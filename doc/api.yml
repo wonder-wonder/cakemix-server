@@ -73,7 +73,7 @@ paths:
           description: Invalid token.
       operationId: get-check-token
       description: Checks JWT token is valid.
-  '/auth/regist/new/token':
+  /auth/regist/gen/token:
     get:
       summary: Generate new key for registering new user
       operationId: get-new-token-regist
@@ -90,10 +90,10 @@ paths:
               examples:
                 example:
                   value:
-                    jwt: JWT TOKEN
-        '409':
-          description: The username or email is already used. Server cannot accept the request.
-  '/auth/regist/{token}':
+                    token: TOKEN
+        '403':
+          description: The user has not permission to generate token
+  '/auth/regist/pre/{token}':
     parameters:
       - schema:
           type: string
@@ -482,7 +482,7 @@ paths:
       tags:
         - Team
       description: Remove the team.
-  '/doc/{parent_id}':
+  '/doc/{folder_id}':
     parameters:
       - schema:
           type: string
@@ -500,17 +500,25 @@ paths:
       operationId: create-new-doc
       tags:
         - Document
+  '/doc/{folder_id}/{doc_id}':
+    parameters:
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        required: true
+        description: Folder ID
     delete:
       summary: Delete a document
       responses:
         '200':
-          description: Create new a document.
+          description: Delete the document.
         '400':
-          description: Cannot create new document.
+          description: Cannot delete the document.
       operationId: delete-doc
       tags:
         - Document
-  '/doc/move/{doc_id}/{parent_id}':
+  '/doc/{doc_id}/move/{folder_id}':
     parameters:
       - schema:
           type: string
@@ -534,7 +542,7 @@ paths:
       operationId: move-doc
       tags:
         - Document
-  '/folder/{parent_id}':
+  '/folder/{folder_id}':
     parameters:
       - schema:
           type: string
@@ -556,13 +564,13 @@ paths:
       summary: Delete a folder
       responses:
         '200':
-          description: Create new a folder.
+          description: delete the folder.
         '400':
-          description: Cannot create new folder.
+          description: Cannot delete the folder.
       operationId: delete-folder
       tags:
         - Folder
-  '/folder/move/{folder_id}/{parent_id}':
+  '/folder/{folder_id}/move/{folder_id}':
     parameters:
       - schema:
           type: string
@@ -586,7 +594,7 @@ paths:
       operationId: move-folder
       tags:
         - Folder
-  '/list/{parent_id}':
+  '/list/{folder_id}':
     parameters:
       - in: query
         name: type
@@ -606,7 +614,7 @@ paths:
         '200':
           description: Move items from target parent.
         '404':
-          description: Not found file and folder.
+          description: Not found target folder.
       operationId: get-list
       tags:
         - List
