@@ -486,7 +486,7 @@ paths:
     parameters:
       - schema:
           type: string
-        name: parent_id
+        name: folder_id
         in: path
         required: true
         description: Folder ID
@@ -504,10 +504,16 @@ paths:
     parameters:
       - schema:
           type: string
-        name: parent_id
+        name: folder_id
         in: path
         required: true
         description: Folder ID
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+        description: Document ID
     delete:
       summary: Delete a document
       responses:
@@ -528,15 +534,15 @@ paths:
         required: true
       - schema:
           type: string
-        name: parent_id
+        name: folder_id
         in: path
-        description: Parent ID
+        description: Folder ID
         required: true
     put:
-      summary: Make document
+      summary: Move document to target folder
       responses:
         '200':
-          description: Move document to target parent.
+          description: Move document to target folder.
         '400':
           description: Cannot move document.
       operationId: move-doc
@@ -546,7 +552,7 @@ paths:
     parameters:
       - schema:
           type: string
-        name: parent_id
+        name: folder_id
         in: path
         required: true
         description: Folder ID
@@ -578,17 +584,11 @@ paths:
         in: path
         description: Folder ID
         required: true
-      - schema:
-          type: string
-        name: parent_id
-        in: path
-        description: Parent ID
-        required: true
     put:
-      summary: Make folder
+      summary: Move folder to target parent.
       responses:
         '200':
-          description: Move folder to target parent.
+          description: Moved folder to target parent.
         '400':
           description: Cannot move folder.
       operationId: move-folder
@@ -604,9 +604,9 @@ paths:
         required: true
       - schema:
           type: string
-        name: parent_id
+        name: folder_id
         in: path
-        description: Parent ID
+        description: Folder ID
         required: true
     get:
       summary: Get file and folder list in folder
