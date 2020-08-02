@@ -1,0 +1,858 @@
+openapi: 3.0.0
+info:
+  title: Cakemix Server API
+  description: 'Definition of Cakemix Server API'
+  version: 1.0.0
+  contact:
+    name: Wonder Wonder
+    url: 'https://wonder-wonder.xyz'
+    email: contact@wonder-wonder.xyz
+servers:
+  - url: 'http://localhost:8081/v1'
+    description: Server URL for localhost development
+  - url: 'https://api.cakemix.wonder-wonder.xyz/v1'
+    description: Server URL for production
+paths:
+  /auth/login:
+    post:
+      summary: Login and get token
+      operationId: post-login
+      responses:
+        '200':
+          description: Authentication is success and logged in. Server returns JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResModel'
+              examples:
+                example:
+                  value:
+                    jwt: JWT TOKEN
+        '401':
+          description: The ID or password is incorrect.
+      tags:
+        - Auth
+      description: Request login with email and password and returns JWT token.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginReqModel'
+            examples:
+              example(email):
+                value:
+                  id: hoge@example.com
+                  pass: password
+              example(username):
+                value:
+                  id: hoge
+                  pass: password
+        description: Login request.
+  /auth/logout:
+    post:
+      summary: Logout and remove session key
+      operationId: post-logout
+      description: Request to logout. Server removes session key.
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Removed session and logout successfully.
+        '401':
+          description: Invalid token.
+  /auth/check/token:
+    get:
+      summary: Check token
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Token is valid.
+        '401':
+          description: Invalid token.
+      operationId: get-check-token
+      description: Checks JWT token is valid.
+  '/auth/regist/new/token':
+    get:
+      summary: Generate new key for registering new user
+      operationId: get-new-token-regist
+      tags:
+        - Auth
+      description: Request to generate new key for registering new user.
+      responses:
+        '200':
+          description: The request is accepted with no error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthRegistNewTokenResModel'
+              examples:
+                example:
+                  value:
+                    jwt: JWT TOKEN
+        '409':
+          description: The username or email is already used. Server cannot accept the request.
+  '/auth/regist/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+        description: Verification token for registration.
+    post:
+      summary: Request to register new user
+      operationId: post-regist
+      tags:
+        - Auth
+      description: Request to register new user. Server sends verification email.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegistReqModel'
+            examples:
+              example:
+                value:
+                  email: hoge@example.com
+                  username: hoge
+                  password: password
+        description: Regist information
+      responses:
+        '200':
+          description: The request is accepted with no error.
+        '409':
+          description: The username or email is already used. Server cannot accept the request.
+  '/auth/regist/verify/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+        description: Verification token for registration.
+    post:
+      summary: Verify registration verification token
+      operationId: post-regist-verify
+      responses:
+        '200':
+          description: The token is accepted and user is registered successfully.
+        '404':
+          description: The token is invalid or expired.
+      tags:
+        - Auth
+      description: 'Verify registration verification token. After verification, the account is added to user data and activated.'
+      security: []
+  /auth/pass/change:
+    post:
+      summary: Request to change password
+      operationId: post-pass-change
+      responses:
+        '200':
+          description: The password is changed successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Old password is wrong.
+      tags:
+        - Auth
+      description: Request to change password.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassChangeReqModel'
+            examples:
+              example:
+                value:
+                  oldpass: password
+                  newpass: NEW password
+        description: Old and new password.
+  /auth/pass/reset:
+    post:
+      summary: Request to reset password
+      operationId: post-pass-reset
+      tags:
+        - Auth
+      description: Request to reset password. Server sends verification email.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassResetReqModel'
+            examples:
+              example:
+                value:
+                  email: hoge@example.com
+        description: Email address to reset password.
+      responses:
+        '200':
+          description: The request is accepted.
+        '400':
+          description: The request is invalid. (Email is invalid.)
+  '/auth/pass/reset/verify/{token}':
+    get:
+      summary: Check password reset token
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: The token is valid.
+        '401':
+          description: Invalid token.
+      operationId: get-pass-reset-verify
+      description: 'Check verification token to reset password. To change password with token, use POST methods.'
+      security: []
+    post:
+      summary: Reset password
+      operationId: post-pass-reset-verify
+      responses:
+        '200':
+          description: The request is accepted.
+        '401':
+          description: Invalid token.
+      tags:
+        - Auth
+      description: Reset password with new one.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassChangeReqModel'
+            examples:
+              example:
+                value:
+                  newpass: NEW password
+        description: New password.
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+  '/profile/{user_name}':
+    parameters:
+      - schema:
+          type: string
+        name: user_name
+        in: path
+        required: true
+        description: Username or teamname
+    get:
+      summary: Get profile
+      responses:
+        '200':
+          description: Got the profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileModel'
+              examples:
+                example(WIP):
+                  value:
+                    uuid: u01234567
+                    name: hoge
+                    bio: The biography
+                    icon_uri: 'https://path/to/icon'
+                    created_at: 1514798825
+                    attr: SysAdmin
+                    is_team: false
+                    teams:
+                      - uuid: t01234567
+                        name: wonderwonder
+                        icon_uri: 'https://path/to/icon'
+                        attr: Official
+                        is_team: true
+                      - uuid: t23456789
+                        name: foobar
+                        icon_uri: 'https://path/to/icon'
+                        attr: ''
+                        is_team: true
+        '404':
+          description: The user/team is not found.
+      operationId: get-user-profile-uuid
+      tags:
+        - Profile
+      description: Get profile for user/team.
+    put:
+      summary: Edit profile
+      operationId: put-user-profile-uuid
+      responses:
+        '200':
+          description: The profile is updated successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Update of profile is not allowed.
+        '404':
+          description: The user/team is not found.
+      tags:
+        - Profile
+      description: Edit profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileModel'
+            examples:
+              example(WIP):
+                value:
+                  uuid: u01234567
+                  name: hoge
+                  bio: The biography
+                  icon_uri: 'https://path/to/icon'
+                  created_at: 1514798825
+                  attr: SysAdmin
+                  is_team: false
+                  teams:
+                    - uuid: t01234567
+                      name: wonderwonder
+                      icon_uri: 'https://path/to/icon'
+                      attr: Official
+                      is_team: true
+                    - uuid: t23456789
+                      name: foobar
+                      icon_uri: 'https://path/to/icon'
+                      attr: ''
+                      is_team: true
+        description: |-
+          Updated profile data. The parameters can be omitted if no update.
+          Some parameter cannot be changed because of readonly.
+  '/team/{teamid}/member':
+    parameters:
+      - schema:
+          type: string
+        name: teamid
+        in: path
+        required: true
+    get:
+      summary: Get team member list
+      responses:
+        '200':
+          description: Got team member list
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Member list
+                items:
+                  $ref: '#/components/schemas/MemberInfoModel'
+              examples:
+                example:
+                  value:
+                    - member:
+                        uuid: u01234567
+                        name: hoge
+                        icon_uri: 'https://path/to/icon'
+                        attr: SysAdmin
+                        is_team: false
+                      permission: 1
+                    - member:
+                        uuid: u23456789
+                        name: fuga
+                        icon_uri: 'https://path/to/icon'
+                        attr: Official
+                        is_team: false
+                      permission: 1
+        '404':
+          description: The team is not found.
+      operationId: get-team-teamid-member
+      description: Get team member list.
+      tags:
+        - Team
+    post:
+      summary: Add the member into team
+      operationId: post-team-teamid-member
+      responses:
+        '200':
+          description: Added the member into the team.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Adding member into the team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Add the member into the team.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInfoModel'
+            examples:
+              example:
+                value:
+                  member: u23456789
+                  permission: 1
+        description: Member info.
+      tags:
+        - Team
+    put:
+      summary: Modify member info in the team
+      operationId: put-team-teamid-member
+      responses:
+        '200':
+          description: Modified the member info.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Modifying member info team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Modify member info in the team.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInfoModel'
+            examples:
+              example:
+                value:
+                  member: u23456789
+                  permission: 3
+        description: Member info.
+      tags:
+        - Team
+    delete:
+      summary: Remove the member from the team
+      operationId: delete-team-teamid-member
+      responses:
+        '200':
+          description: Removed the member from the tean.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Removing member from the team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Remove the member from the team.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: uuid
+          description: Removing member UUID
+          required: true
+      tags:
+        - Team
+  /team:
+    post:
+      summary: Create team
+      operationId: post-team
+      responses:
+        '200':
+          description: The new team is created successfully.
+        '401':
+          description: Invalid token.
+        '409':
+          description: The teamname is already used.
+      tags:
+        - Team
+      description: Create new team.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          description: Teamname
+          required: true
+  '/team/{teamid}':
+    parameters:
+      - schema:
+          type: string
+        name: teamid
+        in: path
+        required: true
+        description: Team UUID
+    delete:
+      summary: Remove team
+      operationId: delete-team-teamid
+      responses:
+        '200':
+          description: The team is removed successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Removing team is not allowed.
+        '404':
+          description: The team is not found.
+      tags:
+        - Team
+      description: Remove the team.
+  '/doc/{parent_id}':
+    parameters:
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        required: true
+        description: Folder ID
+    post:
+      summary: Make a new document
+      responses:
+        '200':
+          description: Create new a document.
+        '400':
+          description: Cannot create new document.
+      operationId: create-new-doc
+      tags:
+        - Document
+    delete:
+      summary: Delete a document
+      responses:
+        '200':
+          description: Create new a document.
+        '400':
+          description: Cannot create new document.
+      operationId: delete-doc
+      tags:
+        - Document
+  '/doc/move/{doc_id}/{parent_id}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        description: Folder ID
+        required: true
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        description: Parent ID
+        required: true
+    put:
+      summary: Make document
+      responses:
+        '200':
+          description: Move document to target parent.
+        '400':
+          description: Cannot move document.
+      operationId: move-doc
+      tags:
+        - Document
+  '/folder/{parent_id}':
+    parameters:
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        required: true
+        description: Folder ID
+    post:
+      summary: Make a new folder
+      responses:
+        '200':
+          description: Create new a folder.
+        '400':
+          description: Cannot create new folder.
+      operationId: create-new-folder
+      tags:
+        - Folder
+    delete:
+      summary: Delete a folder
+      responses:
+        '200':
+          description: Create new a folder.
+        '400':
+          description: Cannot create new folder.
+      operationId: delete-folder
+      tags:
+        - Folder
+  '/folder/move/{folder_id}/{parent_id}':
+    parameters:
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        description: Folder ID
+        required: true
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        description: Parent ID
+        required: true
+    put:
+      summary: Make folder
+      responses:
+        '200':
+          description: Move folder to target parent.
+        '400':
+          description: Cannot move folder.
+      operationId: move-folder
+      tags:
+        - Folder
+  '/list/{parent_id}':
+    parameters:
+      - in: query
+        name: type
+        schema:
+          type: string
+          description: type of getting list
+        required: true
+      - schema:
+          type: string
+        name: parent_id
+        in: path
+        description: Parent ID
+        required: true
+    get:
+      summary: Get file and folder list in folder
+      responses:
+        '200':
+          description: Move items from target parent.
+        '404':
+          description: Not found file and folder.
+      operationId: get-list
+      tags:
+        - List
+components:
+  schemas:
+    JWT:
+      title: JWT
+      type: object
+      description: |-
+        JSON Web Token(JWT) is used for authorization.
+        Geekers API uses only requred items.
+      properties:
+        iss:
+          type: string
+          description: Issuer Claim.
+          example: geekers
+        sub:
+          type: string
+          description: Subject Claim.
+          example: login
+        aud:
+          type: string
+          description: Audience Claim. It keeps UUID.
+          example: u123456
+        exp:
+          type: integer
+          description: Expiration Time Claim.
+          example: 1609426800
+        nbf:
+          type: integer
+          description: Not Before Claim.
+        iat:
+          type: integer
+          description: Issued At Claim.
+        jti:
+          type: string
+          description: JWT ID Claim. It keeps session ID.
+          example: sessionkey
+      required:
+        - aud
+        - exp
+        - jti
+    AuthRegistReqModel:
+      title: AuthRegistReqModel
+      type: object
+      description: Request model for /auth/regist
+      properties:
+        email:
+          type: string
+          description: Email address
+          format: email
+        username:
+          type: string
+          description: Username
+        password:
+          type: string
+          description: Password
+      required:
+        - email
+        - username
+        - password
+    AuthRegistNewTokenResModel:
+      title: AuthRegistNewTokenResModel
+      type: object
+      description: Request model for /auth/regist/new/token
+      properties:
+        token:
+          type: string
+          description: Token for registering
+      required:
+        - token
+    AuthLoginReqModel:
+      title: AuthLoginReqModel
+      type: object
+      description: Request model for /auth/login
+      properties:
+        id:
+          type: string
+          description: Email address or username
+        pass:
+          type: string
+          description: Password
+      required:
+        - id
+        - pass
+    AuthLoginResModel:
+      title: AuthLoginResModel
+      type: object
+      description: Response model for /auth/login
+      properties:
+        jwt:
+          type: string
+          description: JWT token
+      required:
+        - jwt
+    AuthPassChangeReqModel:
+      title: AuthPassChangeReqModel
+      type: object
+      description: 'Request model for /auth/pass/change and /auth/pass/reset/verify/{token}'
+      properties:
+        oldpass:
+          type: string
+          description: Old password
+        newpass:
+          type: string
+          description: New password
+      required:
+        - newpass
+    AuthPassResetReqModel:
+      title: AuthPassResetReqModel
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email for user to reset password
+      required:
+        - email
+      description: Request model for /auth/pass/reset
+    ProfileModel:
+      title: ProfileModel
+      type: object
+      description: |-
+        Profile model for get and post of /profile/{name}.
+        Required items are attached in child items.
+      properties:
+        uuid:
+          type: string
+          description: UUID for user/team
+        name:
+          type: string
+          description: Username or teamname
+        bio:
+          type: string
+          description: Biography
+        icon_uri:
+          type: string
+          description: IconURI
+          format: uri
+        created_at:
+          type: integer
+          description: User/team creation date
+        attr:
+          type: string
+          description: 'Attribute(Official, SysAdmin)'
+        is_team:
+          type: boolean
+          description: Team or not
+        teams:
+          type: array
+          description: List for joining teams
+          items:
+            $ref: '#/components/schemas/ProfileModel'
+        lang:
+          type: string
+          description: Language
+      required:
+        - uuid
+        - name
+        - icon_uri
+        - attr
+        - is_team
+    MemberInfoModel:
+      title: MemberInfoModel
+      description: 'Member info model for /team/{teamid}/member'
+      type: object
+      properties:
+        member:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+          description: Member profile or UUID
+        permission:
+          type: integer
+          description: Permission
+    DocumentModel:
+      title: DocumentModel
+      description: 'Document model'
+      type: object
+      properties:
+        owner:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        updater:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        title:
+          type: string
+          description: Documentation
+        body:
+          type: string
+          description: Documentation
+        permission:
+          type: integer
+          description: Permission
+        created_at:
+          type: integer
+          description: document creation date
+        updated_at:
+          type: integer
+          description: document creation date
+    DocumentResModel:
+      title: DocumentResModel
+      type: object
+      description: 'Response of document creation'
+      properties:
+        doc_id:
+          type: string
+          description: Documentation
+      required:
+        - doc_id
+    FolderModel:
+      title: FolderModel
+      description: 'Folder model'
+      type: object
+      properties:
+        owner:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        updater:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        permission:
+          type: integer
+          description: Permission
+        created_at:
+          type: integer
+          description: folder creation date
+        updated_at:
+          type: integer
+          description: folder creation date
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+tags:
+  - name: Auth
+    description: Authorization API
+security:
+  - JWT: []
