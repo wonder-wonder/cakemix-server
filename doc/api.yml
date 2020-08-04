@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Cakemix Server API
-  description: 'Definition of Cakemix Server API'
+  description: Definition of Cakemix Server API
   version: 1.0.0
   contact:
     name: Wonder Wonder
@@ -495,19 +495,25 @@ paths:
       responses:
         '200':
           description: Create new a document.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  doc_id:
+                    type: string
+              examples:
+                example-1:
+                  value:
+                    doc_id: generated token
         '400':
           description: Cannot create new document.
       operationId: create-new-doc
       tags:
         - Document
-  '/doc/{folder_id}/{doc_id}':
+      description: Just create new document and will return document id
+  '/doc/{doc_id}':
     parameters:
-      - schema:
-          type: string
-        name: folder_id
-        in: path
-        required: true
-        description: Folder ID
       - schema:
           type: string
         name: doc_id
@@ -561,6 +567,17 @@ paths:
       responses:
         '200':
           description: Create new a folder.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder_id:
+                    type: string
+              examples:
+                example-1:
+                  value:
+                    folder_id: folder_id
         '400':
           description: Cannot create new folder.
       operationId: create-new-folder
@@ -576,13 +593,19 @@ paths:
       operationId: delete-folder
       tags:
         - Folder
-  '/folder/{folder_id}/move/{folder_id}':
+  '/folder/{folder_id}/move/{target_folder_id}':
     parameters:
       - schema:
           type: string
         name: folder_id
         in: path
         description: Folder ID
+        required: true
+      - schema:
+          type: string
+        name: target_folder_id
+        in: path
+        description: Target Folder ID
         required: true
     put:
       summary: Move folder to target parent.
@@ -609,15 +632,64 @@ paths:
         description: Folder ID
         required: true
     get:
-      summary: Get file and folder list in folder
+      summary: Get document and folder list in the target folder
       responses:
         '200':
           description: Move items from target parent.
+          content:
+            application/json:
+              schema:
+                description: List of Folder and Document
+                anyOf:
+                  - $ref: '#/components/schemas/FolderModel'
+                  - $ref: '#/components/schemas/DocumentModel'
+              examples:
+                example (type=all):
+                  value:
+                    folder:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                    document:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        title: title
+                        body: body
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                example (type=folder):
+                  value:
+                    folder:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                example (type=document):
+                  value:
+                    document:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        title: title
+                        body: body
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
         '404':
           description: Not found target folder.
       operationId: get-list
       tags:
         - List
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: type
+          required: true
+          description: 'type that which list will be returned (all, folder, document)'
 components:
   schemas:
     JWT:
@@ -793,7 +865,7 @@ components:
           description: Permission
     DocumentModel:
       title: DocumentModel
-      description: 'Document model'
+      description: Document model
       type: object
       properties:
         owner:
@@ -824,7 +896,7 @@ components:
     DocumentResModel:
       title: DocumentResModel
       type: object
-      description: 'Response of document creation'
+      description: Response of document creation
       properties:
         doc_id:
           type: string
@@ -833,7 +905,7 @@ components:
         - doc_id
     FolderModel:
       title: FolderModel
-      description: 'Folder model'
+      description: Folder model
       type: object
       properties:
         owner:
