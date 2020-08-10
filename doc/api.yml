@@ -562,6 +562,72 @@ paths:
         in: path
         required: true
         description: Folder ID
+      - in: query
+        name: type
+        schema:
+          type: string
+          description: type of getting list
+        required: true
+    get:
+      summary: Get document and folder list in the target folder
+      responses:
+        '200':
+          description: Move items from target parent.
+          content:
+            application/json:
+              schema:
+                description: List of Folder and Document
+                anyOf:
+                  - $ref: '#/components/schemas/FolderModel'
+                  - $ref: '#/components/schemas/DocumentModel'
+              examples:
+                example (type=all):
+                  value:
+                    folder:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                    document:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        title: title
+                        body: body
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                example (type=folder):
+                  value:
+                    folder:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+                example (type=document):
+                  value:
+                    document:
+                      - owner: ProfileModel
+                        updater: ProfileModel
+                        title: title
+                        body: body
+                        permission: 0
+                        created_at: DATE
+                        updated_at: DATE
+        '404':
+          description: Not found target folder.
+      operationId: get-list
+      tags:
+        - Folder
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: type
+          required: true
+          description: 'type that which list will be returned (all, folder, document)'
+      description: ''        
     post:
       summary: Make a new folder
       responses:
@@ -617,79 +683,6 @@ paths:
       operationId: move-folder
       tags:
         - Folder
-  '/list/{folder_id}':
-    parameters:
-      - in: query
-        name: type
-        schema:
-          type: string
-          description: type of getting list
-        required: true
-      - schema:
-          type: string
-        name: folder_id
-        in: path
-        description: Folder ID
-        required: true
-    get:
-      summary: Get document and folder list in the target folder
-      responses:
-        '200':
-          description: Move items from target parent.
-          content:
-            application/json:
-              schema:
-                description: List of Folder and Document
-                anyOf:
-                  - $ref: '#/components/schemas/FolderModel'
-                  - $ref: '#/components/schemas/DocumentModel'
-              examples:
-                example (type=all):
-                  value:
-                    folder:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                    document:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        title: title
-                        body: body
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                example (type=folder):
-                  value:
-                    folder:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                example (type=document):
-                  value:
-                    document:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        title: title
-                        body: body
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-        '404':
-          description: Not found target folder.
-      operationId: get-list
-      tags:
-        - List
-      parameters:
-        - schema:
-            type: string
-          in: query
-          name: type
-          required: true
-          description: 'type that which list will be returned (all, folder, document)'
 components:
   schemas:
     JWT:
