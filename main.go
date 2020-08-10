@@ -6,21 +6,23 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/wonder-wonder/cakemix-server/db"
+	"github.com/wonder-wonder/cakemix-server/handler"
 )
 
 func main() {
 	r := gin.Default()
-	// db, err := db.OpenDB()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	db, err := db.OpenDB()
+	if err != nil {
+		panic(err)
+	}
 
 	// API handler
 	r.GET("/", helloHandler)
-	// r.Use(handler.CORS())
+	r.Use(handler.CORS())
 
-	// v1 := r.Group("v1")
-	// v1Handler(v1, db)
+	v1 := r.Group("v1")
+	v1Handler(v1, db)
 
 	// Start web server
 	fmt.Println("Start server")
@@ -41,15 +43,11 @@ func helloHandler(c *gin.Context) {
 	c.Abort()
 }
 
-// func v1Handler(r *gin.RouterGroup, db *db.DB) {
-// 	h := handler.NewHandler(db)
-// 	h.AuthHandler(r)
-// 	h.ProfileHandler(r)
-// 	h.ProjectHandler(r)
-// 	h.TagCatHandler(r)
-// 	h.UserHandler(r)
-// 	h.SearchHandler(r)
-// 	h.RankHandler(r)
-// 	h.TeamHandler(r)
-// 	h.OtherHandler(r)
-// }
+func v1Handler(r *gin.RouterGroup, db *db.DB) {
+	h := handler.NewHandler(db)
+	h.AuthHandler(r)
+	h.DocumentHandler(r)
+	h.FolderHandler(r)
+	h.ProfileHandler(r)
+	h.TeamHandler(r)
+}
