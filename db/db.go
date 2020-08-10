@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	dbHost = "geekerspg"
+	dbHost = "cakemixpg"
 	dbPort = "5432"
 	dbUser = "postgres"
 	dbPass = "postgres"
-	dbName = "geekers"
+	dbName = "cakemix"
 )
 
 // // IDType
