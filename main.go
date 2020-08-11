@@ -8,9 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
 func main() {
+	ot := ot.New("", []string{})
+	ot.Test()
+	return
 	r := gin.Default()
 	db, err := db.OpenDB()
 	if err != nil {
