@@ -1,5 +1,9 @@
 package ot
 
+import (
+	"errors"
+)
+
 type OpType int
 
 const (
@@ -10,7 +14,7 @@ const (
 
 type Op struct {
 	OpType OpType
-	Loc    int
+	Len    int
 	Text   string
 }
 type Ops struct {
@@ -26,3 +30,107 @@ type OT struct {
 func New(text string, users []string) *OT {
 	return &OT{Text: text, Users: users}
 }
+
+func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
+	if rev < 0 || rev > len(ot.History) {
+		return Ops{}, errors.New("Revision is out of range")
+	}
+	ret := ops
+	// Check all history after rev
+	for _, h := range ot.History[rev:] {
+		//temporary new ops
+		tops := Ops{User: ret.User}
+		//History op counter
+		j := 0
+		//Remaining retain or delete
+		remain := 0
+		isDel := false
+		// Check all Ops
+		for _, op := range ret.Ops {
+			// If insert, just insert
+			if op.OpType == OpTypeInsert {
+				tops.Ops = append(tops.Ops, op)
+				continue
+			}
+			// Current length to process
+			cur := op.Len
+			for cur > 0 {
+				// Get remain
+				if remain == 0 {
+					for j < len(h.Ops) {
+						// If insert, just retain and ignore
+						if h.Ops[j].OpType == OpTypeInsert {
+							tops.Ops = append(tops.Ops, Op{OpType: OpTypeRetain, Len: h.Ops[j].Len})
+							j++
+							continue
+						}
+						// Get length for remain
+						remain = h.Ops[j].Len
+						isDel = h.Ops[j].OpType == OpTypeDelete
+						j++
+						break
+					}
+					// If remain is not left, the operation is inconsistent
+					if remain == 0 {
+						return Ops{}, errors.New("Operation is inconsistent")
+					}
+				}
+
+				if cur > remain {
+					//Use all remain
+					if !isDel {
+						//If retain, left it. If delete, discard it
+						tops.Ops = append(tops.Ops, Op{OpType: op.OpType, Len: remain})
+					}
+					cur -= remain
+					remain = 0
+				} else {
+					//Use remain and cur is finished
+					if !isDel {
+						//If retain, left it. If delete, discard it
+						tops.Ops = append(tops.Ops, Op{OpType: op.OpType, Len: cur})
+					}
+					remain -= cur
+					cur = 0
+				}
+			}
+		}
+		// hist ops is remain, it may insert operation
+		if j < len(h.Ops) {
+			// If insert, just retain and ignore
+			if h.Ops[j].OpType == OpTypeInsert {
+				tops.Ops = append(tops.Ops, Op{OpType: OpTypeRetain, Len: h.Ops[j].Len})
+				j++
+			}
+			if j < len(h.Ops) {
+				// If stil remain, it's inconsistent
+				return Ops{}, errors.New("Operation is inconsistent")
+			}
+		}
+		//Merge same type
+		if len(tops.Ops) > 1 {
+			for i := 1; i < len(tops.Ops); i++ {
+				if tops.Ops[i-1].OpType == tops.Ops[i].OpType {
+					tops.Ops[i-1].Len += tops.Ops[i].Len
+					tops.Ops[i-1].Text += tops.Ops[i].Text
+					tops.Ops = append(tops.Ops[:i], tops.Ops[i+1:]...)
+					i--
+				}
+			}
+		}
+		ret = tops
+	}
+	return ret, nil
+}
+
+// func Test() {
+// 	// ot := New("", []string{})
+// 	// a := []string{"a", "b", "c"}
+// 	// println(a[2:])
+// 	// println(a[3:])
+// 	op := Ops{Ops: []Op{{Text: "a"}, {Text: "b"}, {Text: "c"}}}
+// 	for _, o := range op.Ops {
+// 		o.Text = "d"
+// 	}
+// 	fmt.Printf("%v\n", op)
+// }
