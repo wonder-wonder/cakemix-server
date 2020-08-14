@@ -123,14 +123,22 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	return ret, nil
 }
 
-// func Test() {
-// 	// ot := New("", []string{})
-// 	// a := []string{"a", "b", "c"}
-// 	// println(a[2:])
-// 	// println(a[3:])
-// 	op := Ops{Ops: []Op{{Text: "a"}, {Text: "b"}, {Text: "c"}}}
-// 	for _, o := range op.Ops {
-// 		o.Text = "d"
-// 	}
-// 	fmt.Printf("%v\n", op)
-// }
+func (ot *OT) Operate(rev int, ops Ops) {
+	opstrans, err := ot.Transform(rev, ops)
+	if err != nil {
+		panic("hoge")
+	}
+	loc := 0
+	for _, v := range opstrans.Ops {
+		if v.OpType == OpTypeRetain {
+			loc += v.Len
+		} else if v.OpType == OpTypeInsert {
+			ot.Text = ot.Text[:loc] + v.Text + ot.Text[loc:]
+			loc += v.Len
+		} else if v.OpType == OpTypeDelete {
+			ot.Text = ot.Text[:loc] + ot.Text[v.Len+loc:]
+		}
+		println(loc, v.Len, v.OpType, ot.Text)
+	}
+	ot.History = append(ot.History, opstrans)
+}
