@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
@@ -28,50 +29,50 @@ func (h *Handler) notimplHandler(c *gin.Context) {
 // CheckAuthMiddleware generates middleware to check JWT and set UUID
 func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// header := c.Request.Header.Get("Authorization")
-		// hs := strings.SplitN(header, " ", 2)
-		// if len(hs) != 2 || hs[0] != "Bearer" {
-		// 	c.AbortWithStatus(http.StatusUnauthorized)
-		// 	return
-		// }
+		header := c.Request.Header.Get("Authorization")
+		hs := strings.SplitN(header, " ", 2)
+		if len(hs) != 2 || hs[0] != "Bearer" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 
-		// uuid, err := h.db.VerifyToken(hs[1])
-		// if err == db.ErrInvalidToken {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		// 	return
-		// } else if err != nil {
-		// 	c.AbortWithError(http.StatusInternalServerError, err)
-		// 	return
-		// }
-		// c.Set("UUID", uuid)
+		uuid, err := h.db.VerifyToken(hs[1])
+		if err == db.ErrInvalidToken {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		} else if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		c.Set("UUID", uuid)
 	}
 }
 
 // GetUUIDMiddleware generates middleware to set UUID if valid JWT is available
 func (h *Handler) GetUUIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// header := c.Request.Header.Get("Authorization")
-		// hs := strings.SplitN(header, " ", 2)
-		// if len(hs) != 2 || hs[0] != "Bearer" {
-		// 	return
-		// }
+		header := c.Request.Header.Get("Authorization")
+		hs := strings.SplitN(header, " ", 2)
+		if len(hs) != 2 || hs[0] != "Bearer" {
+			return
+		}
 
-		// uuid, err := h.db.VerifyToken(hs[1])
-		// if err != nil {
-		// 	return
-		// }
-		// c.Set("UUID", uuid)
+		uuid, err := h.db.VerifyToken(hs[1])
+		if err != nil {
+			return
+		}
+		c.Set("UUID", uuid)
 	}
 }
 
-// func getUUID(c *gin.Context) (string, bool) {
-// 	dat, ok := c.Get("UUID")
-// 	if !ok {
-// 		return "", false
-// 	}
-// 	uuid, ok := dat.(string)
-// 	return uuid, ok
-// }
+func getUUID(c *gin.Context) (string, bool) {
+	dat, ok := c.Get("UUID")
+	if !ok {
+		return "", false
+	}
+	uuid, ok := dat.(string)
+	return uuid, ok
+}
 
 // CORS supports cross origin resource sharing.
 func CORS() gin.HandlerFunc {

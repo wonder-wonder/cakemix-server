@@ -1,8 +1,12 @@
 package db
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base32"
+	"encoding/base64"
 	"os"
+	"strings"
 
 	_ "github.com/lib/pq" //PostgreSQL driver
 )
@@ -15,28 +19,28 @@ var (
 	dbName = "cakemix"
 )
 
-// // IDType
-// type IDType int
+// IDType
+type IDType int
 
-// // IDType list
-// const (
-// 	IDTypeVerifyToken IDType = iota
-// 	IDTypeSessionID
-// 	IDTypeSalt
-// 	IDTypeUser
-// 	IDTypeTeam
-// 	IDTypeProject
-// 	IDTypeComment
-// )
+// IDType list
+const (
+	IDTypeVerifyToken IDType = iota
+	IDTypeSessionID
+	IDTypeSalt
+	IDTypeUser
+	IDTypeTeam
+	IDTypeProject
+	IDTypeComment
+)
 
-// const (
-// 	sizeVerifyToken = 24
-// 	sizeSessionID   = 9
-// 	sizeSalt        = 12
-// 	sizeUser        = 10
-// 	sizeProject     = 10
-// 	sizeComment     = 10
-// )
+const (
+	sizeVerifyToken = 24
+	sizeSessionID   = 9
+	sizeSalt        = 12
+	sizeUser        = 10
+	sizeProject     = 10
+	sizeComment     = 10
+)
 
 // DB holds DB connection
 type DB struct {
@@ -76,47 +80,47 @@ func OpenDB() (*DB, error) {
 	return &DB{db: db}, nil
 }
 
-// func GenerateID(t IDType) (string, error) {
-// 	size := 0
-// 	var enc func([]byte) string
-// 	switch t {
-// 	case IDTypeVerifyToken:
-// 		size = sizeVerifyToken
-// 		enc = base64.URLEncoding.EncodeToString
-// 	case IDTypeSessionID:
-// 		size = sizeSessionID
-// 		enc = base64.StdEncoding.EncodeToString
-// 	case IDTypeSalt:
-// 		size = sizeSalt
-// 		enc = base64.StdEncoding.EncodeToString
-// 	case IDTypeUser:
-// 		size = sizeUser
-// 		enc = func(src []byte) string {
-// 			return "u" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
-// 		}
-// 	case IDTypeTeam:
-// 		size = sizeUser
-// 		enc = func(src []byte) string {
-// 			return "t" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
-// 		}
-// 	case IDTypeProject:
-// 		size = sizeProject
-// 		enc = func(src []byte) string {
-// 			return "p" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
-// 		}
-// 	case IDTypeComment:
-// 		size = sizeComment
-// 		enc = func(src []byte) string {
-// 			return "c" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
-// 		}
-// 	default:
-// 		panic("Unexpected IDType")
-// 	}
+func GenerateID(t IDType) (string, error) {
+	size := 0
+	var enc func([]byte) string
+	switch t {
+	case IDTypeVerifyToken:
+		size = sizeVerifyToken
+		enc = base64.URLEncoding.EncodeToString
+	case IDTypeSessionID:
+		size = sizeSessionID
+		enc = base64.StdEncoding.EncodeToString
+	case IDTypeSalt:
+		size = sizeSalt
+		enc = base64.StdEncoding.EncodeToString
+	case IDTypeUser:
+		size = sizeUser
+		enc = func(src []byte) string {
+			return "u" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+		}
+	case IDTypeTeam:
+		size = sizeUser
+		enc = func(src []byte) string {
+			return "t" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+		}
+	case IDTypeProject:
+		size = sizeProject
+		enc = func(src []byte) string {
+			return "p" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+		}
+	case IDTypeComment:
+		size = sizeComment
+		enc = func(src []byte) string {
+			return "c" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+		}
+	default:
+		panic("Unexpected IDType")
+	}
 
-// 	rd := make([]byte, size)
-// 	_, err := rand.Read(rd)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return enc(rd), nil
-// }
+	rd := make([]byte, size)
+	_, err := rand.Read(rd)
+	if err != nil {
+		return "", err
+	}
+	return enc(rd), nil
+}
