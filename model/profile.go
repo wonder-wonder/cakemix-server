@@ -10,10 +10,7 @@ type Profile struct {
 	Attr      string    `json:"attr"`
 	IsTeam    bool      `json:"is_team"`
 	Teams     []Profile `json:"teams"`
-	//TODO
-	// Project   []ProjectInfoRes `json:"projects"`
-	Project []interface{} `json:"projects"`
-	Lang    string        `json:"lang"`
+	Lang      string    `json:"lang"`
 }
 
 //ProfileReq model

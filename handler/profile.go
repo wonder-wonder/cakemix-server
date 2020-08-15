@@ -37,7 +37,6 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		Lang:      p.Lang,
 		IsTeam:    (p.UUID[0] == 't'),
 		Teams:     []model.Profile{},
-		// Project:   []model.ProjectInfoRes{}, TODO
 	}
 
 	teams, err := h.db.GetTeamsByUser(p.UUID)
@@ -55,19 +54,6 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 			IsTeam:  true,
 		})
 	}
-	// projs, err := h.db.GetProjectsByUser(p.UUID)
-	// for _, v := range projs {
-	// 	pi, err := h.db.GetProjectInfo(v)
-	// 	if err != nil {
-	// 		c.AbortWithError(http.StatusInternalServerError, err)
-	// 		return
-	// 	}
-	// 	res.Project = append(res.Project, model.ProjectInfoRes{
-	// 		UUID:        pi.UUID,
-	// 		Title:       pi.Title,
-	// 		Description: pi.Description,
-	// 	})
-	// }
 
 	c.JSON(http.StatusOK, res)
 }
