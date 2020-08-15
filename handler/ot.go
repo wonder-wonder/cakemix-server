@@ -88,7 +88,7 @@ func ParseOp(msg []byte, user string) (OpData, error) {
 				ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeRetain, Len: vti})
 			}
 		case string:
-			ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeInsert, Len: len(vt), Text: vt})
+			ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeInsert, Len: len([]rune(vt)), Text: vt})
 		default:
 			(errors.New("Parse op error"))
 		}
