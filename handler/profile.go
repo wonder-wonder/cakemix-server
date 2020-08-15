@@ -40,21 +40,21 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		// Project:   []model.ProjectInfoRes{}, TODO
 	}
 
-	// teams, err := h.db.GetTeamsByUser(p.UUID)
-	// for _, v := range teams {
-	// 	prof, err := h.db.GetProfileByUUID(v)
-	// 	if err != nil {
-	// 		c.AbortWithError(http.StatusInternalServerError, err)
-	// 		return
-	// 	}
-	// 	res.Teams = append(res.Teams, model.Profile{
-	// 		UUID:    prof.UUID,
-	// 		Name:    prof.Name,
-	// 		IconURI: prof.IconURI,
-	// 		Attr:    prof.Attr,
-	// 		IsTeam:  true,
-	// 	})
-	// }
+	teams, err := h.db.GetTeamsByUser(p.UUID)
+	for _, v := range teams {
+		prof, err := h.db.GetProfileByUUID(v)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		res.Teams = append(res.Teams, model.Profile{
+			UUID:    prof.UUID,
+			Name:    prof.Name,
+			IconURI: prof.IconURI,
+			Attr:    prof.Attr,
+			IsTeam:  true,
+		})
+	}
 	// projs, err := h.db.GetProjectsByUser(p.UUID)
 	// for _, v := range projs {
 	// 	pi, err := h.db.GetProjectInfo(v)
