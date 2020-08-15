@@ -128,17 +128,19 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 		panic("hoge")
 	}
 	loc := 0
+	trune := []rune(ot.Text)
 	for _, v := range opstrans.Ops {
 		if v.OpType == OpTypeRetain {
 			loc += v.Len
 		} else if v.OpType == OpTypeInsert {
-			ot.Text = ot.Text[:loc] + v.Text + ot.Text[loc:]
+			trune = append(trune[:loc], append([]rune(v.Text), trune[loc:]...)...)
 			loc += v.Len
 		} else if v.OpType == OpTypeDelete {
-			ot.Text = ot.Text[:loc] + ot.Text[v.Len+loc:]
+			trune = append(trune[:loc], trune[v.Len+loc:]...)
 		}
-		println(loc, v.Len, v.OpType, ot.Text)
+		println(loc, v.Len, v.OpType, string(trune))
 	}
+	ot.Text = string(trune)
 	ot.History = append(ot.History, opstrans)
 	return opstrans, nil
 }
