@@ -23,12 +23,11 @@ type Ops struct {
 }
 type OT struct {
 	Text    string
-	Users   []string
 	History []Ops
 }
 
-func New(text string, users []string) *OT {
-	return &OT{Text: text, Users: users}
+func New(text string) *OT {
+	return &OT{Text: text}
 }
 
 func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
@@ -123,7 +122,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	return ret, nil
 }
 
-func (ot *OT) Operate(rev int, ops Ops) {
+func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 	opstrans, err := ot.Transform(rev, ops)
 	if err != nil {
 		panic("hoge")
@@ -141,4 +140,5 @@ func (ot *OT) Operate(rev int, ops Ops) {
 		println(loc, v.Len, v.OpType, ot.Text)
 	}
 	ot.History = append(ot.History, opstrans)
+	return opstrans, nil
 }
