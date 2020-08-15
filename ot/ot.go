@@ -2,6 +2,7 @@ package ot
 
 import (
 	"errors"
+	"unicode/utf16"
 )
 
 type OpType int
@@ -128,19 +129,18 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 		panic("hoge")
 	}
 	loc := 0
-	trune := []rune(ot.Text)
+	trune := utf16.Encode([]rune(ot.Text))
 	for _, v := range opstrans.Ops {
 		if v.OpType == OpTypeRetain {
 			loc += v.Len
 		} else if v.OpType == OpTypeInsert {
-			trune = append(trune[:loc], append([]rune(v.Text), trune[loc:]...)...)
+			trune = append(trune[:loc], append(utf16.Encode([]rune(v.Text)), trune[loc:]...)...)
 			loc += v.Len
 		} else if v.OpType == OpTypeDelete {
 			trune = append(trune[:loc], trune[v.Len+loc:]...)
 		}
-		println(loc, v.Len, v.OpType, string(trune))
 	}
-	ot.Text = string(trune)
+	ot.Text = string(utf16.Decode(trune))
 	ot.History = append(ot.History, opstrans)
 	return opstrans, nil
 }
