@@ -1,4 +1,4 @@
-package ot
+package handler
 
 import (
 	"encoding/json"
@@ -10,9 +10,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
+var clients []ClientInfo
+
+type ClientInfo struct {
+	Conn      *websocket.Conn `json:"-"`
+	ID        int             `json:"-"`
+	Name      string          `json:"name"`
+	Selection []SelData       `json:"selection"`
+}
 type WSMsg struct {
 	Event string          `json:"e"`
 	Data  json.RawMessage `json:"d"`
@@ -36,7 +44,7 @@ type DocData struct {
 // }
 type OpData struct {
 	Revision  int
-	Operation Ops
+	Operation ot.Ops
 	Selection []SelData
 }
 
@@ -69,18 +77,18 @@ func ParseOp(msg []byte, user string) (OpData, error) {
 	if err != nil {
 		panic(err)
 	}
-	ret.Operation = Ops{Ops: []Op{}, User: user}
+	ret.Operation = ot.Ops{Ops: []ot.Op{}, User: user}
 	for _, v := range opsraw {
 		switch vt := v.(type) {
 		case float64:
 			vti := int(vt)
 			if vti < 0 {
-				ret.Operation.Ops = append(ret.Operation.Ops, Op{OpType: OpTypeDelete, Len: -vti})
+				ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeDelete, Len: -vti})
 			} else {
-				ret.Operation.Ops = append(ret.Operation.Ops, Op{OpType: OpTypeRetain, Len: vti})
+				ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeRetain, Len: vti})
 			}
 		case string:
-			ret.Operation.Ops = append(ret.Operation.Ops, Op{OpType: OpTypeInsert, Len: len(vt), Text: vt})
+			ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeInsert, Len: len(vt), Text: vt})
 		default:
 			(errors.New("Parse op error"))
 		}
@@ -110,21 +118,18 @@ func ParseSel(msg []byte) ([]SelData, error) {
 	return rang.Ranges, nil
 }
 
-type ClientInfo struct {
-	Conn      *websocket.Conn `json:"-"`
-	ID        int             `json:"-"`
-	Name      string          `json:"name"`
-	Selection []SelData       `json:"selection"`
+func Broadcast(from int, msg []byte) {
+	for _, c := range clients {
+		if c.ID == from {
+			continue
+		}
+		c.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
+	}
 }
 
-var clients []ClientInfo
+func (h *Handler) OTHandler(r *gin.RouterGroup) {
+	otsess := ot.New("Hello, world!")
 
-func Test() {
-	ot := New("Hello, world!")
-
-	r := gin.Default()
-
-	// API handler
 	r.GET("/ws", func(c *gin.Context) {
 		var wsupgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -142,7 +147,7 @@ func Test() {
 		for i, c := range clients {
 			cl[strconv.Itoa(i)] = c
 		}
-		docdatraw, err := json.Marshal(DocData{Clients: cl, Document: ot.Text, Revision: len(ot.History)})
+		docdatraw, err := json.Marshal(DocData{Clients: cl, Document: otsess.Text, Revision: len(otsess.History)})
 		if err != nil {
 			panic(err)
 		}
@@ -177,14 +182,14 @@ func Test() {
 					panic(err)
 				}
 
-				op, err := ot.Operate(opdat.Revision, opdat.Operation)
+				op, err := otsess.Operate(opdat.Revision, opdat.Operation)
 				opraw := []interface{}{}
 				for _, v := range op.Ops {
-					if v.OpType == OpTypeRetain {
+					if v.OpType == ot.OpTypeRetain {
 						opraw = append(opraw, v.Len)
-					} else if v.OpType == OpTypeInsert {
+					} else if v.OpType == ot.OpTypeInsert {
 						opraw = append(opraw, v.Text)
-					} else if v.OpType == OpTypeDelete {
+					} else if v.OpType == ot.OpTypeDelete {
 						opraw = append(opraw, -v.Len)
 					}
 				}
@@ -199,7 +204,7 @@ func Test() {
 					panic(err)
 				}
 				Broadcast(useridint, datraw)
-				fmt.Printf("\n%s\n", ot.Text)
+				fmt.Printf("\n%s\n", otsess.Text)
 				temp := `{"e":"ok"}`
 				conn.WriteMessage(websocket.TextMessage, []byte(temp))
 			} else if dat.Event == "sel" {
@@ -225,17 +230,5 @@ func Test() {
 		}
 
 	})
-	r.Use(handler.CORS())
 
-	r.Run("localhost:3001")
-
-}
-
-func Broadcast(from int, msg []byte) {
-	for _, c := range clients {
-		if c.ID == from {
-			continue
-		}
-		c.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
-	}
 }
