@@ -1,1 +1,1 @@
-CREATE DATABASE geekers;
+CREATE DATABASE cakemix;

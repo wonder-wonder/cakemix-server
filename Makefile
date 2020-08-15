@@ -5,8 +5,8 @@ startdb:
 	docker run -dp 5432:5432 -v `PWD`/docker/postgres:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres
 
 stopdb:
-	docker stop geekersdbdev
-	docker rm geekersdbdev
+	docker stop cakemixdbdev
+	docker rm cakemixdbdev
 
 # runprod:
 # 	docker-compose up
