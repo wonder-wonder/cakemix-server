@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS tag(tagid SERIAL PRIMARY KEY, name TEXT UNIQUE);
 CREATE TABLE IF NOT EXISTS folder(
   uuid TEXT PRIMARY KEY,
   owneruuid TEXT,
+  parentfolderuuid TEXT,
   name TEXT,
   permission INTEGER,
   createdat INTEGER,
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS folder(
 CREATE TABLE IF NOT EXISTS document(
   uuid TEXT PRIMARY KEY,
   owneruuid TEXT,
+  parentfolderuuid TEXT,
   title TEXT,
   permission INTEGER,
   createat INTEGER,
