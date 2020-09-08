@@ -36,3 +36,28 @@ type TeamMember struct {
 	Permission TeamPerm
 	JoinAt     int64
 }
+
+// Folder table model
+type Folder struct {
+	UUID             string
+	OwnerUUID        string
+	ParentFolderUUID string
+	Name             string
+	Permission       int
+	CreatedAt        int
+	UpdatedAt        int
+	UpdaterUUID      string
+}
+
+// Document table model
+type Document struct {
+	UUID             string
+	OwnerUUID        string
+	ParentFolderUUID string
+	Title            string
+	Permission       int
+	CreatedAt        int
+	UpdatedAt        int
+	UpdaterUUID      string
+	TagID            int
+}
