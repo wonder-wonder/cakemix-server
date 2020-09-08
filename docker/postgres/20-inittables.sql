@@ -53,3 +53,29 @@ CREATE TABLE IF NOT EXISTS teammember(
   FOREIGN KEY (teamuuid) REFERENCES username(UUID),
   FOREIGN KEY (useruuid) REFERENCES auth(uuid)
 );
+CREATE TABLE IF NOT EXISTS tag(tagid SERIAL PRIMARY KEY, name TEXT UNIQUE);
+CREATE TABLE IF NOT EXISTS folder(
+  uuid TEXT PRIMARY KEY,
+  owneruuid TEXT,
+  name TEXT,
+  permission INTEGER,
+  createdat INTEGER,
+  updatedat INTEGER,
+  updateruuid TEXT,
+  FOREIGN KEY (owneruuid) REFERENCES username(uuid),
+  FOREIGN KEY (updateruuid) REFERENCES username(uuid),
+  FOREIGN KEY (tagid) REFERENCES tag(tagid)
+);
+CREATE TABLE IF NOT EXISTS document(
+  uuid TEXT PRIMARY KEY,
+  owneruuid TEXT,
+  title TEXT,
+  permission INTEGER,
+  createat INTEGER,
+  updatedat INTEGER,
+  updateruuid TEXT,
+  tagid INTEGER,
+  FOREIGN KEY (owneruuid) REFERENCES username(uuid),
+  FOREIGN KEY (updateruuid) REFERENCES username(uuid),
+  FOREIGN KEY (tagid) REFERENCES tag(tagid)
+);
