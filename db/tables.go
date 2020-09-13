@@ -44,8 +44,8 @@ type Folder struct {
 	ParentFolderUUID string
 	Name             string
 	Permission       int
-	CreatedAt        int
-	UpdatedAt        int
+	CreatedAt        int64
+	UpdatedAt        int64
 	UpdaterUUID      string
 }
 
@@ -56,8 +56,8 @@ type Document struct {
 	ParentFolderUUID string
 	Title            string
 	Permission       int
-	CreatedAt        int
-	UpdatedAt        int
+	CreatedAt        int64
+	UpdatedAt        int64
 	UpdaterUUID      string
 	TagID            int
 }
