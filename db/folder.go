@@ -79,3 +79,11 @@ func (d *DB) CreateFolder(name string, permission int, parentfid string, owneruu
 	}
 	return fid, nil
 }
+
+func (d *DB) DeleteFolder(fid string) error {
+	_, err := d.db.Exec(`DELETE FROM folder WHERE uuid = $1`, fid)
+	if err != nil {
+		return err
+	}
+	return nil
+}

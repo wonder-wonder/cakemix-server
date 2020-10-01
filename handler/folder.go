@@ -12,7 +12,7 @@ func (h *Handler) FolderHandler(r *gin.RouterGroup) {
 	folderck := r.Group("folder", h.CheckAuthMiddleware())
 	folderck.GET(":folderid", h.getFolderHandler)
 	folderck.POST(":folderid", h.createFolderHandler)
-	folderck.DELETE(":folderid", h.notimplHandler)
+	folderck.DELETE(":folderid", h.deleteFolderHandler)
 	folderck.PUT(":folderid/move/:targetfid", h.notimplHandler)
 }
 func (h *Handler) getFolderHandler(c *gin.Context) {
@@ -142,6 +142,29 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 	fid, err := h.db.CreateFolder(req.Name, req.Permission, parentfid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 	c.AbortWithStatusJSON(http.StatusOK, model.CreateFolderRes{FolderID: fid})
+}
+
+func (h *Handler) deleteFolderHandler(c *gin.Context) {
+	fid := c.Param("folderid")
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	//TODO: permission check
+	if uuid == "" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err := h.db.DeleteFolder(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
 }
