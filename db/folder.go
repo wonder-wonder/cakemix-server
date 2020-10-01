@@ -87,3 +87,11 @@ func (d *DB) DeleteFolder(fid string) error {
 	}
 	return nil
 }
+
+func (d *DB) MoveFolder(fid string, targetfid string) error {
+	_, err := d.db.Exec(`UPDATE folder SET parentfolderuuid = $1 WHERE uuid = $2`, targetfid, fid)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -13,7 +13,7 @@ func (h *Handler) FolderHandler(r *gin.RouterGroup) {
 	folderck.GET(":folderid", h.getFolderHandler)
 	folderck.POST(":folderid", h.createFolderHandler)
 	folderck.DELETE(":folderid", h.deleteFolderHandler)
-	folderck.PUT(":folderid/move/:targetfid", h.notimplHandler)
+	folderck.PUT(":folderid/move/:targetfid", h.moveFolderHandler)
 }
 func (h *Handler) getFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
@@ -162,6 +162,27 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 	}
 
 	err := h.db.DeleteFolder(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) moveFolderHandler(c *gin.Context) {
+	fid := c.Param("folderid")
+	targetfid := c.Param("targetfid")
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	//TODO: permission check
+	if uuid == "" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err := h.db.MoveFolder(fid, targetfid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
