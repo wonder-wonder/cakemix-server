@@ -14,6 +14,10 @@ type Folder struct {
 	UpdatedAt  int64   `json:"updated_at"`
 }
 
+type CreateFolderReq struct {
+	Name       string `json:"name"`
+	Permission int    `json:"permission"`
+}
 type CreateFolderRes struct {
 	FolderID string `json:"folder_id"`
 }

@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var ErrFolderNotFound = errors.New("Folder is not found")
@@ -65,6 +66,16 @@ func (d *DB) GetFolderInfo(fid string) (Folder, error) {
 	return ret, nil
 }
 
-func (d *DB) CreateFolder(parentfid string) (string, error) {
-
+func (d *DB) CreateFolder(name string, permission int, parentfid string, owneruuid string) (string, error) {
+	dateint := time.Now().Unix()
+	fid, err := GenerateID(IDTypeFolder)
+	if err != nil {
+		return "", err
+	}
+	_, err = d.db.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
+		fid, owneruuid, parentfid, name, permission, dateint, dateint, owneruuid)
+	if err != nil {
+		return "", err
+	}
+	return fid, nil
 }

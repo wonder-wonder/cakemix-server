@@ -11,7 +11,7 @@ import (
 func (h *Handler) FolderHandler(r *gin.RouterGroup) {
 	folderck := r.Group("folder", h.CheckAuthMiddleware())
 	folderck.GET(":folderid", h.getFolderHandler)
-	folderck.POST(":folderid", h.notimplHandler)
+	folderck.POST(":folderid", h.createFolderHandler)
 	folderck.DELETE(":folderid", h.notimplHandler)
 	folderck.PUT(":folderid/move/:targetfid", h.notimplHandler)
 }
@@ -21,6 +21,8 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 
 	follist := []model.Folder{}
 	doclist := []model.Document{}
+
+	//TODO: permission check
 
 	if listtype == "" || listtype == "folder" {
 		folidlist, err := h.db.GetFolderList(fid)
@@ -120,4 +122,26 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 	}
 
 	c.AbortWithStatusJSON(http.StatusOK, ret)
+}
+
+func (h *Handler) createFolderHandler(c *gin.Context) {
+	parentfid := c.Param("folderid")
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	var req model.CreateFolderReq
+	err := c.BindJSON(&req)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	//TODO: permission check
+
+	fid, err := h.db.CreateFolder(req.Name, req.Permission, parentfid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+	}
+	c.AbortWithStatusJSON(http.StatusOK, model.CreateFolderRes{FolderID: fid})
 }
