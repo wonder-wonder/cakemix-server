@@ -634,6 +634,8 @@ paths:
                 properties:
                   folder_id:
                     type: string
+                  name:
+                    type: string
               examples:
                 example-1:
                   value:
@@ -918,6 +920,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BreadcrumbModel'
+        name:
+          type: string
     BreadcrumbModel:
       title: BreadcrumbModel
       type: object
