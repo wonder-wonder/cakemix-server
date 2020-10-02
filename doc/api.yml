@@ -627,7 +627,7 @@ paths:
           name: type
           required: true
           description: 'type that which list will be returned (all, folder, document)'
-      description: ''        
+      description: ''
     post:
       summary: Make a new folder
       responses:
@@ -920,6 +920,19 @@ components:
         updated_at:
           type: integer
           description: folder creation date
+        breadcrumb:
+          $ref: '#/components/schemas/BreadcrumbModel'
+    BreadcrumbModel:
+      title: BreadcrumbModel
+      type: object
+      properties:
+        folder_id:
+          type: string
+        title:
+          type: string
+        child:
+          $ref: '#/components/schemas/BreadcrumbModel'
+      description: Breadcrumb
   securitySchemes:
     JWT:
       type: http
