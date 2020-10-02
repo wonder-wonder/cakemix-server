@@ -634,8 +634,6 @@ paths:
                 properties:
                   folder_id:
                     type: string
-                  name:
-                    type: string
               examples:
                 example-1:
                   value:
@@ -645,6 +643,13 @@ paths:
       operationId: create-new-folder
       tags:
         - Folder
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+          description: Folder name
     delete:
       summary: Delete a folder
       responses:
