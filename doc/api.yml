@@ -562,12 +562,6 @@ paths:
         in: path
         required: true
         description: Folder ID
-      - in: query
-        name: type
-        schema:
-          type: string
-          description: type of getting list
-        required: true
     get:
       summary: Get document and folder list in the target folder
       responses:
