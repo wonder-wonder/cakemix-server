@@ -10,6 +10,16 @@ const (
 	TeamPermUser
 )
 
+// FilePerm is enum of file and folder permission.
+type FilePerm int
+
+// FilePerm list
+const (
+	FilePermPrivate FilePerm = iota
+	FilePermRead
+	FilePermReadWrite
+)
+
 // Auth table model
 type Auth struct {
 	UUID     string
@@ -35,4 +45,29 @@ type TeamMember struct {
 	UserUUID   string
 	Permission TeamPerm
 	JoinAt     int64
+}
+
+// Folder table model
+type Folder struct {
+	UUID             string
+	OwnerUUID        string
+	ParentFolderUUID string
+	Name             string
+	Permission       FilePerm
+	CreatedAt        int64
+	UpdatedAt        int64
+	UpdaterUUID      string
+}
+
+// Document table model
+type Document struct {
+	UUID             string
+	OwnerUUID        string
+	ParentFolderUUID string
+	Title            string
+	Permission       FilePerm
+	CreatedAt        int64
+	UpdatedAt        int64
+	UpdaterUUID      string
+	TagID            int
 }

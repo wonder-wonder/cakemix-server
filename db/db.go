@@ -29,8 +29,8 @@ const (
 	IDTypeSalt
 	IDTypeUser
 	IDTypeTeam
-	IDTypeProject
-	IDTypeComment
+	IDTypeFolder
+	IDTypeDocument
 )
 
 const (
@@ -103,15 +103,15 @@ func GenerateID(t IDType) (string, error) {
 		enc = func(src []byte) string {
 			return "t" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
 		}
-	case IDTypeProject:
+	case IDTypeFolder:
 		size = sizeProject
 		enc = func(src []byte) string {
-			return "p" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+			return "f" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
 		}
-	case IDTypeComment:
-		size = sizeComment
+	case IDTypeDocument:
+		size = sizeProject
 		enc = func(src []byte) string {
-			return "c" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
+			return "d" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
 		}
 	default:
 		panic("Unexpected IDType")

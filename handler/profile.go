@@ -39,7 +39,7 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		Teams:     []model.Profile{},
 	}
 
-	teams, err := h.db.GetTeamsByUser(p.UUID)
+	teams, _ := getTeams(c)
 	for _, v := range teams {
 		prof, err := h.db.GetProfileByUUID(v)
 		if err != nil {
