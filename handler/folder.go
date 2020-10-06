@@ -25,6 +25,10 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -148,6 +152,10 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 
 	finfo, err := h.db.GetFolderInfo(parentfid)
 	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -170,6 +178,10 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -208,6 +220,10 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 	// Check folder permission
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
