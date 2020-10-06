@@ -66,7 +66,7 @@ func (d *DB) GetFolderInfo(fid string) (Folder, error) {
 	return ret, nil
 }
 
-func (d *DB) CreateFolder(name string, permission int, parentfid string, owneruuid string) (string, error) {
+func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, owneruuid string) (string, error) {
 	dateint := time.Now().Unix()
 	fid, err := GenerateID(IDTypeFolder)
 	if err != nil {

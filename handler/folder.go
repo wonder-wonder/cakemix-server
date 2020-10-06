@@ -144,17 +144,8 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 
 func (h *Handler) createFolderHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	var req model.CreateFolderReq
-	err := c.BindJSON(&req)
-	if err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
+	fname := c.Query("name")
+
 	finfo, err := h.db.GetFolderInfo(parentfid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -166,7 +157,7 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		return
 	}
 
-	fid, err := h.db.CreateFolder(req.Name, req.Permission, parentfid, uuid)
+	fid, err := h.db.CreateFolder(fname, db.FilePermPrivate, parentfid, finfo.OwnerUUID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
