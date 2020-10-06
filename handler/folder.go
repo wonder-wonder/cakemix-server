@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/model"
 )
 
@@ -22,7 +23,15 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 	follist := []model.Folder{}
 	doclist := []model.Document{}
 
-	//TODO: permission check
+	finfo, err := h.db.GetFolderInfo(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission == db.FilePermPrivate {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 
 	if listtype == "" || listtype == "folder" {
 		folidlist, err := h.db.GetFolderList(fid)
@@ -36,6 +45,11 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
+
+			if !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
+				continue
+			}
+
 			ownp, err := h.db.GetProfile(folinfo.OwnerUUID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
@@ -63,7 +77,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 					IsTeam:  (updp.UUID[0] == 't'),
 				},
 				Name:       folinfo.Name,
-				Permission: folinfo.Permission,
+				Permission: int(folinfo.Permission),
 				CreatedAt:  folinfo.CreatedAt,
 				UpdatedAt:  folinfo.UpdatedAt,
 			})
@@ -80,6 +94,10 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
+			}
+
+			if !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
+				continue
 			}
 
 			ownp, err := h.db.GetProfile(docinfo.OwnerUUID)
@@ -109,7 +127,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 					IsTeam:  (updp.UUID[0] == 't'),
 				},
 				Title:      docinfo.Title,
-				Permission: docinfo.Permission,
+				Permission: int(docinfo.Permission),
 				CreatedAt:  docinfo.CreatedAt,
 				UpdatedAt:  docinfo.UpdatedAt,
 			})
@@ -137,7 +155,16 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	//TODO: permission check
+	finfo, err := h.db.GetFolderInfo(parentfid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 
 	fid, err := h.db.CreateFolder(req.Name, req.Permission, parentfid, uuid)
 	if err != nil {
@@ -149,19 +176,33 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 
 func (h *Handler) deleteFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
+
+	finfo, err := h.db.GetFolderInfo(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
-	//TODO: permission check
-	if uuid == "" {
-		c.AbortWithStatus(http.StatusUnauthorized)
+	docidlist, err := h.db.GetDocList(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	folidlist, err := h.db.GetFolderList(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if len(folidlist) > 0 || len(docidlist) > 0 {
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
-	err := h.db.DeleteFolder(fid)
+	err = h.db.DeleteFolder(fid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -172,17 +213,41 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 func (h *Handler) moveFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
 	targetfid := c.Param("targetfid")
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
+
+	// Check folder permission
+	finfo, err := h.db.GetFolderInfo(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	//TODO: permission check
-	if uuid == "" {
-		c.AbortWithStatus(http.StatusUnauthorized)
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
-	err := h.db.MoveFolder(fid, targetfid)
+
+	// Check original parent folder permission
+	finfo, err = h.db.GetFolderInfo(finfo.ParentFolderUUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check target folder permission
+	finfo, err = h.db.GetFolderInfo(targetfid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	err = h.db.MoveFolder(fid, targetfid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return

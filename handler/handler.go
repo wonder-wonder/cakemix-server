@@ -62,6 +62,12 @@ func (h *Handler) GetUUIDMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Set("UUID", uuid)
+
+		teams, err := h.db.GetTeamsByUser(uuid)
+		if err != nil {
+			return
+		}
+		c.Set("Teams", teams)
 	}
 }
 
@@ -72,6 +78,33 @@ func getUUID(c *gin.Context) (string, bool) {
 	}
 	uuid, ok := dat.(string)
 	return uuid, ok
+}
+func getTeams(c *gin.Context) ([]string, bool) {
+	dat, ok := c.Get("Teams")
+	if !ok {
+		return []string{}, false
+	}
+	uuid, ok := dat.([]string)
+	return uuid, ok
+}
+func isRelatedUUID(c *gin.Context, uuid string) bool {
+	myuuid, ok := getUUID(c)
+	if !ok {
+		return false
+	}
+	if uuid == myuuid {
+		return true
+	}
+	teamuuids, ok := getTeams(c)
+	if !ok {
+		return false
+	}
+	for _, v := range teamuuids {
+		if uuid == v {
+			return true
+		}
+	}
+	return false
 }
 
 // CORS supports cross origin resource sharing.
