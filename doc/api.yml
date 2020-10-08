@@ -684,6 +684,21 @@ paths:
       operationId: move-folder
       tags:
         - Folder
+  '/doc/{doc_id}/ws':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '101':
+          description: Switch to web socket protocol
+      operationId: get-doc-doc_id-ws
+      description: ''
 components:
   schemas:
     JWT:
