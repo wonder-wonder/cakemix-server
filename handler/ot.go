@@ -13,20 +13,9 @@ import (
 	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
-type ClientInfo struct {
-	Conn      *websocket.Conn `json:"-"`
-	ID        string          `json:"-"`
-	Name      string          `json:"name"`
-	Selection []SelData       `json:"selection"`
-}
-type WSMsg struct {
-	Event string          `json:"e"`
-	Data  json.RawMessage `json:"d,omitempty"`
-}
-type DocData struct {
-	Clients  interface{} `json:"clients"`
-	Document string      `json:"document"`
-	Revision int         `json:"revision"`
+func (h *Handler) OTHandler(r *gin.RouterGroup) {
+	// TODO: user check
+	r.GET("/ws", getOTHandler)
 }
 
 // {
@@ -40,12 +29,27 @@ type DocData struct {
 // 		]}
 // 	]
 // }
+
+type WSMsg struct {
+	Event string          `json:"e"`
+	Data  json.RawMessage `json:"d,omitempty"`
+}
+type DocData struct {
+	Clients  interface{} `json:"clients"`
+	Document string      `json:"document"`
+	Revision int         `json:"revision"`
+}
+type ClientInfo struct {
+	Conn      *websocket.Conn `json:"-"`
+	ID        string          `json:"-"`
+	Name      string          `json:"name"`
+	Selection []SelData       `json:"selection"`
+}
 type OpData struct {
 	Revision  int
 	Operation ot.Ops
 	Selection []SelData
 }
-
 type SelData struct {
 	Anchor int `json:"anchor"`
 	Head   int `json:"head"`
@@ -103,7 +107,6 @@ func ParseOp(msg []byte, user string) (OpData, error) {
 
 	return ret, nil
 }
-
 func ParseSel(msg []byte) ([]SelData, error) {
 	type Ranges struct {
 		Ranges []SelData `json:"ranges"`
@@ -116,34 +119,101 @@ func ParseSel(msg []byte) ([]SelData, error) {
 	return rang.Ranges, nil
 }
 
-func Broadcast(sess *Session, from string, msg []byte) {
-	for _, c := range sess.Clinets {
-		if c.ID == from {
-			continue
-		}
-		c.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
-	}
-}
-
 type Session struct {
 	UUID         string
 	Clinets      map[string]ClientInfo
 	OT           *ot.OT
 	TotalClients int
+	BCCh         chan BCMsg
+	AddCh        chan ClientInfo
+	QuitCh       chan string
+}
+type BCMsg struct {
+	from string
+	msg  []byte
 }
 
-// var clients []ClientInfo
+var AddCh = make(chan bool, 1)
+
+func (sess *Session) GetNewUserID() string {
+	AddCh <- true
+	sess.TotalClients++
+	ret := sess.TotalClients
+	<-AddCh
+	return strconv.Itoa(ret)
+}
+
+func (sess *Session) SessionLoop() {
+	for {
+		select {
+		case bcm := <-sess.BCCh:
+			for _, c := range sess.Clinets {
+				if c.ID == bcm.from {
+					continue
+				}
+				c.Conn.WriteMessage(websocket.TextMessage, bcm.msg)
+			}
+		case cl := <-sess.AddCh:
+			sess.Clinets[cl.ID] = cl
+		case userid := <-sess.QuitCh:
+			// Remove client to session
+			res := WSMsg{Event: "quit", Data: []byte(userid)}
+			resraw, err := json.Marshal(res)
+			if err != nil {
+				panic(err)
+			}
+			for _, c := range sess.Clinets {
+				if c.ID == userid {
+					continue
+				}
+				c.Conn.WriteMessage(websocket.TextMessage, resraw)
+			}
+			delete(sess.Clinets, userid)
+			if len(sess.Clinets) == 0 {
+				// TODO: session closing
+				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+				removeSession(sess.UUID)
+				return
+			}
+		}
+	}
+}
+func (sess *Session) Broadcast(from string, msg []byte) {
+	sess.BCCh <- BCMsg{from: from, msg: msg}
+}
+func (sess *Session) AddClient(cl ClientInfo) {
+	sess.AddCh <- cl
+}
+func (sess *Session) QuitClient(userid string) {
+	sess.QuitCh <- userid
+}
+
 var sessions = map[string]*Session{}
+var lockch = make(chan bool, 1)
 
-func (h *Handler) OTHandler(r *gin.RouterGroup) {
-	// TODO: user check
-	r.GET("/ws", getOTHandler)
+func getSession(docid string) *Session {
+	// Get session
+	lockch <- true
+	sess, ok := sessions[docid]
+	if !ok {
+		// If unavailable, init session.
+		//TODO: Load document
+		text := "Hello, world!"
+		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1)}
+		sessions[sess.UUID] = sess
+		go sess.SessionLoop()
+	}
+	<-lockch
+	return sess
 }
-func getOTHandler(c *gin.Context) {
-	did := c.Query("docid")
-	// TODO: get user name
-	name := "guest"
+func removeSession(docid string) {
+	lockch <- true
+	delete(sessions, docid)
+	<-lockch
+}
 
+func getOTHandler(c *gin.Context) {
+	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -157,15 +227,11 @@ func getOTHandler(c *gin.Context) {
 		return
 	}
 
-	// Init or get session
-	sess, ok := sessions[did]
-	if !ok {
-		//TODO: Load document
-		text := "Hello, world!"
-		sess = &Session{UUID: did, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0}
-		sessions[sess.UUID] = sess
-	}
+	did := c.Query("docid")
+	// TODO: get user name
+	name := "guest"
 
+	sess := getSession(did)
 	// Send current session status
 	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: len(sess.OT.History)})
 	if err != nil {
@@ -178,9 +244,9 @@ func getOTHandler(c *gin.Context) {
 	conn.WriteMessage(websocket.TextMessage, initDocRaw)
 
 	// Add client to session
-	sess.TotalClients++
-	userid := strconv.Itoa(sess.TotalClients)
-	sess.Clinets[userid] = ClientInfo{Conn: conn, ID: userid, Name: name}
+
+	userid := sess.GetNewUserID()
+	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid})
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -222,8 +288,7 @@ func getOTHandler(c *gin.Context) {
 			if err != nil {
 				panic(err)
 			}
-			Broadcast(sess, userid, datraw)
-			fmt.Printf("\n%s\n", sess.OT.Text)
+			sess.Broadcast(userid, datraw)
 			res := WSMsg{Event: "ok"}
 			resraw, err := json.Marshal(res)
 			if err != nil {
@@ -249,19 +314,8 @@ func getOTHandler(c *gin.Context) {
 			if err != nil {
 				panic(err)
 			}
-			Broadcast(sess, userid, datraw)
+			sess.Broadcast(userid, datraw)
 		}
 	}
-	res := WSMsg{Event: "quit", Data: []byte(userid)}
-	resraw, err := json.Marshal(res)
-	if err != nil {
-		panic(err)
-	}
-	Broadcast(sess, userid, resraw)
-	delete(sess.Clinets, userid)
-	if len(sess.Clinets) == 0 {
-		// TODO: session closing
-		fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
-		delete(sessions, sess.UUID)
-	}
+	sess.QuitClient(userid)
 }
