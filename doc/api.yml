@@ -562,12 +562,6 @@ paths:
         in: path
         required: true
         description: Folder ID
-      - in: query
-        name: type
-        schema:
-          type: string
-          description: type of getting list
-        required: true
     get:
       summary: Get document and folder list in the target folder
       responses:
@@ -627,7 +621,7 @@ paths:
           name: type
           required: true
           description: 'type that which list will be returned (all, folder, document)'
-      description: ''        
+      description: ''
     post:
       summary: Make a new folder
       responses:
@@ -649,6 +643,13 @@ paths:
       operationId: create-new-folder
       tags:
         - Folder
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+          description: Folder name
     delete:
       summary: Delete a folder
       responses:
@@ -920,6 +921,21 @@ components:
         updated_at:
           type: integer
           description: folder creation date
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreadcrumbModel'
+        name:
+          type: string
+    BreadcrumbModel:
+      title: BreadcrumbModel
+      type: object
+      description: Breadcrumb
+      properties:
+        folder_id:
+          type: string
+        title:
+          type: string
   securitySchemes:
     JWT:
       type: http
