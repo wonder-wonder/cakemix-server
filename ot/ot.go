@@ -126,7 +126,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 	opstrans, err := ot.Transform(rev, ops)
 	if err != nil {
-		panic("hoge")
+		panic(err)
 	}
 	loc := 0
 	trune := utf16.Encode([]rune(ot.Text))

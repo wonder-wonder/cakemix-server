@@ -126,8 +126,10 @@ func Broadcast(sess *Session, from string, msg []byte) {
 }
 
 type Session struct {
-	Clinets map[string]ClientInfo
-	OT      *ot.OT
+	UUID         string
+	Clinets      map[string]ClientInfo
+	OT           *ot.OT
+	TotalClients int
 }
 
 // var clients []ClientInfo
@@ -160,8 +162,8 @@ func getOTHandler(c *gin.Context) {
 	if !ok {
 		//TODO: Load document
 		text := "Hello, world!"
-		sess = &Session{Clinets: map[string]ClientInfo{}, OT: ot.New(text)}
-		sessions[did] = sess
+		sess = &Session{UUID: did, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0}
+		sessions[sess.UUID] = sess
 	}
 
 	// Send current session status
@@ -177,7 +179,8 @@ func getOTHandler(c *gin.Context) {
 
 	// Add client to session
 	// useridint := len(sess.Clinets)
-	userid := strconv.Itoa(len(sess.Clinets))
+	sess.TotalClients++
+	userid := strconv.Itoa(sess.TotalClients)
 	sess.Clinets[userid] = ClientInfo{Conn: conn, ID: userid, Name: name}
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -251,5 +254,10 @@ func getOTHandler(c *gin.Context) {
 	delete(sess.Clinets, userid)
 	for _, v := range sess.Clinets {
 		println(v.ID)
+	}
+	if len(sess.Clinets) == 0 {
+		// TODO: session closing
+		fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+		delete(sessions, sess.UUID)
 	}
 }
