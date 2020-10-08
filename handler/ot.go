@@ -131,7 +131,7 @@ type Session struct {
 }
 
 // var clients []ClientInfo
-var sessions = map[string]Session{}
+var sessions = map[string]*Session{}
 
 func (h *Handler) OTHandler(r *gin.RouterGroup) {
 	// TODO: user check
@@ -155,14 +155,16 @@ func getOTHandler(c *gin.Context) {
 		return
 	}
 
+	// Init or get session
 	sess, ok := sessions[did]
 	if !ok {
-		//Load document
+		//TODO: Load document
 		text := "Hello, world!"
-		sess = Session{Clinets: map[string]ClientInfo{}, OT: ot.New(text)}
+		sess = &Session{Clinets: map[string]ClientInfo{}, OT: ot.New(text)}
 		sessions[did] = sess
 	}
 
+	// Send current session status
 	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: len(sess.OT.History)})
 	if err != nil {
 		panic(err)
@@ -172,13 +174,18 @@ func getOTHandler(c *gin.Context) {
 		panic(err)
 	}
 	conn.WriteMessage(websocket.TextMessage, initDocRaw)
+
+	// Add client to session
 	// useridint := len(sess.Clinets)
 	userid := strconv.Itoa(len(sess.Clinets))
 	sess.Clinets[userid] = ClientInfo{Conn: conn, ID: userid, Name: name}
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			break
+			if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
+				break
+			}
+			panic(err)
 		}
 
 		dat := WSMsg{}
@@ -213,7 +220,7 @@ func getOTHandler(c *gin.Context) {
 			if err != nil {
 				panic(err)
 			}
-			Broadcast(&sess, userid, datraw)
+			Broadcast(sess, userid, datraw)
 			fmt.Printf("\n%s\n", sess.OT.Text)
 			temp := `{"e":"ok"}`
 			conn.WriteMessage(websocket.TextMessage, []byte(temp))
@@ -236,9 +243,13 @@ func getOTHandler(c *gin.Context) {
 			if err != nil {
 				panic(err)
 			}
-			Broadcast(&sess, userid, datraw)
+			Broadcast(sess, userid, datraw)
 		}
-
 	}
-
+	temp := `{"e":"quit","d":"` + userid + `"}`
+	Broadcast(sess, userid, []byte(temp))
+	delete(sess.Clinets, userid)
+	for _, v := range sess.Clinets {
+		println(v.ID)
+	}
 }
