@@ -21,7 +21,7 @@ type ClientInfo struct {
 }
 type WSMsg struct {
 	Event string          `json:"e"`
-	Data  json.RawMessage `json:"d"`
+	Data  json.RawMessage `json:"d,omitempty"`
 }
 type DocData struct {
 	Clients  interface{} `json:"clients"`
@@ -178,7 +178,6 @@ func getOTHandler(c *gin.Context) {
 	conn.WriteMessage(websocket.TextMessage, initDocRaw)
 
 	// Add client to session
-	// useridint := len(sess.Clinets)
 	sess.TotalClients++
 	userid := strconv.Itoa(sess.TotalClients)
 	sess.Clinets[userid] = ClientInfo{Conn: conn, ID: userid, Name: name}
@@ -225,8 +224,12 @@ func getOTHandler(c *gin.Context) {
 			}
 			Broadcast(sess, userid, datraw)
 			fmt.Printf("\n%s\n", sess.OT.Text)
-			temp := `{"e":"ok"}`
-			conn.WriteMessage(websocket.TextMessage, []byte(temp))
+			res := WSMsg{Event: "ok"}
+			resraw, err := json.Marshal(res)
+			if err != nil {
+				panic(err)
+			}
+			conn.WriteMessage(websocket.TextMessage, resraw)
 		} else if dat.Event == "sel" {
 			sel, err := ParseSel(dat.Data)
 			if err != nil {
@@ -249,12 +252,13 @@ func getOTHandler(c *gin.Context) {
 			Broadcast(sess, userid, datraw)
 		}
 	}
-	temp := `{"e":"quit","d":"` + userid + `"}`
-	Broadcast(sess, userid, []byte(temp))
-	delete(sess.Clinets, userid)
-	for _, v := range sess.Clinets {
-		println(v.ID)
+	res := WSMsg{Event: "quit", Data: []byte(userid)}
+	resraw, err := json.Marshal(res)
+	if err != nil {
+		panic(err)
 	}
+	Broadcast(sess, userid, resraw)
+	delete(sess.Clinets, userid)
 	if len(sess.Clinets) == 0 {
 		// TODO: session closing
 		fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
