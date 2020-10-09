@@ -64,8 +64,7 @@ CREATE TABLE IF NOT EXISTS folder(
   updatedat INTEGER,
   updateruuid TEXT,
   FOREIGN KEY (owneruuid) REFERENCES username(uuid),
-  FOREIGN KEY (updateruuid) REFERENCES username(uuid),
-  FOREIGN KEY (tagid) REFERENCES tag(tagid)
+  FOREIGN KEY (updateruuid) REFERENCES username(uuid)
 );
 CREATE TABLE IF NOT EXISTS document(
   uuid TEXT PRIMARY KEY,
