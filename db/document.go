@@ -85,3 +85,36 @@ func (d *DB) GetLatestDocument(did string) (string, error) {
 	}
 	return text, nil
 }
+
+func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
+	dateint := time.Now().Unix()
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1 WHERE uuid = $2`, dateint, did)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3)`,
+		did, text, dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}

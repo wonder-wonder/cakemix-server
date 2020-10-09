@@ -81,8 +81,9 @@ CREATE TABLE IF NOT EXISTS document(
   FOREIGN KEY (tagid) REFERENCES tag(tagid)
 );
 CREATE TABLE IF NOT EXISTS documentrevision(
-  uuid TEXT PRIMARY KEY,
+  uuid TEXT,
   text TEXT,
   updatedat INTEGER,
+  PRIMARY KEY (uuid, updatedat),
   FOREIGN KEY (uuid) REFERENCES document(uuid)
 );

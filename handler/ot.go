@@ -37,6 +37,7 @@ type DocData struct {
 type ClientInfo struct {
 	Conn      *websocket.Conn `json:"-"`
 	ID        string          `json:"-"`
+	UUID      string          `json:"-"`
 	Name      string          `json:"name"`
 	Selection []SelData       `json:"selection"`
 }
@@ -138,7 +139,7 @@ func (sess *Session) GetNewUserID() string {
 	return strconv.Itoa(ret)
 }
 
-func (sess *Session) SessionLoop() {
+func (sess *Session) SessionLoop(h *Handler) {
 	for {
 		select {
 		case bcm := <-sess.BCCh:
@@ -166,6 +167,15 @@ func (sess *Session) SessionLoop() {
 			delete(sess.Clinets, userid)
 			if len(sess.Clinets) == 0 {
 				// TODO: session closing
+				close(sess.AddCh)
+				close(sess.BCCh)
+				close(sess.QuitCh)
+				if len(sess.OT.History) > 0 {
+					err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+					if err != nil {
+						panic(err)
+					}
+				}
 				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
 				removeSession(sess.UUID)
 				return
@@ -186,20 +196,22 @@ func (sess *Session) QuitClient(userid string) {
 var sessions = map[string]*Session{}
 var lockch = make(chan bool, 1)
 
-func getSession(docid string) *Session {
+func (h *Handler) getSession(docid string) (*Session, error) {
 	// Get session
 	lockch <- true
+	defer func() { <-lockch }()
 	sess, ok := sessions[docid]
 	if !ok {
 		// If unavailable, init session.
-		//TODO: Load document
-		text := "Hello, world!"
+		text, err := h.db.GetLatestDocument(docid)
+		if err != nil {
+			return nil, err
+		}
 		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1)}
 		sessions[sess.UUID] = sess
-		go sess.SessionLoop()
+		go sess.SessionLoop(h)
 	}
-	<-lockch
-	return sess
+	return sess, nil
 }
 func removeSession(docid string) {
 	lockch <- true
@@ -234,7 +246,10 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	// TODO: get user name
 	name := "guest"
 
-	sess := getSession(did)
+	sess, err := h.getSession(did)
+	if err != nil {
+		panic(err)
+	}
 	// Send current session status
 	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: len(sess.OT.History)})
 	if err != nil {
@@ -248,7 +263,8 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 
 	// Add client to session
 	userid := sess.GetNewUserID()
-	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid})
+	// TODO:uuid
+	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: "ujuxj7nrznlg655jt"})
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
