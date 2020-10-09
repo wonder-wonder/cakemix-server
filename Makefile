@@ -8,11 +8,11 @@ stopdb:
 	docker stop cakemixdbdev
 	docker rm cakemixdbdev
 
-# runprod:
-# 	docker-compose up
+runprod:
+	docker-compose up
 
-# dockerdown:
-# 	docker-compose down
+down:
+	docker-compose down
 
 build: main.go
 	go build -o cakemixsv main.go
