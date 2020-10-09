@@ -50,5 +50,4 @@ func v1Handler(r *gin.RouterGroup, db *db.DB) {
 	h.FolderHandler(r)
 	h.ProfileHandler(r)
 	h.TeamHandler(r)
-	h.OTHandler(r)
 }

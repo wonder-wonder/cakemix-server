@@ -13,11 +13,6 @@ import (
 	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
-func (h *Handler) OTHandler(r *gin.RouterGroup) {
-	// TODO: user check
-	r.GET("/ws", getOTHandler)
-}
-
 // {
 // 	"e":"op",
 // 	"d":
@@ -212,7 +207,14 @@ func removeSession(docid string) {
 	<-lockch
 }
 
-func getOTHandler(c *gin.Context) {
+func (h *Handler) getOTHandler(c *gin.Context) {
+	// TODO: checck security token
+	token := c.Query("token")
+	if token != "testtoken" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -227,7 +229,8 @@ func getOTHandler(c *gin.Context) {
 		return
 	}
 
-	did := c.Query("docid")
+	did := c.Param("docid")
+
 	// TODO: get user name
 	name := "guest"
 
@@ -244,7 +247,6 @@ func getOTHandler(c *gin.Context) {
 	conn.WriteMessage(websocket.TextMessage, initDocRaw)
 
 	// Add client to session
-
 	userid := sess.GetNewUserID()
 	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid})
 	for {

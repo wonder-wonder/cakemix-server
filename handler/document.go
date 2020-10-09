@@ -10,6 +10,7 @@ import (
 
 // DocumentHandler is handlers of documents
 func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
+	r.GET("doc/:docid/ws", h.getOTHandler)
 	docck := r.Group("doc", h.CheckAuthMiddleware())
 	docck.POST(":folderid", h.createDocumentHandler)
 	docck.DELETE(":docid", h.deleteDocumentHandler)
