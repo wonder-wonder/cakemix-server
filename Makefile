@@ -14,8 +14,8 @@ stopdb:
 # dockerdown:
 # 	docker-compose down
 
-# build: main.go
-# 	go build -o geekerssv main.go
+build: main.go
+	go build -o cakemixsv main.go
 
 key:
 	yes|ssh-keygen -t rsa -f signkey -m PEM -N ""
