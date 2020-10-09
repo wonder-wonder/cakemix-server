@@ -12,10 +12,37 @@ import (
 func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 	r.GET("doc/:docid/ws", h.getOTHandler)
 	docck := r.Group("doc", h.CheckAuthMiddleware())
+	docck.GET(":docid", h.getDocumentHandler)
 	docck.POST(":folderid", h.createDocumentHandler)
 	docck.DELETE(":docid", h.deleteDocumentHandler)
 	docck.PUT(":docid/move/:folderid", h.moveDocumentHandler)
 }
+
+func (h *Handler) getDocumentHandler(c *gin.Context) {
+	did := c.Param("docid")
+
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission == db.FilePermPrivate {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	doc, err := h.db.GetLatestDocument(did)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusOK, struct{ Text string }{Text: doc})
+}
+
 func (h *Handler) createDocumentHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
 

@@ -70,3 +70,10 @@ type Document struct {
 	UpdatedAt        int64
 	UpdaterUUID      string
 }
+
+// DocumentRevision table model
+type DocumentRevision struct {
+	UUID      string
+	Text      string
+	UpdatedAt int64
+}
