@@ -699,6 +699,14 @@ paths:
           description: Switch to web socket protocol
       operationId: get-doc-doc_id-ws
       description: ''
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: token
+          description: security token
+          required: true
+      security: []
 components:
   schemas:
     JWT:
