@@ -1,14 +1,12 @@
 version: '3'
 services:
   cakemix:
-    image: golang
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: cakemixsv
     ports:
       - 8081:8081
-    volumes:
-      - .:/root/src/github.com/wonder-wonder/cakemix-server
-      - ./docker/goweb/go:/go
-    command: bash -c "GOPATH=/go:/root && cd /root/src/github.com/wonder-wonder/cakemix-server && make key && make build && ./cakemixsv"
     depends_on:
       - cakemixpg
     links:

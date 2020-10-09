@@ -9,7 +9,7 @@ stopdb:
 	docker rm cakemixdbdev
 
 runprod:
-	docker-compose up
+	docker-compose up --build
 
 down:
 	docker-compose down
