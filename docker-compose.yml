@@ -1,0 +1,29 @@
+version: '3'
+services:
+  cakemix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cakemixsv
+    ports:
+      - 8081:8081
+    depends_on:
+      - cakemixpg
+    links:
+      - cakemixpg:5432
+    environment:
+      DBHOST: cakemixpg
+      DBPORT: 5432
+      DBUSER: postgres
+      DBPASS: postgres
+      DBNAME: cakemix
+
+  cakemixpg:
+    image: postgres
+    container_name: cakemixpg
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker/postgres:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_PASSWORD=postgres

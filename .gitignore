@@ -1,6 +1,9 @@
 signkey
 signkey.pub
 
+cakemixsv
+docker/goweb/
+
 ### https://raw.github.com/github/gitignore/5c5a1b536b6f9bf11515518f03d58addaf29f681/Global/macOS.gitignore
 
 # General
