@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
@@ -220,10 +221,24 @@ func removeSession(docid string) {
 }
 
 func (h *Handler) getOTHandler(c *gin.Context) {
-	// TODO: checck security token
-	token := c.Query("token")
-	if token != "testtoken" {
+	uuid, ok := getUUID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	did := c.Param("docid")
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
@@ -241,10 +256,11 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		return
 	}
 
-	did := c.Param("docid")
-
-	// TODO: get user name
-	name := "guest"
+	p, err := h.db.GetProfileByUUID(uuid)
+	if err != nil {
+		panic(err)
+	}
+	name := p.Name
 
 	sess, err := h.getSession(did)
 	if err != nil {
@@ -263,8 +279,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 
 	// Add client to session
 	userid := sess.GetNewUserID()
-	// TODO:uuid
-	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: "ujuxj7nrznlg655jt"})
+	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: uuid})
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {

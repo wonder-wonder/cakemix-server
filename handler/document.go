@@ -10,7 +10,7 @@ import (
 
 // DocumentHandler is handlers of documents
 func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
-	r.GET("doc/:docid/ws", h.getOTHandler)
+	r.GET("doc/:docid/ws", h.SetJWTFromQuery(), h.CheckAuthMiddleware(), h.getOTHandler)
 	docck := r.Group("doc", h.CheckAuthMiddleware())
 	docck.GET(":docid", h.getDocumentHandler)
 	docck.POST(":folderid", h.createDocumentHandler)
@@ -140,4 +140,16 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 		return
 	}
 	c.AbortWithStatus(http.StatusOK)
+}
+
+// SetJWTFromQuery generates middleware to set JWT from query to header
+func (h *Handler) SetJWTFromQuery() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Query("token")
+		if token == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		c.Request.Header.Set("Authorization", "Bearer "+token)
+	}
 }
