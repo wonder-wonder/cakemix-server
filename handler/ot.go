@@ -175,7 +175,6 @@ func (sess *Session) SessionLoop(h *Handler) {
 			}
 			delete(sess.Clinets, userid)
 			if len(sess.Clinets) == 0 {
-				// TODO: session closing
 				close(sess.AddCh)
 				close(sess.BCCh)
 				close(sess.QuitCh)
