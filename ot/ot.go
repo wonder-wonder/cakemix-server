@@ -23,21 +23,24 @@ type Ops struct {
 	Ops  []Op
 }
 type OT struct {
-	Text    string
-	History []Ops
+	Text     string
+	History  map[int]Ops
+	Revision int
 }
 
 func New(text string) *OT {
-	return &OT{Text: text}
+	return &OT{Text: text, Revision: 0, History: map[int]Ops{}}
 }
 
 func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
-	if rev < 0 || rev > len(ot.History) {
+	if rev < 0 || rev > ot.Revision {
 		return Ops{}, errors.New("Revision is out of range")
 	}
 	ret := ops
 	// Check all history after rev
-	for _, h := range ot.History[rev:] {
+	// for _, h := range ot.History[rev:] {
+	for i := rev; i < ot.Revision; i++ {
+		h := ot.History[i]
 		//temporary new ops
 		tops := Ops{User: ret.User}
 		//History op counter
@@ -141,6 +144,7 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 		}
 	}
 	ot.Text = string(utf16.Decode(trune))
-	ot.History = append(ot.History, opstrans)
+	ot.History[ot.Revision] = opstrans
+	ot.Revision++
 	return opstrans, nil
 }

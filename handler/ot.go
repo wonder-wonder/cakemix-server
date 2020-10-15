@@ -7,10 +7,17 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/ot"
+)
+
+const (
+	autoSaveInterval  = 60  //Sec
+	OTHistGCThreshold = 200 //Ops
 )
 
 // {
@@ -37,6 +44,8 @@ type DocData struct {
 type ClientInfo struct {
 	Conn      *websocket.Conn `json:"-"`
 	ID        string          `json:"-"`
+	UUID      string          `json:"-"`
+	LastRev   int             `json:"-"`
 	Name      string          `json:"name"`
 	Selection []SelData       `json:"selection"`
 }
@@ -122,6 +131,7 @@ type Session struct {
 	BCCh         chan BCMsg
 	AddCh        chan ClientInfo
 	QuitCh       chan string
+	isTimerOn    bool
 }
 type BCMsg struct {
 	from string
@@ -138,7 +148,7 @@ func (sess *Session) GetNewUserID() string {
 	return strconv.Itoa(ret)
 }
 
-func (sess *Session) SessionLoop() {
+func (sess *Session) SessionLoop(h *Handler) {
 	for {
 		select {
 		case bcm := <-sess.BCCh:
@@ -165,8 +175,16 @@ func (sess *Session) SessionLoop() {
 			}
 			delete(sess.Clinets, userid)
 			if len(sess.Clinets) == 0 {
-				// TODO: session closing
-				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+				close(sess.AddCh)
+				close(sess.BCCh)
+				close(sess.QuitCh)
+				if len(sess.OT.History) > 0 {
+					err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+					if err != nil {
+						panic(err)
+					}
+				}
+				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, sess.OT.Revision, sess.OT.Text)
 				removeSession(sess.UUID)
 				return
 			}
@@ -183,23 +201,61 @@ func (sess *Session) QuitClient(userid string) {
 	sess.QuitCh <- userid
 }
 
+func (sess *Session) SaveTimer(h *Handler) {
+	if sess.isTimerOn {
+		return
+	}
+	sess.isTimerOn = true
+	go func() {
+		<-time.After(autoSaveInterval * time.Second)
+		sess.isTimerOn = false
+		if len(sess.Clinets) == 0 {
+			return
+		}
+		err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Auto saved: session(%s), total %d ops, %s\n", sess.UUID, sess.OT.Revision, sess.OT.Text)
+		sess.GCOT()
+	}()
+}
+
+func (sess *Session) GCOT() {
+	if len(sess.OT.History) < OTHistGCThreshold {
+		return
+	}
+	min := sess.OT.Revision
+	for _, c := range sess.Clinets {
+		if c.LastRev < min {
+			min = c.LastRev
+		}
+	}
+	for i := sess.OT.Revision - len(sess.OT.History); i < min; i++ {
+		delete(sess.OT.History, i)
+	}
+	fmt.Printf("GC OT history: rev is %d, len is %d\n", sess.OT.Revision, len(sess.OT.History))
+}
+
 var sessions = map[string]*Session{}
 var lockch = make(chan bool, 1)
 
-func getSession(docid string) *Session {
+func (h *Handler) getSession(docid string) (*Session, error) {
 	// Get session
 	lockch <- true
+	defer func() { <-lockch }()
 	sess, ok := sessions[docid]
 	if !ok {
 		// If unavailable, init session.
-		//TODO: Load document
-		text := "Hello, world!"
+		text, err := h.db.GetLatestDocument(docid)
+		if err != nil {
+			return nil, err
+		}
 		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1)}
 		sessions[sess.UUID] = sess
-		go sess.SessionLoop()
+		go sess.SessionLoop(h)
 	}
-	<-lockch
-	return sess
+	return sess, nil
 }
 func removeSession(docid string) {
 	lockch <- true
@@ -208,10 +264,24 @@ func removeSession(docid string) {
 }
 
 func (h *Handler) getOTHandler(c *gin.Context) {
-	// TODO: checck security token
-	token := c.Query("token")
-	if token != "testtoken" {
+	uuid, ok := getUUID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	did := c.Param("docid")
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
@@ -229,14 +299,19 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		return
 	}
 
-	did := c.Param("docid")
+	p, err := h.db.GetProfileByUUID(uuid)
+	if err != nil {
+		panic(err)
+	}
+	name := p.Name
 
-	// TODO: get user name
-	name := "guest"
-
-	sess := getSession(did)
+	sess, err := h.getSession(did)
+	if err != nil {
+		panic(err)
+	}
 	// Send current session status
-	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: len(sess.OT.History)})
+	rev := sess.OT.Revision
+	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev})
 	if err != nil {
 		panic(err)
 	}
@@ -248,7 +323,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 
 	// Add client to session
 	userid := sess.GetNewUserID()
-	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid})
+	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: uuid, LastRev: rev})
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -291,6 +366,12 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 				panic(err)
 			}
 			sess.Broadcast(userid, datraw)
+
+			sess.SaveTimer(h)
+			cl, _ := sess.Clinets[userid]
+			cl.LastRev = opdat.Revision
+			sess.Clinets[userid] = cl
+
 			res := WSMsg{Event: "ok"}
 			resraw, err := json.Marshal(res)
 			if err != nil {

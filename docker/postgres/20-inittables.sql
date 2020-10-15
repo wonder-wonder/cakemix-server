@@ -72,11 +72,18 @@ CREATE TABLE IF NOT EXISTS document(
   parentfolderuuid TEXT,
   title TEXT,
   permission INTEGER,
-  createat INTEGER,
+  createdat INTEGER,
   updatedat INTEGER,
   updateruuid TEXT,
   tagid INTEGER,
   FOREIGN KEY (owneruuid) REFERENCES username(uuid),
   FOREIGN KEY (updateruuid) REFERENCES username(uuid),
   FOREIGN KEY (tagid) REFERENCES tag(tagid)
+);
+CREATE TABLE IF NOT EXISTS documentrevision(
+  uuid TEXT,
+  text TEXT,
+  updatedat INTEGER,
+  PRIMARY KEY (uuid, updatedat),
+  FOREIGN KEY (uuid) REFERENCES document(uuid)
 );

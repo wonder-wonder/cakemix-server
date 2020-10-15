@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -25,9 +26,33 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 	if err != nil {
 		return "", err
 	}
-	_, err = d.db.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
+	tx, err := d.db.Begin()
+	if err != nil {
+		return "", err
+	}
+
+	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
 		did, owneruuid, parentfid, title, permission, dateint, dateint, owneruuid)
 	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3)`,
+		did, "", dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
 		return "", err
 	}
 	return did, nil
@@ -44,6 +69,51 @@ func (d *DB) DeleteDocument(did string) error {
 func (d *DB) MoveDocument(did string, targetfid string) error {
 	_, err := d.db.Exec(`UPDATE document SET parentfolderuuid = $1 WHERE uuid = $2`, targetfid, did)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DB) GetLatestDocument(did string) (string, error) {
+	text := ""
+	r := d.db.QueryRow("SELECT text FROM document AS d,documentrevision AS dr WHERE dr.uuid = $1 AND dr.uuid = d.uuid AND d.updatedat = dr.updatedat", did)
+	err := r.Scan(&text)
+	if err == sql.ErrNoRows {
+		return "", ErrFolderNotFound
+	} else if err != nil {
+		return "", err
+	}
+	return text, nil
+}
+
+func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
+	dateint := time.Now().Unix()
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1 WHERE uuid = $2`, dateint, did)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3)`,
+		did, text, dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
 		return err
 	}
 	return nil
