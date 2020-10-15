@@ -7,11 +7,16 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/ot"
+)
+
+const (
+	autoSaveInterval = 60 //Sec
 )
 
 // {
@@ -124,6 +129,7 @@ type Session struct {
 	BCCh         chan BCMsg
 	AddCh        chan ClientInfo
 	QuitCh       chan string
+	isTimerOn    bool
 }
 type BCMsg struct {
 	from string
@@ -192,6 +198,25 @@ func (sess *Session) AddClient(cl ClientInfo) {
 }
 func (sess *Session) QuitClient(userid string) {
 	sess.QuitCh <- userid
+}
+
+func (sess *Session) SaveTimer(h *Handler) {
+	if sess.isTimerOn {
+		return
+	}
+	sess.isTimerOn = true
+	go func() {
+		<-time.After(autoSaveInterval * time.Second)
+		sess.isTimerOn = false
+		if len(sess.Clinets) == 0 {
+			return
+		}
+		err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Auto saved: session(%s), total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+	}()
 }
 
 var sessions = map[string]*Session{}
@@ -322,6 +347,9 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 				panic(err)
 			}
 			sess.Broadcast(userid, datraw)
+
+			sess.SaveTimer(h)
+
 			res := WSMsg{Event: "ok"}
 			resraw, err := json.Marshal(res)
 			if err != nil {
