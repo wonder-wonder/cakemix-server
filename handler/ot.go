@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	autoSaveInterval = 60 //Sec
+	autoSaveInterval  = 60  //Sec
+	OTHistGCThreshold = 200 //Ops
 )
 
 // {
@@ -44,6 +45,7 @@ type ClientInfo struct {
 	Conn      *websocket.Conn `json:"-"`
 	ID        string          `json:"-"`
 	UUID      string          `json:"-"`
+	LastRev   int             `json:"-"`
 	Name      string          `json:"name"`
 	Selection []SelData       `json:"selection"`
 }
@@ -183,7 +185,7 @@ func (sess *Session) SessionLoop(h *Handler) {
 						panic(err)
 					}
 				}
-				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+				fmt.Printf("Session(%s) closed: Total %d ops, %s\n", sess.UUID, sess.OT.Revision, sess.OT.Text)
 				removeSession(sess.UUID)
 				return
 			}
@@ -215,8 +217,25 @@ func (sess *Session) SaveTimer(h *Handler) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Auto saved: session(%s), total %d ops, %s\n", sess.UUID, len(sess.OT.History), sess.OT.Text)
+		fmt.Printf("Auto saved: session(%s), total %d ops, %s\n", sess.UUID, sess.OT.Revision, sess.OT.Text)
+		sess.GCOT()
 	}()
+}
+
+func (sess *Session) GCOT() {
+	if len(sess.OT.History) < OTHistGCThreshold {
+		return
+	}
+	min := sess.OT.Revision
+	for _, c := range sess.Clinets {
+		if c.LastRev < min {
+			min = c.LastRev
+		}
+	}
+	for i := sess.OT.Revision - len(sess.OT.History); i < min; i++ {
+		delete(sess.OT.History, i)
+	}
+	fmt.Printf("GC OT history: rev is %d, len is %d\n", sess.OT.Revision, len(sess.OT.History))
 }
 
 var sessions = map[string]*Session{}
@@ -292,7 +311,8 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		panic(err)
 	}
 	// Send current session status
-	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: len(sess.OT.History)})
+	rev := sess.OT.Revision
+	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev})
 	if err != nil {
 		panic(err)
 	}
@@ -304,7 +324,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 
 	// Add client to session
 	userid := sess.GetNewUserID()
-	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: uuid})
+	sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: uuid, LastRev: rev})
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -349,6 +369,9 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 			sess.Broadcast(userid, datraw)
 
 			sess.SaveTimer(h)
+			cl, _ := sess.Clinets[userid]
+			cl.LastRev = opdat.Revision
+			sess.Clinets[userid] = cl
 
 			res := WSMsg{Event: "ok"}
 			resraw, err := json.Marshal(res)
