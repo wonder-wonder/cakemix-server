@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-var ErrFolderNotFound = errors.New("Folder is not found")
+// Folder errors
+var (
+	ErrFolderNotFound = errors.New("Folder is not found")
+)
 
 // GetFolderList returns the list of folders in the specified folder
 func (d *DB) GetFolderList(fid string) ([]string, error) {
@@ -66,6 +69,7 @@ func (d *DB) GetFolderInfo(fid string) (Folder, error) {
 	return ret, nil
 }
 
+// CreateFolder creates new folder
 func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, owneruuid string) (string, error) {
 	dateint := time.Now().Unix()
 	fid, err := GenerateID(IDTypeFolder)
@@ -80,6 +84,7 @@ func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, ow
 	return fid, nil
 }
 
+// DeleteFolder deletes folder
 func (d *DB) DeleteFolder(fid string) error {
 	_, err := d.db.Exec(`DELETE FROM folder WHERE uuid = $1`, fid)
 	if err != nil {
@@ -88,6 +93,7 @@ func (d *DB) DeleteFolder(fid string) error {
 	return nil
 }
 
+// MoveFolder moves folder
 func (d *DB) MoveFolder(fid string, targetfid string) error {
 	_, err := d.db.Exec(`UPDATE folder SET parentfolderuuid = $1 WHERE uuid = $2`, targetfid, fid)
 	if err != nil {
@@ -96,6 +102,7 @@ func (d *DB) MoveFolder(fid string, targetfid string) error {
 	return nil
 }
 
+// GetRootFID returns root folder ID
 func (d *DB) GetRootFID() (string, error) {
 	fid := ""
 	r := d.db.QueryRow("SELECT uuid FROM folder WHERE parentfolderuuid = ''")
@@ -108,6 +115,7 @@ func (d *DB) GetRootFID() (string, error) {
 	return fid, nil
 }
 
+// GetUserFID returns user folder ID
 func (d *DB) GetUserFID() (string, error) {
 	fid := ""
 

@@ -20,6 +20,7 @@ func (d *DB) GetDocumentInfo(fid string) (Document, error) {
 	return ret, nil
 }
 
+// CreateDocument creates new document
 func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string, owneruuid string) (string, error) {
 	dateint := time.Now().Unix()
 	did, err := GenerateID(IDTypeDocument)
@@ -58,6 +59,7 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 	return did, nil
 }
 
+// DeleteDocument deletes document
 func (d *DB) DeleteDocument(did string) error {
 	_, err := d.db.Exec(`DELETE FROM document WHERE uuid = $1`, did)
 	if err != nil {
@@ -66,6 +68,7 @@ func (d *DB) DeleteDocument(did string) error {
 	return nil
 }
 
+// MoveDocument moves document to target folder
 func (d *DB) MoveDocument(did string, targetfid string) error {
 	_, err := d.db.Exec(`UPDATE document SET parentfolderuuid = $1 WHERE uuid = $2`, targetfid, did)
 	if err != nil {
@@ -74,6 +77,7 @@ func (d *DB) MoveDocument(did string, targetfid string) error {
 	return nil
 }
 
+// GetLatestDocument returns document data
 func (d *DB) GetLatestDocument(did string) (string, error) {
 	text := ""
 	r := d.db.QueryRow("SELECT text FROM document AS d,documentrevision AS dr WHERE dr.uuid = $1 AND dr.uuid = d.uuid AND d.updatedat = dr.updatedat", did)
@@ -86,6 +90,7 @@ func (d *DB) GetLatestDocument(did string) (string, error) {
 	return text, nil
 }
 
+// SaveDocument store the document data
 func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 	dateint := time.Now().Unix()
 	tx, err := d.db.Begin()

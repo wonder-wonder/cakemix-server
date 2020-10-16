@@ -19,7 +19,7 @@ var (
 	dbName = "cakemix"
 )
 
-// IDType
+// IDType is enum of types of ID
 type IDType int
 
 // IDType list
@@ -80,6 +80,7 @@ func OpenDB() (*DB, error) {
 	return &DB{db: db}, nil
 }
 
+// GenerateID generates random IDs
 func GenerateID(t IDType) (string, error) {
 	size := 0
 	var enc func([]byte) string

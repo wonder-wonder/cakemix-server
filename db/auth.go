@@ -32,7 +32,7 @@ var (
 	verifyKey *rsa.PublicKey
 )
 
-func OpenKeys() error {
+func openKeys() error {
 	// Signing (private) key
 	signBytes, err := ioutil.ReadFile("./signkey")
 	if err != nil {
@@ -88,7 +88,7 @@ func passhash(pass string, salt string) string {
 // GenerateJWT generates JWT using UUID and sessionID
 func GenerateJWT(uuid string, sessionid string) (string, error) {
 	if signKey == nil {
-		OpenKeys()
+		openKeys()
 	}
 
 	// create token with claims
@@ -135,7 +135,7 @@ func (d *DB) VerifyToken(token string) (string, error) {
 	var claims jwt.StandardClaims
 
 	if verifyKey == nil {
-		OpenKeys()
+		openKeys()
 	}
 
 	_, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {

@@ -17,7 +17,7 @@ import (
 
 const (
 	autoSaveInterval  = 60  //Sec
-	OTHistGCThreshold = 200 //Ops
+	otHistGCThreshold = 200 //Ops
 )
 
 // {
@@ -32,15 +32,20 @@ const (
 // 	]
 // }
 
+// WSMsg is structure for websocket message
 type WSMsg struct {
 	Event string          `json:"e"`
 	Data  json.RawMessage `json:"d,omitempty"`
 }
+
+// DocData is structure for document data
 type DocData struct {
 	Clients  interface{} `json:"clients"`
 	Document string      `json:"document"`
 	Revision int         `json:"revision"`
 }
+
+// ClientInfo is structure for client info
 type ClientInfo struct {
 	Conn      *websocket.Conn `json:"-"`
 	ID        string          `json:"-"`
@@ -49,16 +54,21 @@ type ClientInfo struct {
 	Name      string          `json:"name"`
 	Selection []SelData       `json:"selection"`
 }
+
+// OpData is structure for operation data
 type OpData struct {
 	Revision  int
 	Operation ot.Ops
 	Selection []SelData
 }
+
+// SelData is structure for selection data
 type SelData struct {
 	Anchor int `json:"anchor"`
 	Head   int `json:"head"`
 }
 
+// ParseOp parses raw operation data to OpData
 func ParseOp(msg []byte, user string) (OpData, error) {
 	dat := []json.RawMessage{}
 	err := json.Unmarshal(msg, &dat)
@@ -96,7 +106,7 @@ func ParseOp(msg []byte, user string) (OpData, error) {
 		case string:
 			ret.Operation.Ops = append(ret.Operation.Ops, ot.Op{OpType: ot.OpTypeInsert, Len: len([]rune(vt)), Text: vt})
 		default:
-			(errors.New("Parse op error"))
+			panic(errors.New("Parse op error"))
 		}
 	}
 
@@ -111,6 +121,8 @@ func ParseOp(msg []byte, user string) (OpData, error) {
 
 	return ret, nil
 }
+
+// ParseSel parses raw selection data to SelData
 func ParseSel(msg []byte) ([]SelData, error) {
 	type Ranges struct {
 		Ranges []SelData `json:"ranges"`
@@ -123,6 +135,7 @@ func ParseSel(msg []byte) ([]SelData, error) {
 	return rang.Ranges, nil
 }
 
+// Session is structure for OT session
 type Session struct {
 	UUID         string
 	Clinets      map[string]ClientInfo
@@ -132,22 +145,25 @@ type Session struct {
 	AddCh        chan ClientInfo
 	QuitCh       chan string
 	isTimerOn    bool
+	IDLock       chan bool
 }
+
+// BCMsg is structure for broadcast message
 type BCMsg struct {
 	from string
 	msg  []byte
 }
 
-var AddCh = make(chan bool, 1)
-
+// GetNewUserID returns new user ID
 func (sess *Session) GetNewUserID() string {
-	AddCh <- true
+	sess.IDLock <- true
 	sess.TotalClients++
 	ret := sess.TotalClients
-	<-AddCh
+	<-sess.IDLock
 	return strconv.Itoa(ret)
 }
 
+// SessionLoop is main loop
 func (sess *Session) SessionLoop(h *Handler) {
 	for {
 		select {
@@ -191,16 +207,23 @@ func (sess *Session) SessionLoop(h *Handler) {
 		}
 	}
 }
+
+// Broadcast sends message for all clients
 func (sess *Session) Broadcast(from string, msg []byte) {
 	sess.BCCh <- BCMsg{from: from, msg: msg}
 }
+
+// AddClient adds client into OT session
 func (sess *Session) AddClient(cl ClientInfo) {
 	sess.AddCh <- cl
 }
+
+// QuitClient removes client from OT session
 func (sess *Session) QuitClient(userid string) {
 	sess.QuitCh <- userid
 }
 
+// SaveTimer sets auto save timer
 func (sess *Session) SaveTimer(h *Handler) {
 	if sess.isTimerOn {
 		return
@@ -221,8 +244,9 @@ func (sess *Session) SaveTimer(h *Handler) {
 	}()
 }
 
+// GCOT is garbage collector of OT history
 func (sess *Session) GCOT() {
-	if len(sess.OT.History) < OTHistGCThreshold {
+	if len(sess.OT.History) < otHistGCThreshold {
 		return
 	}
 	min := sess.OT.Revision
@@ -251,7 +275,7 @@ func (h *Handler) getSession(docid string) (*Session, error) {
 		if err != nil {
 			return nil, err
 		}
-		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1)}
+		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1), IDLock: make(chan bool, 1)}
 		sessions[sess.UUID] = sess
 		go sess.SessionLoop(h)
 	}
@@ -295,7 +319,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	conn, err := wsupgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("Failed to set websocket upgrade: %v", err)
+		log.Printf("Failed to set websocket upgrade: %v\n", err)
 		return
 	}
 
