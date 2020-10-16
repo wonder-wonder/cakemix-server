@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base32"
 	"encoding/base64"
+	"errors"
 	"os"
 	"strings"
 
@@ -115,7 +116,7 @@ func GenerateID(t IDType) (string, error) {
 			return "d" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
 		}
 	default:
-		panic("Unexpected IDType")
+		return "", errors.New("Unexpected IDType")
 	}
 
 	rd := make([]byte, size)
