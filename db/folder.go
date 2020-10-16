@@ -95,3 +95,33 @@ func (d *DB) MoveFolder(fid string, targetfid string) error {
 	}
 	return nil
 }
+
+func (d *DB) GetRootFID() (string, error) {
+	fid := ""
+	r := d.db.QueryRow("SELECT uuid FROM folder WHERE parentfolderuuid = ''")
+	err := r.Scan(&fid)
+	if err == sql.ErrNoRows {
+		return fid, ErrFolderNotFound
+	} else if err != nil {
+		return fid, err
+	}
+	return fid, nil
+}
+
+func (d *DB) GetUserFID() (string, error) {
+	fid := ""
+
+	rootfid, err := d.GetRootFID()
+	if err != nil {
+		return fid, err
+	}
+
+	r := d.db.QueryRow("SELECT uuid FROM folder WHERE parentfolderuuid = $2 AND name = 'User'", rootfid)
+	err = r.Scan(&fid)
+	if err == sql.ErrNoRows {
+		return fid, ErrFolderNotFound
+	} else if err != nil {
+		return fid, err
+	}
+	return fid, nil
+}
