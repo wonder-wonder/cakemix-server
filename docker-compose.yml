@@ -18,6 +18,7 @@ services:
       DBNAME: cakemix
     networks:
       - shared-network
+      - cakemix-network
 
   cakemixpg:
     image: postgres
@@ -27,7 +28,10 @@ services:
     restart: always
     environment:
       - POSTGRES_PASSWORD=postgres
+    networks:
+      - cakemix-network
 
 networks:
   shared-network:
     external: true
+  cakemix-network:
