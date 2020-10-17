@@ -4,9 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cakemixsv
-    ports:
-      - 8081:8081
+    container_name: cakemix
     depends_on:
       - cakemixpg
     links:
@@ -17,13 +15,17 @@ services:
       DBUSER: postgres
       DBPASS: postgres
       DBNAME: cakemix
+    networks:
+      - shared-network
 
   cakemixpg:
     image: postgres
     container_name: cakemixpg
-    ports:
-      - 5432:5432
     volumes:
       - ./docker/postgres:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_PASSWORD=postgres
+
+networks:
+  shared-network:
+    external: true
