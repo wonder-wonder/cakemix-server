@@ -5,33 +5,42 @@ import (
 	"unicode/utf16"
 )
 
+// OpType is enum of OT operation
 type OpType int
 
+// OpType enums
 const (
 	OpTypeRetain = iota
 	OpTypeInsert
 	OpTypeDelete
 )
 
+// Op is structure for part of OT operation
 type Op struct {
 	OpType OpType
 	Len    int
 	Text   string
 }
+
+// Ops is structure for OT operation
 type Ops struct {
 	User string
 	Ops  []Op
 }
+
+// OT is structure for OT session
 type OT struct {
 	Text     string
 	History  map[int]Ops
 	Revision int
 }
 
+// New creates OT
 func New(text string) *OT {
 	return &OT{Text: text, Revision: 0, History: map[int]Ops{}}
 }
 
+// Transform converts OT operations
 func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	if rev < 0 || rev > ot.Revision {
 		return Ops{}, errors.New("Revision is out of range")
@@ -126,10 +135,11 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	return ret, nil
 }
 
+// Operate applies OT operation
 func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 	opstrans, err := ot.Transform(rev, ops)
 	if err != nil {
-		panic(err)
+		return Ops{}, err
 	}
 	loc := 0
 	trune := utf16.Encode([]rune(ot.Text))

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base32"
 	"encoding/base64"
+	"errors"
 	"os"
 	"strings"
 
@@ -19,7 +20,7 @@ var (
 	dbName = "cakemix"
 )
 
-// IDType
+// IDType is enum of types of ID
 type IDType int
 
 // IDType list
@@ -80,6 +81,7 @@ func OpenDB() (*DB, error) {
 	return &DB{db: db}, nil
 }
 
+// GenerateID generates random IDs
 func GenerateID(t IDType) (string, error) {
 	size := 0
 	var enc func([]byte) string
@@ -114,7 +116,7 @@ func GenerateID(t IDType) (string, error) {
 			return "d" + strings.ToLower(base32.StdEncoding.EncodeToString(src))
 		}
 	default:
-		panic("Unexpected IDType")
+		return "", errors.New("Unexpected IDType")
 	}
 
 	rd := make([]byte, size)

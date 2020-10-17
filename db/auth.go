@@ -32,7 +32,7 @@ var (
 	verifyKey *rsa.PublicKey
 )
 
-func OpenKeys() error {
+func openKeys() error {
 	// Signing (private) key
 	signBytes, err := ioutil.ReadFile("./signkey")
 	if err != nil {
@@ -88,7 +88,7 @@ func passhash(pass string, salt string) string {
 // GenerateJWT generates JWT using UUID and sessionID
 func GenerateJWT(uuid string, sessionid string) (string, error) {
 	if signKey == nil {
-		OpenKeys()
+		openKeys()
 	}
 
 	// create token with claims
@@ -135,7 +135,7 @@ func (d *DB) VerifyToken(token string) (string, error) {
 	var claims jwt.StandardClaims
 
 	if verifyKey == nil {
-		OpenKeys()
+		openKeys()
 	}
 
 	_, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
@@ -226,12 +226,22 @@ func (d *DB) RegistUser(token string) error {
 	var email string
 	var password string
 	var salt string
+
 	dateint := time.Now().Unix()
 	r := d.db.QueryRow("SELECT uuid,username,email,password,salt FROM preuser WHERE token = $1 AND expdate > $2", token, dateint)
 	err := r.Scan(&uuid, &username, &email, &password, &salt)
 	if err == sql.ErrNoRows {
 		return ErrInvalidToken
 	} else if err != nil {
+		return err
+	}
+
+	fid, err := GenerateID(IDTypeFolder)
+	if err != nil {
+		return err
+	}
+	userfid, err := d.GetUserFID()
+	if err != nil {
 		return err
 	}
 
@@ -246,6 +256,7 @@ func (d *DB) RegistUser(token string) error {
 		}
 		return err
 	}
+	// Add user login information
 	_, err = tx.Exec(`INSERT INTO username VALUES($1,$2)`, uuid, username)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
@@ -260,7 +271,17 @@ func (d *DB) RegistUser(token string) error {
 		}
 		return err
 	}
+	// Add user profile
 	_, err = tx.Exec(`INSERT INTO profile VALUES($1,$2,'','',$3,'','ja')`, uuid, username, dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	// Add user folder
+	_, err = tx.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
+		fid, uuid, userfid, username, FilePermPrivate, dateint, dateint, uuid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

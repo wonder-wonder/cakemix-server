@@ -1,5 +1,6 @@
 package model
 
+// Document is structure for document info
 type Document struct {
 	Owner      Profile `json:"owner"`
 	Updater    Profile `json:"updater"`
@@ -9,6 +10,8 @@ type Document struct {
 	CreatedAt  int64   `json:"created_at"`
 	UpdatedAt  int64   `json:"updated_at"`
 }
+
+// CreateDocumentRes is structure for response of document creation
 type CreateDocumentRes struct {
 	DocumentID string `json:"doc_id"`
 }

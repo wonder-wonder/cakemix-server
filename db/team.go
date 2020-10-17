@@ -223,6 +223,7 @@ func (d *DB) ChangeTeamOwner(teamuuid string, olduuid string, newuuid string) er
 	return nil
 }
 
+// GetTeamsByUser returns team IDs for specified user
 func (d *DB) GetTeamsByUser(useruuid string) ([]string, error) {
 	res := []string{}
 	rows, err := d.db.Query("SELECT teamuuid FROM teammember WHERE useruuid = $1", useruuid)
