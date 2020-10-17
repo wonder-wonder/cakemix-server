@@ -9,6 +9,7 @@ services:
       - cakemixpg
     links:
       - cakemixpg:5432
+    restart: always
     environment:
       DBHOST: cakemixpg
       DBPORT: 5432
@@ -23,6 +24,7 @@ services:
     container_name: cakemixpg
     volumes:
       - ./docker/postgres:/docker-entrypoint-initdb.d
+    restart: always
     environment:
       - POSTGRES_PASSWORD=postgres
 
