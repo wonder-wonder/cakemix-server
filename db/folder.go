@@ -124,7 +124,7 @@ func (d *DB) GetUserFID() (string, error) {
 		return fid, err
 	}
 
-	r := d.db.QueryRow("SELECT uuid FROM folder WHERE parentfolderuuid = $2 AND name = 'User'", rootfid)
+	r := d.db.QueryRow("SELECT uuid FROM folder WHERE parentfolderuuid = $1 AND name = 'User'", rootfid)
 	err = r.Scan(&fid)
 	if err == sql.ErrNoRows {
 		return fid, ErrFolderNotFound
