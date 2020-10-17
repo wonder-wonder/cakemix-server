@@ -5,8 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: cakemixsv
-    ports:
-      - 8081:8081
     depends_on:
       - cakemixpg
     links:
@@ -21,8 +19,6 @@ services:
   cakemixpg:
     image: postgres
     container_name: cakemixpg
-    ports:
-      - 5432:5432
     volumes:
       - ./docker/postgres:/docker-entrypoint-initdb.d
     environment:
