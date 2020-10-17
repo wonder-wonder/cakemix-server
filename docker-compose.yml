@@ -15,6 +15,8 @@ services:
       DBUSER: postgres
       DBPASS: postgres
       DBNAME: cakemix
+    networks:
+      - shared-network
 
   cakemixpg:
     image: postgres
@@ -23,3 +25,7 @@ services:
       - ./docker/postgres:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_PASSWORD=postgres
+
+networks:
+  shared-network:
+    external: true
