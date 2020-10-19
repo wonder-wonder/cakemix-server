@@ -14,16 +14,18 @@ import (
 func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	auth := r.Group("auth")
 	auth.POST("login", h.loginHandler)
-	auth.POST("regist/pre/:token", h.notimplHandler)
-	auth.POST("regist/verify/:token", h.notimplHandler)
+	auth.POST("regist/pre/:token", h.registHandler)
+	auth.GET("regist/pre/:token", h.registTokenCheckHandler)
+	auth.POST("regist/verify/:token", h.registVerifyHandler)
 	auth.POST("pass/reset", h.passResetHandler)
 	auth.GET("pass/reset/verify/:token", h.passResetTokenCheckHandler)
 	auth.POST("pass/reset/verify/:token", h.passResetVerifyHandler)
+	auth.GET("check/user/:name/:token", h.checkUserNameHandler)
 
 	authck := auth.Group("/", h.CheckAuthMiddleware())
 	authck.POST("logout", h.logoutHandler)
 	authck.GET("check/token", h.checkTokenHandler)
-	authck.GET("regist/gen/token", h.notimplHandler)
+	authck.GET("regist/gen/token", h.registTokenGenerateHandler)
 	authck.POST("pass/change", h.passChangeHandler)
 }
 
@@ -87,9 +89,45 @@ func (h *Handler) logoutHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+func (h *Handler) registTokenGenerateHandler(c *gin.Context) {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	token, err := h.db.GenerateInviteToken(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusOK, model.AuthRegistGenTokenReq{Token: token})
+}
+func (h *Handler) registTokenCheckHandler(c *gin.Context) {
+	token := c.Param("token")
+	err := h.db.CheckInviteToken(token)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
 func (h *Handler) registHandler(c *gin.Context) {
 	var req model.AuthRegistReq
-	err := c.BindJSON(&req)
+
+	invtoken := c.Param("token")
+	err := h.db.CheckInviteToken(invtoken)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	err = c.BindJSON(&req)
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -105,6 +143,11 @@ func (h *Handler) registHandler(c *gin.Context) {
 	}
 	//TODO:sendmail
 	println(token)
+	err = h.db.DeleteInviteToken(invtoken)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.AbortWithStatus(http.StatusOK)
 }
 
@@ -115,6 +158,29 @@ func (h *Handler) registVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) checkUserNameHandler(c *gin.Context) {
+	username := c.Param("name")
+	token := c.Param("token")
+	err := h.db.CheckInviteToken(token)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	_, err = h.db.GetProfile(username)
+	if err == nil {
+		c.AbortWithStatus(http.StatusConflict)
+		return
+	} else if err != db.ErrUserTeamNotFound {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

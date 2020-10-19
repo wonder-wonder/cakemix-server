@@ -18,6 +18,11 @@ CREATE TABLE IF NOT EXISTS session(
   PRIMARY KEY (uuid, sessionid),
   FOREIGN KEY (uuid) REFERENCES auth(uuid)
 );
+CREATE TABLE IF NOT EXISTS invitetoken(
+  fromuuid TEXT,
+  token TEXT PRIMARY KEY,
+  expdate INTEGER
+);
 -- User may fail so that uuid, username, and email can be duplicate. (System checks them when inserting)
 CREATE TABLE IF NOT EXISTS preuser(
   uuid TEXT,
