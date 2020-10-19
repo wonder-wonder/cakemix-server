@@ -739,7 +739,7 @@ paths:
       responses:
         '200':
           description: No user
-        '400':
+        '409':
           description: username has already taken
       operationId: get-auth-check-user-username
       description: Check username is not taken by other
