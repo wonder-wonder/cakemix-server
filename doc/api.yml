@@ -61,6 +61,7 @@ paths:
           description: Removed session and logout successfully.
         '401':
           description: Invalid token.
+      parameters: []
   /auth/check/token:
     get:
       summary: Check token
@@ -125,6 +126,18 @@ paths:
           description: The request is accepted with no error.
         '409':
           description: The username or email is already used. Server cannot accept the request.
+    get:
+      summary: ''
+      operationId: get-auth-regist-pre-token
+      responses:
+        '200':
+          description: token is valid.
+        '401':
+          description: Invalid token.
+      description: Request to verify invitation link
+      tags:
+        - Auth
+      security: []
   '/auth/regist/verify/{token}':
     parameters:
       - schema:
@@ -707,6 +720,33 @@ paths:
           description: security token
           required: true
       security: []
+  '/auth/check/user/{user_name}/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: user_name
+        in: path
+        required: true
+    get:
+      summary: Check username
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: No user
+        '401':
+          description: invalid token
+        '409':
+          description: username has already taken
+      operationId: get-auth-check-user-username
+      description: Check username is not taken by other
+      security: []
+      parameters: []
 components:
   schemas:
     JWT:
