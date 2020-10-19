@@ -165,6 +165,43 @@ func (d *DB) VerifyToken(token string) (string, error) {
 	return claims.Audience, nil
 }
 
+// GenerateInviteToken generates token for invitation
+func (d *DB) GenerateInviteToken(useruuid string) (string, error) {
+	expdateint := time.Now().Add(time.Hour * verifyTokenExpHours).Unix()
+	newtoken, err := GenerateID(IDTypeVerifyToken)
+	if err != nil {
+		return "", err
+	}
+	_, err = d.db.Exec(`INSERT INTO invitetoken VALUES($1,$2,$3)`, useruuid, newtoken, expdateint)
+	if err != nil {
+		return "", err
+	}
+	return newtoken, nil
+}
+
+// CheckInviteToken checks invitation token
+func (d *DB) CheckInviteToken(token string) error {
+	cnt := 0
+	dateint := time.Now().Unix()
+	r := d.db.QueryRow("SELECT count(*) FROM invitetoken WHERE token = $1 AND expdate > $2", token, dateint)
+	err := r.Scan(&cnt)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if cnt != 1 {
+		return ErrInvalidToken
+	}
+	return nil
+}
+
+func (d *DB) DeleteInviteToken(token string) error {
+	_, err := d.db.Exec(`DELETE FROM invitetoken WHERE token = $1`, token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // PreRegistUser records new user information into preuser and return token to activate
 func (d *DB) PreRegistUser(username string, email string, password string) (string, error) {
 	dateint := time.Now().Unix()
@@ -280,7 +317,7 @@ func (d *DB) RegistUser(token string) error {
 		return err
 	}
 	// Add user folder
-	_, err = tx.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
+	_, err = tx.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
 		fid, uuid, userfid, username, FilePermPrivate, dateint, dateint, uuid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {

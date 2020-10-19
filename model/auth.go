@@ -1,5 +1,10 @@
 package model
 
+// AuthRegistGenTokenReq model
+type AuthRegistGenTokenReq struct {
+	Token string `json:"token"`
+}
+
 //AuthRegistReq model
 type AuthRegistReq struct {
 	Email    string `json:"email"`

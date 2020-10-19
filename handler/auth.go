@@ -14,8 +14,8 @@ import (
 func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	auth := r.Group("auth")
 	auth.POST("login", h.loginHandler)
-	auth.POST("regist/pre/:token", h.notimplHandler)
-	auth.POST("regist/verify/:token", h.notimplHandler)
+	auth.POST("regist/pre/:token", h.registHandler)
+	auth.POST("regist/verify/:token", h.registVerifyHandler)
 	auth.POST("pass/reset", h.passResetHandler)
 	auth.GET("pass/reset/verify/:token", h.passResetTokenCheckHandler)
 	auth.POST("pass/reset/verify/:token", h.passResetVerifyHandler)
@@ -23,7 +23,7 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck := auth.Group("/", h.CheckAuthMiddleware())
 	authck.POST("logout", h.logoutHandler)
 	authck.GET("check/token", h.checkTokenHandler)
-	authck.GET("regist/gen/token", h.notimplHandler)
+	authck.GET("regist/gen/token", h.registTokenGenerateHandler)
 	authck.POST("pass/change", h.passChangeHandler)
 }
 
@@ -87,9 +87,34 @@ func (h *Handler) logoutHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+func (h *Handler) registTokenGenerateHandler(c *gin.Context) {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	token, err := h.db.GenerateInviteToken(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusOK, model.AuthRegistGenTokenReq{Token: token})
+}
+
 func (h *Handler) registHandler(c *gin.Context) {
 	var req model.AuthRegistReq
-	err := c.BindJSON(&req)
+
+	invtoken := c.Param("token")
+	err := h.db.CheckInviteToken(invtoken)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	err = c.BindJSON(&req)
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -105,6 +130,11 @@ func (h *Handler) registHandler(c *gin.Context) {
 	}
 	//TODO:sendmail
 	println(token)
+	err = h.db.DeleteInviteToken(invtoken)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.AbortWithStatus(http.StatusOK)
 }
 
