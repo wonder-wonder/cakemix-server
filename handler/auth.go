@@ -15,10 +15,12 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	auth := r.Group("auth")
 	auth.POST("login", h.loginHandler)
 	auth.POST("regist/pre/:token", h.registHandler)
+	auth.GET("regist/pre/:token", h.registTokenCheckHandler)
 	auth.POST("regist/verify/:token", h.registVerifyHandler)
 	auth.POST("pass/reset", h.passResetHandler)
 	auth.GET("pass/reset/verify/:token", h.passResetTokenCheckHandler)
 	auth.POST("pass/reset/verify/:token", h.passResetVerifyHandler)
+	auth.GET("check/user/:name/:token", h.checkUserNameHandler)
 
 	authck := auth.Group("/", h.CheckAuthMiddleware())
 	authck.POST("logout", h.logoutHandler)
@@ -100,7 +102,18 @@ func (h *Handler) registTokenGenerateHandler(c *gin.Context) {
 	}
 	c.AbortWithStatusJSON(http.StatusOK, model.AuthRegistGenTokenReq{Token: token})
 }
-
+func (h *Handler) registTokenCheckHandler(c *gin.Context) {
+	token := c.Param("token")
+	err := h.db.CheckInviteToken(token)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
 func (h *Handler) registHandler(c *gin.Context) {
 	var req model.AuthRegistReq
 
@@ -145,6 +158,29 @@ func (h *Handler) registVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) checkUserNameHandler(c *gin.Context) {
+	username := c.Param("name")
+	token := c.Param("token")
+	err := h.db.CheckInviteToken(token)
+	if err == db.ErrInvalidToken {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	_, err = h.db.GetProfile(username)
+	if err == nil {
+		c.AbortWithStatus(http.StatusConflict)
+		return
+	} else if err != db.ErrUserTeamNotFound {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
