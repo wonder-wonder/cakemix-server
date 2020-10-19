@@ -739,6 +739,8 @@ paths:
       responses:
         '200':
           description: No user
+        '401':
+          description: invalid token
         '409':
           description: username has already taken
       operationId: get-auth-check-user-username
