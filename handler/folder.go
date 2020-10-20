@@ -15,6 +15,7 @@ func (h *Handler) FolderHandler(r *gin.RouterGroup) {
 	folderck.POST(":folderid", h.createFolderHandler)
 	folderck.DELETE(":folderid", h.deleteFolderHandler)
 	folderck.PUT(":folderid/move/:targetfid", h.moveFolderHandler)
+	folderck.PUT(":folderid", h.modifyFolderHandler)
 }
 func (h *Handler) getFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
@@ -255,6 +256,73 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 	}
 
 	err = h.db.MoveFolder(fid, targetfid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) modifyFolderHandler(c *gin.Context) {
+	fid := c.Param("folderid")
+
+	// Check folder permission
+	finfo, err := h.db.GetFolderInfo(fid)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	// Check owner
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	if finfo.OwnerUUID != uuid {
+		teams, ok := getTeams(c)
+		if !ok {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		ng := true
+		for _, v := range teams {
+			if finfo.OwnerUUID == v {
+				perm, err := h.db.GetTeamMemberPerm(v, uuid)
+				if err != nil {
+					c.AbortWithError(http.StatusInternalServerError, err)
+				}
+				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
+					ng = false
+				}
+				break
+			}
+		}
+		if ng {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+	}
+
+	req := model.FolderModifyReqModel{
+		OwnerUUID:  finfo.OwnerUUID,
+		Name:       finfo.Name,
+		Permission: int(finfo.Permission),
+	}
+
+	err = c.BindJSON(&req)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	finfo.OwnerUUID = req.OwnerUUID
+	finfo.Name = req.Name
+	finfo.Permission = db.FilePerm(req.Permission)
+
+	err = h.db.UpdateFolderInfo(finfo)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
