@@ -562,12 +562,10 @@ paths:
             examples:
               example-1:
                 value:
-                  owneruuid: u12345678
-                  name: test
+                  owneruuid: t12345678
                   permission: 1
               example-2:
                 value:
-                  name: newname
                   permission: 2
   '/doc/{doc_id}/move/{folder_id}':
     parameters:
@@ -1075,17 +1073,14 @@ components:
     DocumentModifyReqModel:
       title: DocumentModifyReqModel
       type: object
+      description: Document modify request model
       properties:
         owneruuid:
           type: string
           description: Owner UUID
-        name:
-          type: string
-          description: Folder name
         permission:
           type: integer
           description: Permission
-      description: Document modify request model
   securitySchemes:
     JWT:
       type: http
