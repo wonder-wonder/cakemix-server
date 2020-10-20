@@ -20,3 +20,10 @@ type Folder struct {
 type CreateFolderRes struct {
 	FolderID string `json:"folder_id"`
 }
+
+// FolderModifyReqModel is structure for request folder info modification
+type FolderModifyReqModel struct {
+	OwnerUUID  string `json:"owneruuid"`
+	Name       string `json:"name"`
+	Permission int    `json:"permission"`
+}

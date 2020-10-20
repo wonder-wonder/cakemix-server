@@ -123,3 +123,14 @@ func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 	}
 	return nil
 }
+
+// UpdateDocumentInfo modifies document info
+func (d *DB) UpdateDocumentInfo(dat Document) error {
+	dateint := time.Now().Unix()
+	_, err := d.db.Exec(`UPDATE document SET owneruuid = $2, permission = $3, updateat = $4, updateruuid = $5 WHERE uuid = $1`,
+		dat.UUID, dat.OwnerUUID, dat.Permission, dateint, dat.UpdaterUUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

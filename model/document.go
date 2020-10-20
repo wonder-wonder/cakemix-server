@@ -15,3 +15,9 @@ type Document struct {
 type CreateDocumentRes struct {
 	DocumentID string `json:"doc_id"`
 }
+
+// DocumentModifyReqModel is structure for request document info modification
+type DocumentModifyReqModel struct {
+	OwnerUUID  string `json:"owneruuid"`
+	Permission int    `json:"permission"`
+}

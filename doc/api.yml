@@ -543,6 +543,30 @@ paths:
       operationId: delete-doc
       tags:
         - Document
+    put:
+      summary: Modify document property
+      operationId: put-doc-doc_id
+      responses:
+        '200':
+          description: Modified the document property.
+        '400':
+          description: Cannot modify the document property.
+      tags:
+        - Document
+      description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentModifyReqModel'
+            examples:
+              example-1:
+                value:
+                  owneruuid: t12345678
+                  permission: 1
+              example-2:
+                value:
+                  permission: 2
   '/doc/{doc_id}/move/{folder_id}':
     parameters:
       - schema:
@@ -673,6 +697,39 @@ paths:
       operationId: delete-folder
       tags:
         - Folder
+    put:
+      summary: Modify folder property
+      responses:
+        '200':
+          description: Modified the folder property.
+        '400':
+          description: Cannot modify the folder property.
+      operationId: modify-folder
+      tags:
+        - Folder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderModifyReqModel'
+            examples:
+              example:
+                value:
+                  owneruuid: u12345678
+                  name: test
+                  permission: 1
+              example-2:
+                value:
+                  name: newname
+              example-3:
+                value:
+                  owneruuid: t12345678
+                  permission: 2
+          application/javascript:
+            schema:
+              type: object
+              properties: {}
+      description: ''
   '/folder/{folder_id}/move/{target_folder_id}':
     parameters:
       - schema:
@@ -999,6 +1056,31 @@ components:
           type: string
         title:
           type: string
+    FolderModifyReqModel:
+      title: FolderModifyReqModel
+      type: object
+      properties:
+        owneruuid:
+          type: string
+          description: Owner UUID
+        name:
+          type: string
+          description: Folder name
+        permission:
+          type: integer
+          description: Permission
+      description: Folder modify request model
+    DocumentModifyReqModel:
+      title: DocumentModifyReqModel
+      type: object
+      description: Document modify request model
+      properties:
+        owneruuid:
+          type: string
+          description: Owner UUID
+        permission:
+          type: integer
+          description: Permission
   securitySchemes:
     JWT:
       type: http
@@ -1006,5 +1088,6 @@ components:
 tags:
   - name: Auth
     description: Authorization API
+  - name: Document
 security:
   - JWT: []

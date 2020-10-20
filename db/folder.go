@@ -133,3 +133,14 @@ func (d *DB) GetUserFID() (string, error) {
 	}
 	return fid, nil
 }
+
+// UpdateFolderInfo modifies folder info
+func (d *DB) UpdateFolderInfo(dat Folder) error {
+	dateint := time.Now().Unix()
+	_, err := d.db.Exec(`UPDATE folder SET owneruuid = $2, name = $3, permission = $4, updateat = $5, updateruuid = $6 WHERE uuid = $1`,
+		dat.UUID, dat.OwnerUUID, dat.Name, dat.Permission, dateint, dat.UpdaterUUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
