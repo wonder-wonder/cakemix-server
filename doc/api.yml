@@ -608,9 +608,11 @@ paths:
             application/json:
               schema:
                 description: List of Folder and Document
-                anyOf:
-                  - $ref: '#/components/schemas/FolderModel'
-                  - $ref: '#/components/schemas/DocumentModel'
+                type: array
+                items:
+                  anyOf:
+                    - $ref: '#/components/schemas/FolderModel'
+                    - $ref: '#/components/schemas/DocumentModel'
               examples:
                 example (type=all):
                   value:
