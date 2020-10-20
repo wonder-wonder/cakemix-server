@@ -16,6 +16,7 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 	docck.POST(":folderid", h.createDocumentHandler)
 	docck.DELETE(":docid", h.deleteDocumentHandler)
 	docck.PUT(":docid/move/:folderid", h.moveDocumentHandler)
+	docck.PUT(":docid", h.modifyDocumentHandler)
 }
 
 func (h *Handler) getDocumentHandler(c *gin.Context) {
@@ -151,4 +152,68 @@ func (h *Handler) setJWTFromQuery() gin.HandlerFunc {
 		}
 		c.Request.Header.Set("Authorization", "Bearer "+token)
 	}
+}
+
+func (h *Handler) modifyDocumentHandler(c *gin.Context) {
+	did := c.Param("docid")
+
+	// Check document permission
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	// Check owner
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	if dinfo.OwnerUUID != uuid {
+		teams, ok := getTeams(c)
+		if !ok {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		ng := true
+		for _, v := range teams {
+			if dinfo.OwnerUUID == v {
+				perm, err := h.db.GetTeamMemberPerm(v, uuid)
+				if err != nil {
+					c.AbortWithError(http.StatusInternalServerError, err)
+				}
+				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
+					ng = false
+				}
+				break
+			}
+		}
+		if ng {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+	}
+	req := model.DocumentModifyReqModel{
+		OwnerUUID:  dinfo.OwnerUUID,
+		Permission: int(dinfo.Permission),
+	}
+
+	err = c.BindJSON(&req)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	dinfo.OwnerUUID = req.OwnerUUID
+	dinfo.Permission = db.FilePerm(req.Permission)
+
+	err = h.db.UpdateDocumentInfo(dinfo)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
 }
