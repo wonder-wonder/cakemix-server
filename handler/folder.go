@@ -55,12 +55,12 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				continue
 			}
 
-			ownp, err := h.db.GetProfile(folinfo.OwnerUUID)
+			ownp, err := h.db.GetProfileByUUID(folinfo.OwnerUUID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
-			updp, err := h.db.GetProfile(folinfo.UpdaterUUID)
+			updp, err := h.db.GetProfileByUUID(folinfo.UpdaterUUID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
@@ -105,12 +105,12 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				continue
 			}
 
-			ownp, err := h.db.GetProfile(docinfo.OwnerUUID)
+			ownp, err := h.db.GetProfileByUUID(docinfo.OwnerUUID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
-			updp, err := h.db.GetProfile(docinfo.UpdaterUUID)
+			updp, err := h.db.GetProfileByUUID(docinfo.UpdaterUUID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
