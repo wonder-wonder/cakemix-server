@@ -98,7 +98,7 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	targetfid := c.Param("targetfid")
 
 	// Check document permission
-	dinfo, err := h.db.GetFolderInfo(did)
+	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
