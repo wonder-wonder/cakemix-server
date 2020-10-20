@@ -15,9 +15,9 @@ INSERT INTO teammember VALUES('tqssoagvfvlg3mky2', 'ujafzavrqkqthqe54', 0, 1);
 -- Default tag
 INSERT INTO tag VALUES (0,'notag');
 -- Root folder
-INSERT INTO folder VALUES('fwk6al7nyj4qdufaz','tqssoagvfvlg3mky2','','',0,1,1,'ujafzavrqkqthqe54');
+INSERT INTO folder VALUES('fwk6al7nyj4qdufaz','tqssoagvfvlg3mky2','','',1,1,1,'ujafzavrqkqthqe54');
 -- User folder
-INSERT INTO folder VALUES('fdahpbkboamdbgnua','tqssoagvfvlg3mky2','fwk6al7nyj4qdufaz','User',0,1,1,'ujafzavrqkqthqe54');
+INSERT INTO folder VALUES('fdahpbkboamdbgnua','tqssoagvfvlg3mky2','fwk6al7nyj4qdufaz','User',1,1,1,'ujafzavrqkqthqe54');
 
 -- Admin folder
 INSERT INTO folder VALUES('fhfprvdljyczssis7','ujafzavrqkqthqe54','fdahpbkboamdbgnua','root',0,1,1,'ujafzavrqkqthqe54');
