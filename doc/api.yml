@@ -1014,6 +1014,8 @@ components:
         updated_at:
           type: integer
           description: document creation date
+        uuid:
+          type: string
     DocumentResModel:
       title: DocumentResModel
       type: object
@@ -1053,6 +1055,8 @@ components:
           items:
             $ref: '#/components/schemas/BreadcrumbModel'
         name:
+          type: string
+        uuid:
           type: string
     BreadcrumbModel:
       title: BreadcrumbModel
