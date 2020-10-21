@@ -2,6 +2,7 @@ package model
 
 // Document is structure for document info
 type Document struct {
+	UUID       string  `json:"uuid"`
 	Owner      Profile `json:"owner"`
 	Updater    Profile `json:"updater"`
 	Title      string  `json:"title"`

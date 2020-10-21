@@ -8,6 +8,7 @@ type FolderList struct {
 
 // Folder is structure for folder info
 type Folder struct {
+	UUID       string  `json:"uuid"`
 	Owner      Profile `json:"owner"`
 	Updater    Profile `json:"updater"`
 	Name       string  `json:"name"`

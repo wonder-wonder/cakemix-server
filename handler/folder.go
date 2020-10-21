@@ -67,6 +67,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			}
 
 			follist = append(follist, model.Folder{
+				UUID: v,
 				Owner: model.Profile{
 					UUID:    ownp.UUID,
 					Name:    ownp.Name,
@@ -117,6 +118,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			}
 
 			doclist = append(doclist, model.Document{
+				UUID: v,
 				Owner: model.Profile{
 					UUID:    ownp.UUID,
 					Name:    ownp.Name,
