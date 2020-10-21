@@ -2,8 +2,9 @@ package model
 
 // FolderList is structure for folder list
 type FolderList struct {
-	Folder   []Folder   `json:"folder"`
-	Document []Document `json:"document"`
+	Folder   []Folder     `json:"folder"`
+	Document []Document   `json:"document"`
+	Path     []Breadcrumb `json:"path"`
 }
 
 // Folder is structure for folder info
@@ -27,4 +28,10 @@ type FolderModifyReqModel struct {
 	OwnerUUID  string `json:"owneruuid"`
 	Name       string `json:"name"`
 	Permission int    `json:"permission"`
+}
+
+// Breadcrumb is structure for breadcrumb
+type Breadcrumb struct {
+	FolderID string `json:"folder_id"`
+	Title    string `json:"title"`
 }
