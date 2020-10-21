@@ -196,7 +196,14 @@ func (sess *Session) SessionLoop(h *Handler) {
 				close(sess.BCCh)
 				close(sess.QuitCh)
 				if len(sess.OT.History) > 0 {
-					err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+					updateruuid := sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID
+					err := h.db.SaveDocument(sess.UUID, updateruuid, sess.OT.Text)
+					if err != nil {
+						log.Printf("OT handler error: %v", err)
+						removeSession(sess.UUID)
+						return
+					}
+					err = h.db.UpdateDocument(sess.UUID, updateruuid)
 					if err != nil {
 						log.Printf("OT handler error: %v", err)
 						removeSession(sess.UUID)

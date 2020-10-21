@@ -134,3 +134,14 @@ func (d *DB) UpdateDocumentInfo(dat Document) error {
 	}
 	return nil
 }
+
+// UpdateDocument modifies document update time
+func (d *DB) UpdateDocument(did string, updateruuid string) error {
+	dateint := time.Now().Unix()
+	_, err := d.db.Exec(`UPDATE document SET updateat = $2, updateruuid = $3 WHERE uuid = $1`,
+		did, dateint, updateruuid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
