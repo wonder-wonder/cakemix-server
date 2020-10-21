@@ -1055,10 +1055,6 @@ components:
         updated_at:
           type: integer
           description: folder creation date
-        path:
-          type: array
-          items:
-            $ref: '#/components/schemas/BreadcrumbModel'
         name:
           type: string
         uuid:
