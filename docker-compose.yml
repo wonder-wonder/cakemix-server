@@ -24,7 +24,7 @@ services:
     image: postgres
     container_name: cakemixpg
     volumes:
-      - ./docker/postgres:/docker-entrypoint-initdb.d
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     restart: always
     environment:
       - POSTGRES_PASSWORD=postgres
