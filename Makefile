@@ -2,14 +2,14 @@ rundev: main.go
 	DBHOST="localhost" DBPORT="5432" DBUSER="postgres" DBPASS="postgres" DBNAME="cakemix" APIADDR="localhost" PORT="8081" go run main.go
 
 startdb:
-	docker run -dp 5432:5432 -v `PWD`/docker/postgres:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres
+	docker run -dp 5432:5432 -v `PWD`/docker/postgres/init:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres
 
 stopdb:
 	docker stop cakemixdbdev
 	docker rm cakemixdbdev
 
 runprod:
-	docker-compose up --build
+	docker-compose up --build -d
 
 down:
 	docker-compose down
