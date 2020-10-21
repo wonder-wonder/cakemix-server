@@ -150,9 +150,16 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 		}
 	}
 
+	path, err := h.getPath(c, fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	ret := model.FolderList{
 		Folder:   follist,
 		Document: doclist,
+		Path:     path,
 	}
 
 	c.AbortWithStatusJSON(http.StatusOK, ret)
@@ -339,4 +346,20 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		return
 	}
 	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) getPath(c *gin.Context, fid string) ([]model.Breadcrumb, error) {
+	res := []model.Breadcrumb{}
+	for {
+		finfo, err := h.db.GetFolderInfo(fid)
+		if err != nil {
+			return res, err
+		}
+		if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission == db.FilePermPrivate {
+			break
+		}
+		res = append([]model.Breadcrumb{{FolderID: fid, Title: finfo.Name}}, res...)
+		fid = finfo.ParentFolderUUID
+	}
+	return res, nil
 }
