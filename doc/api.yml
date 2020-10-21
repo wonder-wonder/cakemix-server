@@ -607,17 +607,7 @@ paths:
           content:
             application/json:
               schema:
-                description: List of Folder and Document
-                type: object
-                properties:
-                  folder:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/FolderModel'
-                  document:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/DocumentModel'
+                $ref: '#/components/schemas/FolderListModel'
               examples:
                 example (type=all):
                   value:
@@ -635,6 +625,11 @@ paths:
                         permission: 0
                         created_at: DATE
                         updated_at: DATE
+                    path:
+                      - folder_id: f12345678
+                        title: ''
+                      - folder_id: f87654321
+                        title: test
                 example (type=folder):
                   value:
                     folder:
@@ -643,6 +638,11 @@ paths:
                         permission: 0
                         created_at: DATE
                         updated_at: DATE
+                    path:
+                      - folder_id: f12345678
+                        title: ''
+                      - folder_id: f87654321
+                        title: test
                 example (type=document):
                   value:
                     document:
@@ -653,6 +653,11 @@ paths:
                         permission: 0
                         created_at: DATE
                         updated_at: DATE
+                    path:
+                      - folder_id: f12345678
+                        title: ''
+                      - folder_id: f87654321
+                        title: test
         '404':
           description: Not found target folder.
       operationId: get-list
@@ -1092,6 +1097,25 @@ components:
         permission:
           type: integer
           description: Permission
+    FolderListModel:
+      title: FolderListModel
+      type: object
+      description: Folder list model
+      properties:
+        folder:
+          type: array
+          items:
+            $ref: '#/components/schemas/FolderModel'
+        document:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentModel'
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreadcrumbModel'
+      required:
+        - path
   securitySchemes:
     JWT:
       type: http
