@@ -144,3 +144,14 @@ func (d *DB) UpdateFolderInfo(dat Folder) error {
 	}
 	return nil
 }
+
+// UpdateFolder modifies folder update time
+func (d *DB) UpdateFolder(fid string, updateruuid string) error {
+	dateint := time.Now().Unix()
+	_, err := d.db.Exec(`UPDATE folder SET updateat = $2, updateruuid = $3 WHERE uuid = $1`,
+		fid, dateint, updateruuid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
