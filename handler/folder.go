@@ -24,6 +24,15 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 	follist := []model.Folder{}
 	doclist := []model.Document{}
 
+	if fid == "" {
+		var err error
+		fid, err = h.db.GetRootFID()
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+	}
+
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
