@@ -189,6 +189,18 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = h.db.UpdateFolder(parentfid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	c.AbortWithStatusJSON(http.StatusOK, model.CreateFolderRes{FolderID: fid})
 }
 
@@ -229,6 +241,18 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = h.db.UpdateFolder(finfo.ParentFolderUUID, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	c.AbortWithStatus(http.StatusOK)
 }
 
@@ -251,8 +275,10 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		return
 	}
 
+	sourcefid := finfo.ParentFolderUUID
+
 	// Check original parent folder permission
-	finfo, err = h.db.GetFolderInfo(finfo.ParentFolderUUID)
+	finfo, err = h.db.GetFolderInfo(sourcefid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -278,6 +304,28 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = h.db.UpdateFolder(fid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = h.db.UpdateFolder(sourcefid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = h.db.UpdateFolder(targetfid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	c.AbortWithStatus(http.StatusOK)
 }
 
