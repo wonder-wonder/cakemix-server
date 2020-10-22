@@ -11,7 +11,7 @@ import (
 // FolderHandler is handlers of folders
 func (h *Handler) FolderHandler(r *gin.RouterGroup) {
 	folderck := r.Group("folder", h.CheckAuthMiddleware())
-	folderck.GET(":folderid", h.getFolderHandler)
+	folderck.GET("*folderid", h.getFolderHandler)
 	folderck.POST(":folderid", h.createFolderHandler)
 	folderck.DELETE(":folderid", h.deleteFolderHandler)
 	folderck.PUT(":folderid/move/:targetfid", h.moveFolderHandler)
@@ -24,7 +24,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 	follist := []model.Folder{}
 	doclist := []model.Document{}
 
-	if fid == "" {
+	if fid == "/" {
 		var err error
 		fid, err = h.db.GetRootFID()
 		if err != nil {
@@ -408,6 +408,9 @@ func (h *Handler) getPath(c *gin.Context, fid string) ([]model.Breadcrumb, error
 		}
 		res = append([]model.Breadcrumb{{FolderID: fid, Title: finfo.Name}}, res...)
 		fid = finfo.ParentFolderUUID
+		if fid == "" {
+			break
+		}
 	}
 	return res, nil
 }
