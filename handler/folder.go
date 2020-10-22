@@ -408,6 +408,9 @@ func (h *Handler) getPath(c *gin.Context, fid string) ([]model.Breadcrumb, error
 		}
 		res = append([]model.Breadcrumb{{FolderID: fid, Title: finfo.Name}}, res...)
 		fid = finfo.ParentFolderUUID
+		if fid == "" {
+			break
+		}
 	}
 	return res, nil
 }
