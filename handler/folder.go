@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
@@ -24,7 +25,9 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 	follist := []model.Folder{}
 	doclist := []model.Document{}
 
-	if fid == "/" {
+	fid = strings.TrimLeft(fid, "/")
+
+	if fid == "" {
 		var err error
 		fid, err = h.db.GetRootFID()
 		if err != nil {
