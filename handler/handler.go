@@ -45,6 +45,11 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Set("UUID", uuid)
+		teams, err := h.db.GetTeamsByUser(uuid)
+		if err != nil {
+			return
+		}
+		c.Set("Teams", teams)
 	}
 }
 
