@@ -194,6 +194,7 @@ func (d *DB) CheckInviteToken(token string) error {
 	return nil
 }
 
+// DeleteInviteToken removes invitation token
 func (d *DB) DeleteInviteToken(token string) error {
 	_, err := d.db.Exec(`DELETE FROM invitetoken WHERE token = $1`, token)
 	if err != nil {
