@@ -137,7 +137,7 @@ func (d *DB) GetUserFID() (string, error) {
 // UpdateFolderInfo modifies folder info
 func (d *DB) UpdateFolderInfo(dat Folder) error {
 	dateint := time.Now().Unix()
-	_, err := d.db.Exec(`UPDATE folder SET owneruuid = $2, name = $3, permission = $4, updateat = $5, updateruuid = $6 WHERE uuid = $1`,
+	_, err := d.db.Exec(`UPDATE folder SET owneruuid = $2, name = $3, permission = $4, updatedat = $5, updateruuid = $6 WHERE uuid = $1`,
 		dat.UUID, dat.OwnerUUID, dat.Name, dat.Permission, dateint, dat.UpdaterUUID)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (d *DB) UpdateFolderInfo(dat Folder) error {
 // UpdateFolder modifies folder update time
 func (d *DB) UpdateFolder(fid string, updateruuid string) error {
 	dateint := time.Now().Unix()
-	_, err := d.db.Exec(`UPDATE folder SET updateat = $2, updateruuid = $3 WHERE uuid = $1`,
+	_, err := d.db.Exec(`UPDATE folder SET updatedat = $2, updateruuid = $3 WHERE uuid = $1`,
 		fid, dateint, updateruuid)
 	if err != nil {
 		return err

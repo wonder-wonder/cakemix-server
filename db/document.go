@@ -127,7 +127,7 @@ func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 // UpdateDocumentInfo modifies document info
 func (d *DB) UpdateDocumentInfo(dat Document) error {
 	dateint := time.Now().Unix()
-	_, err := d.db.Exec(`UPDATE document SET owneruuid = $2, permission = $3, updateat = $4, updateruuid = $5 WHERE uuid = $1`,
+	_, err := d.db.Exec(`UPDATE document SET owneruuid = $2, permission = $3, updatedat = $4, updateruuid = $5 WHERE uuid = $1`,
 		dat.UUID, dat.OwnerUUID, dat.Permission, dateint, dat.UpdaterUUID)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (d *DB) UpdateDocumentInfo(dat Document) error {
 // UpdateDocument modifies document update time
 func (d *DB) UpdateDocument(did string, updateruuid string) error {
 	dateint := time.Now().Unix()
-	_, err := d.db.Exec(`UPDATE document SET updateat = $2, updateruuid = $3 WHERE uuid = $1`,
+	_, err := d.db.Exec(`UPDATE document SET updatedat = $2, updateruuid = $3 WHERE uuid = $1`,
 		did, dateint, updateruuid)
 	if err != nil {
 		return err
