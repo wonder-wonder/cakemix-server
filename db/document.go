@@ -32,8 +32,8 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 		return "", err
 	}
 
-	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
-		did, owneruuid, parentfid, title, permission, dateint, dateint, owneruuid)
+	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		did, owneruuid, parentfid, title, permission, dateint, dateint, owneruuid, 0)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

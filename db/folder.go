@@ -76,7 +76,7 @@ func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, ow
 	if err != nil {
 		return "", err
 	}
-	_, err = d.db.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$4,$5,$6,$7,$8)`,
+	_, err = d.db.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
 		fid, owneruuid, parentfid, name, permission, dateint, dateint, owneruuid)
 	if err != nil {
 		return "", err
