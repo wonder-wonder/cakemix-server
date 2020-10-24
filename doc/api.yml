@@ -775,7 +775,8 @@ paths:
         required: true
     get:
       summary: Your GET endpoint
-      tags: []
+      tags:
+        - Document
       responses:
         '101':
           description: Switch to web socket protocol
