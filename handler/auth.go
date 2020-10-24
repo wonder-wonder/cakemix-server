@@ -146,7 +146,7 @@ func (h *Handler) registHandler(c *gin.Context) {
 	msg := "Hi, " + req.UserName + "!\n\n" +
 		"Please verify email address from following URL to acivate your new account.\n" +
 		"https://cakemix.wonder-wonder.xyz/auth/signup/verify/" + token + "/\n\ncakemix system"
-	err = util.SendMail(req.UserName, req.Email, "Verify Email address", msg, "")
+	err = util.SendMail(req.Email, req.UserName, "Verify Email address", msg, "")
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -244,7 +244,7 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 	msg := "Hi, " + prof.Name + "!\n\n" +
 		"Please continue from following URL to reset password for your account.\n" +
 		"https://cakemix.wonder-wonder.xyz/auth/signup/verify/" + token + "/\n\ncakemix system"
-	err = util.SendMail(prof.Name, req.Email, "Reset password", msg, "")
+	err = util.SendMail(req.Email, prof.Name, "Reset password", msg, "")
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return

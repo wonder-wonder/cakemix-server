@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"os"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -25,6 +26,9 @@ func SendMail(ToAddr, ToName, subject, text, textHTML string) error {
 	to := mail.NewEmail(ToName, ToAddr)
 	message := mail.NewSingleEmail(from, subject, to, text, textHTML)
 	client := sendgrid.NewSendClient(SendGridAPIKey)
-	_, err := client.Send(message)
+	res, err := client.Send(message)
+	if res.StatusCode >= 400 {
+		return errors.New(res.Body)
+	}
 	return err
 }
