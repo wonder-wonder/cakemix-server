@@ -862,12 +862,12 @@ paths:
           name: q
           description: search filter
         - schema:
-            type: string
+            type: integer
           in: query
           name: limit
           description: search limit
         - schema:
-            type: string
+            type: integer
           in: query
           name: offset
           description: search offset
