@@ -10,6 +10,8 @@ services:
     links:
       - cakemixpg:5432
     restart: always
+    env_file:
+      - sendgrid.env
     environment:
       DBHOST: cakemixpg
       DBPORT: 5432
