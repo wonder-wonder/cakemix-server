@@ -243,7 +243,7 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 
 	msg := "Hi, " + prof.Name + "!\n\n" +
 		"Please continue from following URL to reset password for your account.\n" +
-		"https://cakemix.wonder-wonder.xyz/auth/signup/verify/" + token + "/\n\ncakemix system"
+		"https://cakemix.wonder-wonder.xyz/auth/passwd/verify/" + token + "/\n\ncakemix system"
 	err = util.SendMail(req.Email, prof.Name, "Reset password", msg, "")
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
