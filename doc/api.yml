@@ -1175,6 +1175,14 @@ tags:
   - name: Auth
     description: Authorization API
   - name: Document
+    description: Document API
+  - name: Profile
+    description: Profile API
+  - name: Team
+    description: Team management API
+  - name: Folder
+    description: Folder API
   - name: Search
+    description: Search API
 security:
   - JWT: []
