@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/model"
+	"github.com/wonder-wonder/cakemix-server/util"
 )
 
 // AuthHandler is handlers of auth
@@ -141,8 +142,15 @@ func (h *Handler) registHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	//TODO:sendmail
-	println(token)
+
+	msg := "Hi, " + req.UserName + "!\n\n" +
+		"Please verify email address from following URL to acivate your new account.\n" +
+		"https://cakemix.wonder-wonder.xyz/auth/signup/verify/" + token + "/\n\ncakemix system"
+	err = util.SendMail(req.UserName, req.Email, "Verify Email address", msg, "")
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	err = h.db.DeleteInviteToken(invtoken)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -217,13 +225,30 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	token, err := h.db.ResetPass(req.Email)
+
+	uuid, token, err := h.db.ResetPass(req.Email)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	//TODO:sendmail
-	println(token)
+	if uuid == "" {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+	prof, err := h.db.GetProfileByUUID(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	msg := "Hi, " + prof.Name + "!\n\n" +
+		"Please continue from following URL to reset password for your account.\n" +
+		"https://cakemix.wonder-wonder.xyz/auth/signup/verify/" + token + "/\n\ncakemix system"
+	err = util.SendMail(prof.Name, req.Email, "Reset password", msg, "")
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.AbortWithStatus(http.StatusOK)
 }
 func (h *Handler) passResetTokenCheckHandler(c *gin.Context) {
