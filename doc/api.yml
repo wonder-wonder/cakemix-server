@@ -775,7 +775,8 @@ paths:
         required: true
     get:
       summary: Your GET endpoint
-      tags: []
+      tags:
+        - Document
       responses:
         '101':
           description: Switch to web socket protocol
@@ -816,6 +817,60 @@ paths:
       description: Check username is not taken by other
       security: []
       parameters: []
+  /search/user:
+    get:
+      summary: Get user list
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Got user list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfileModel'
+              examples:
+                example-1:
+                  value:
+                    - uuid: u12345678
+                      name: hoge
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: admin
+                      is_team: false
+                      teams:
+                        - {}
+                      lang: ja
+                    - uuid: u87654321
+                      name: fuga
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: ''
+                      is_team: false
+                      teams:
+                        - {}
+                      lang: ja
+      operationId: get-search-user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: q
+          description: search filter
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: search limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: search offset
 components:
   schemas:
     JWT:
@@ -1120,5 +1175,14 @@ tags:
   - name: Auth
     description: Authorization API
   - name: Document
+    description: Document API
+  - name: Profile
+    description: Profile API
+  - name: Team
+    description: Team management API
+  - name: Folder
+    description: Folder API
+  - name: Search
+    description: Search API
 security:
   - JWT: []
