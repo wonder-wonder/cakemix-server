@@ -61,8 +61,29 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 
 // DeleteDocument deletes document
 func (d *DB) DeleteDocument(did string) error {
-	_, err := d.db.Exec(`DELETE FROM document WHERE uuid = $1`, did)
+	tx, err := d.db.Begin()
 	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`DELETE FROM documentrevision WHERE uuid = $1`, did)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`DELETE FROM document WHERE uuid = $1`, did)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
 		return err
 	}
 	return nil
