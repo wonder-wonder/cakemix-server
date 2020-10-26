@@ -2,13 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"time"
-)
-
-// Folder errors
-var (
-	ErrFolderNotFound = errors.New("Folder is not found")
 )
 
 // GetFolderList returns the list of folders in the specified folder

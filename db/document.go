@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func (d *DB) GetDocumentInfo(fid string) (Document, error) {
 	r := d.db.QueryRow("SELECT owneruuid,parentfolderuuid,title,permission,createdat,updatedat,updateruuid FROM document WHERE uuid = $1", ret.UUID)
 	err := r.Scan(&ret.OwnerUUID, &ret.ParentFolderUUID, &ret.Title, &ret.Permission, &ret.CreatedAt, &ret.UpdatedAt, &ret.UpdaterUUID)
 	if err == sql.ErrNoRows {
-		return ret, ErrFolderNotFound
+		return ret, ErrDocumentNotFound
 	} else if err != nil {
 		return ret, err
 	}
@@ -101,10 +102,10 @@ func (d *DB) MoveDocument(did string, targetfid string) error {
 // GetLatestDocument returns document data
 func (d *DB) GetLatestDocument(did string) (string, error) {
 	text := ""
-	r := d.db.QueryRow("SELECT text FROM document AS d,documentrevision AS dr WHERE dr.uuid = $1 AND dr.uuid = d.uuid AND d.updatedat = dr.updatedat", did)
+	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND updatedat = (SELECT MAX(updatedat) FROM documentrevision WHERE uuid = $1)", did)
 	err := r.Scan(&text)
 	if err == sql.ErrNoRows {
-		return "", ErrFolderNotFound
+		return "", ErrDocumentNotFound
 	} else if err != nil {
 		return "", err
 	}
@@ -114,12 +115,15 @@ func (d *DB) GetLatestDocument(did string) (string, error) {
 // SaveDocument store the document data
 func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 	dateint := time.Now().Unix()
+	title := strings.Split(text, "\n")[0]
+	title = strings.Trim(title, "# ")
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`UPDATE document SET updatedat = $1 WHERE uuid = $2`, dateint, did)
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2, updateruuid = $3 WHERE uuid = $4`, dateint, title, updateruuid, did)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
