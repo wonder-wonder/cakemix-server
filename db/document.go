@@ -101,7 +101,7 @@ func (d *DB) MoveDocument(did string, targetfid string) error {
 // GetLatestDocument returns document data
 func (d *DB) GetLatestDocument(did string) (string, error) {
 	text := ""
-	r := d.db.QueryRow("SELECT text FROM document AS d,documentrevision AS dr WHERE dr.uuid = $1 AND dr.uuid = d.uuid AND d.updatedat = dr.updatedat", did)
+	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND updatedat = (SELECT MAX(updatedat) FROM documentrevision WHERE uuid = $1)", did)
 	err := r.Scan(&text)
 	if err == sql.ErrNoRows {
 		return "", ErrFolderNotFound
