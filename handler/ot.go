@@ -146,6 +146,7 @@ type Session struct {
 	QuitCh       chan string
 	isTimerOn    bool
 	IDLock       chan bool
+	LastUpdater  string
 }
 
 // BCMsg is structure for broadcast message
@@ -196,7 +197,7 @@ func (sess *Session) SessionLoop(h *Handler) {
 				close(sess.BCCh)
 				close(sess.QuitCh)
 				if len(sess.OT.History) > 0 {
-					updateruuid := sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID
+					updateruuid := sess.LastUpdater
 					err := h.db.SaveDocument(sess.UUID, updateruuid, sess.OT.Text)
 					if err != nil {
 						log.Printf("OT handler error: %v", err)
@@ -245,7 +246,7 @@ func (sess *Session) SaveTimer(h *Handler) {
 		if len(sess.Clinets) == 0 {
 			return
 		}
-		err := h.db.SaveDocument(sess.UUID, sess.Clinets[sess.OT.History[len(sess.OT.History)-1].User].UUID, sess.OT.Text)
+		err := h.db.SaveDocument(sess.UUID, sess.LastUpdater, sess.OT.Text)
 		if err != nil {
 			log.Printf("OT handler error: %v", err)
 			return
@@ -411,6 +412,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 			}
 			sess.Broadcast(userid, datraw)
 
+			sess.LastUpdater = uuid
 			sess.SaveTimer(h)
 			cl, _ := sess.Clinets[userid]
 			cl.LastRev = opdat.Revision

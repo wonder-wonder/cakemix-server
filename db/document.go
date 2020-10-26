@@ -123,7 +123,7 @@ func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 		return err
 	}
 
-	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2 WHERE uuid = $3`, dateint, title, did)
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2, updateruuid = $3 WHERE uuid = $4`, dateint, title, updateruuid, did)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
