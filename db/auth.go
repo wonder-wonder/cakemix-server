@@ -19,14 +19,6 @@ const (
 	verifyTokenExpHours  = 12
 )
 
-// Errors
-var (
-	ErrIDPassInvalid = errors.New("ID or password is incorrect")
-	ErrInvalidToken  = errors.New("Token is expired or invalid")
-	ErrExistUser     = errors.New("UserName or email is already exist")
-	ErrUserNotFound  = errors.New("The user is not found")
-)
-
 var (
 	signKey   *rsa.PrivateKey
 	verifyKey *rsa.PublicKey

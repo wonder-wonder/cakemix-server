@@ -2,12 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
-)
-
-// Errors
-var (
-	ErrUserTeamNotFound = errors.New("User/team is not found")
 )
 
 // GetProfile returns the profile info
