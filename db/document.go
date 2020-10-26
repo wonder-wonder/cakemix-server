@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -114,12 +115,15 @@ func (d *DB) GetLatestDocument(did string) (string, error) {
 // SaveDocument store the document data
 func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 	dateint := time.Now().Unix()
+	title := strings.Split(text, "\n")[0]
+	title = strings.Trim(title, "# ")
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`UPDATE document SET updatedat = $1 WHERE uuid = $2`, dateint, did)
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2 WHERE uuid = $3`, dateint, title, did)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
