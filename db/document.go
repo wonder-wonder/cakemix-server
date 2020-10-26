@@ -13,7 +13,7 @@ func (d *DB) GetDocumentInfo(fid string) (Document, error) {
 	r := d.db.QueryRow("SELECT owneruuid,parentfolderuuid,title,permission,createdat,updatedat,updateruuid FROM document WHERE uuid = $1", ret.UUID)
 	err := r.Scan(&ret.OwnerUUID, &ret.ParentFolderUUID, &ret.Title, &ret.Permission, &ret.CreatedAt, &ret.UpdatedAt, &ret.UpdaterUUID)
 	if err == sql.ErrNoRows {
-		return ret, ErrFolderNotFound
+		return ret, ErrDocumentNotFound
 	} else if err != nil {
 		return ret, err
 	}
@@ -104,7 +104,7 @@ func (d *DB) GetLatestDocument(did string) (string, error) {
 	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND updatedat = (SELECT MAX(updatedat) FROM documentrevision WHERE uuid = $1)", did)
 	err := r.Scan(&text)
 	if err == sql.ErrNoRows {
-		return "", ErrFolderNotFound
+		return "", ErrDocumentNotFound
 	} else if err != nil {
 		return "", err
 	}

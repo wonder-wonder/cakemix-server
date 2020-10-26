@@ -24,7 +24,7 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
-		if err == db.ErrFolderNotFound {
+		if err == db.ErrDocumentNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
 			return
 		}
@@ -87,7 +87,7 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
-		if err == db.ErrFolderNotFound {
+		if err == db.ErrDocumentNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
 			return
 		}
@@ -125,7 +125,7 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
-		if err == db.ErrFolderNotFound {
+		if err == db.ErrDocumentNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
 			return
 		}
@@ -208,7 +208,7 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
-		if err == db.ErrFolderNotFound {
+		if err == db.ErrDocumentNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
 			return
 		}

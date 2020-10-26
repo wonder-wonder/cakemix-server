@@ -308,7 +308,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	did := c.Param("docid")
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
-		if err == db.ErrFolderNotFound {
+		if err == db.ErrDocumentNotFound {
 			c.AbortWithError(http.StatusNotFound, err)
 			return
 		}
