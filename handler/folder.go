@@ -239,6 +239,21 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		return
 	}
 
+	pfinfo, err := h.db.GetFolderInfo(finfo.ParentFolderUUID)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	err = h.db.DeleteFolder(fid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
