@@ -172,6 +172,12 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
 	fname := c.Query("name")
 
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	finfo, err := h.db.GetFolderInfo(parentfid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
@@ -181,23 +187,22 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-
 	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
-	fid, err := h.db.CreateFolder(fname, db.FilePermPrivate, parentfid, finfo.OwnerUUID)
+	owneruuid := uuid
+	if isRelatedUUID(c, finfo.OwnerUUID) {
+		owneruuid = finfo.OwnerUUID
+	}
+
+	fid, err := h.db.CreateFolder(fname, db.FilePermPrivate, parentfid, owneruuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
 	err = h.db.UpdateFolder(parentfid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -235,6 +240,21 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		return
 	}
 	if len(folidlist) > 0 || len(docidlist) > 0 {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	pfinfo, err := h.db.GetFolderInfo(finfo.ParentFolderUUID)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}

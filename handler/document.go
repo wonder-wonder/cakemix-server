@@ -47,6 +47,12 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 func (h *Handler) createDocumentHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
 
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	finfo, err := h.db.GetFolderInfo(parentfid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
@@ -56,23 +62,22 @@ func (h *Handler) createDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-
 	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
-	did, err := h.db.CreateDocument("Untitled", db.FilePermPrivate, parentfid, finfo.OwnerUUID)
+	owneruuid := uuid
+	if isRelatedUUID(c, finfo.OwnerUUID) {
+		owneruuid = finfo.OwnerUUID
+	}
+
+	did, err := h.db.CreateDocument("Untitled", db.FilePermPrivate, parentfid, owneruuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
 	err = h.db.UpdateFolder(parentfid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -95,6 +100,21 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 		return
 	}
 	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	pfinfo, err := h.db.GetFolderInfo(dinfo.ParentFolderUUID)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}

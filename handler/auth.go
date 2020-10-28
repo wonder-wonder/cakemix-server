@@ -241,6 +241,16 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		return
 	}
 
+	islocked, err := h.db.IsUserLocked(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if islocked {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
 	msg := "Hi, " + prof.Name + "!\n\n" +
 		"Please continue from following URL to reset password for your account.\n" +
 		"https://cakemix.wonder-wonder.xyz/auth/passwd/verify/" + token + "/\n\ncakemix system"

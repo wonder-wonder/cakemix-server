@@ -425,3 +425,20 @@ func (d *DB) ResetPassVerify(token string, newpass string) error {
 
 	return nil
 }
+
+// IsUserLocked checks the user is locked.
+func (d *DB) IsUserLocked(uuid string) (bool, error) {
+	pass := ""
+	r := d.db.QueryRow("SELECT password FROM auth WHERE uuid = $1", uuid)
+	err := r.Scan(&pass)
+	if err == sql.ErrNoRows {
+		return true, ErrIDPassInvalid
+	} else if err != nil {
+		return true, err
+	}
+
+	if pass == "" {
+		return true, nil
+	}
+	return false, nil
+}
