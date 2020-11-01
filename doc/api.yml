@@ -344,16 +344,32 @@ paths:
         required: true
     get:
       summary: Get team member list
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: member limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: member offset
       responses:
         '200':
           description: Got team member list
           content:
             application/json:
               schema:
-                type: array
+                type: object
                 description: Member list
-                items:
-                  $ref: '#/components/schemas/MemberInfoModel'
+                properties:
+                  total:
+                    type: integer
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberInfoModel'
               examples:
                 example:
                   value:
@@ -828,9 +844,14 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProfileModel'
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
               examples:
                 example-1:
                   value:
@@ -871,6 +892,11 @@ paths:
           in: query
           name: offset
           description: search offset
+        - schema:
+            type: string
+          in: query
+          name: type
+          description: search target type (user or team)
 components:
   schemas:
     JWT:
