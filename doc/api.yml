@@ -833,6 +833,65 @@ paths:
       description: Check username is not taken by other
       security: []
       parameters: []
+  /search/team:
+    get:
+      summary: Get team list
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Got team list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
+              examples:
+                example-1:
+                  value:
+                    - uuid: u12345678
+                      name: hoge
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: admin
+                      is_team: true
+                      teams:
+                        - {}
+                      lang: ja
+                    - uuid: u87654321
+                      name: fuga
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: ''
+                      is_team: true
+                      teams:
+                        - {}
+                      lang: ja
+      operationId: get-search-team
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: q
+          description: search filter
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: search limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: search offset
   /search/user:
     get:
       summary: Get user list
@@ -892,11 +951,6 @@ paths:
           in: query
           name: offset
           description: search offset
-        - schema:
-            type: string
-          in: query
-          name: type
-          description: search target type (user or team)
 components:
   schemas:
     JWT:
