@@ -344,16 +344,32 @@ paths:
         required: true
     get:
       summary: Get team member list
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: member limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: member offset
       responses:
         '200':
           description: Got team member list
           content:
             application/json:
               schema:
-                type: array
+                type: object
                 description: Member list
-                items:
-                  $ref: '#/components/schemas/MemberInfoModel'
+                properties:
+                  total:
+                    type: integer
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberInfoModel'
               examples:
                 example:
                   value:
@@ -817,6 +833,65 @@ paths:
       description: Check username is not taken by other
       security: []
       parameters: []
+  /search/team:
+    get:
+      summary: Get team list
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Got team list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
+              examples:
+                example-1:
+                  value:
+                    - uuid: u12345678
+                      name: hoge
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: admin
+                      is_team: true
+                      teams:
+                        - {}
+                      lang: ja
+                    - uuid: u87654321
+                      name: fuga
+                      bio: The bio text.
+                      icon_uri: 'http://path/to/icon'
+                      created_at: 0
+                      attr: ''
+                      is_team: true
+                      teams:
+                        - {}
+                      lang: ja
+      operationId: get-search-team
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: q
+          description: search filter
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: search limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: search offset
   /search/user:
     get:
       summary: Get user list
@@ -828,9 +903,14 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProfileModel'
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
               examples:
                 example-1:
                   value:
