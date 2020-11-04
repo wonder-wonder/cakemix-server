@@ -40,9 +40,11 @@ type WSMsg struct {
 
 // DocData is structure for document data
 type DocData struct {
-	Clients  interface{} `json:"clients"`
-	Document string      `json:"document"`
-	Revision int         `json:"revision"`
+	Clients    interface{} `json:"clients"`
+	Document   string      `json:"document"`
+	Revision   int         `json:"revision"`
+	Owner      string      `json:"owner"`
+	Permission int         `json:"permission"`
 }
 
 // ClientInfo is structure for client info
@@ -349,7 +351,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	// Send current session status
 	rev := sess.OT.Revision
-	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev})
+	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev, Owner: dinfo.OwnerUUID, Permission: int(dinfo.Permission)})
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
 		return
