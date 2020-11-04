@@ -16,6 +16,7 @@ type Folder struct {
 	Permission int     `json:"permission"`
 	CreatedAt  int64   `json:"created_at"`
 	UpdatedAt  int64   `json:"updated_at"`
+	Editable   bool    `json:"editable"`
 }
 
 // CreateFolderRes is structure for response of creation folder
