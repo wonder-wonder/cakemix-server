@@ -66,6 +66,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			if !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
 				continue
 			}
+			editable := isRelatedUUID(c, folinfo.OwnerUUID) || folinfo.Permission == db.FilePermReadWrite
 
 			ownp, err := h.db.GetProfileByUUID(folinfo.OwnerUUID)
 			if err != nil {
@@ -98,6 +99,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				Permission: int(folinfo.Permission),
 				CreatedAt:  folinfo.CreatedAt,
 				UpdatedAt:  folinfo.UpdatedAt,
+				Editable:   editable,
 			})
 		}
 	}
@@ -117,6 +119,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			if !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
 				continue
 			}
+			editable := isRelatedUUID(c, docinfo.OwnerUUID) || docinfo.Permission == db.FilePermReadWrite
 
 			ownp, err := h.db.GetProfileByUUID(docinfo.OwnerUUID)
 			if err != nil {
@@ -149,6 +152,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				Permission: int(docinfo.Permission),
 				CreatedAt:  docinfo.CreatedAt,
 				UpdatedAt:  docinfo.UpdatedAt,
+				Editable:   editable,
 			})
 		}
 	}
