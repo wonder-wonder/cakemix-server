@@ -36,7 +36,7 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 		}
 	}
 
-	list, err := h.db.SearchUser(q, lim, offset)
+	count, list, err := h.db.SearchUser(q, lim, offset)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -81,7 +81,7 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 		res = append(res, prof)
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, model.SearchUserTeamRes{Total: count, Users: res})
 }
 
 func (h *Handler) searchTeamHandler(c *gin.Context) {
@@ -105,7 +105,7 @@ func (h *Handler) searchTeamHandler(c *gin.Context) {
 		}
 	}
 
-	list, err := h.db.SearchTeam(q, lim, offset)
+	count, list, err := h.db.SearchTeam(q, lim, offset)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -131,5 +131,5 @@ func (h *Handler) searchTeamHandler(c *gin.Context) {
 		res = append(res, prof)
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, model.SearchUserTeamRes{Total: count, Users: res})
 }
