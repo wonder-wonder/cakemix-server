@@ -12,6 +12,7 @@ import (
 func (h *Handler) SearchHandler(r *gin.RouterGroup) {
 	profck := r.Group("search", h.CheckAuthMiddleware())
 	profck.GET("user", h.searchUserHandler)
+	profck.GET("team", h.searchTeamHandler)
 }
 
 func (h *Handler) searchUserHandler(c *gin.Context) {
@@ -77,6 +78,56 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 				IsTeam:  true,
 			})
 		}
+		res = append(res, prof)
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) searchTeamHandler(c *gin.Context) {
+	res := []model.Profile{}
+	var err error
+	q := c.Query("q")
+	lim := -1
+	offset := -1
+	if c.Query("limit") != "" {
+		lim, err = strconv.Atoi(c.Query("limit"))
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+	}
+	if c.Query("offset") != "" {
+		offset, err = strconv.Atoi(c.Query("offset"))
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+	}
+
+	list, err := h.db.SearchTeam(q, lim, offset)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	for _, v := range list {
+		uprof, err := h.db.GetProfileByUUID(v)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		prof := model.Profile{
+			UUID:      uprof.UUID,
+			Name:      uprof.Name,
+			Bio:       uprof.Bio,
+			IconURI:   uprof.IconURI,
+			CreatedAt: uprof.CreateAt,
+			Attr:      uprof.Attr,
+			IsTeam:    true,
+			Teams:     []model.Profile{},
+			Lang:      uprof.Lang,
+		}
+
 		res = append(res, prof)
 	}
 
