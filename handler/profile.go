@@ -27,6 +27,13 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	isadmin, err := h.db.IsAdmin(p.UUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	res = model.Profile{
 		UUID:      p.UUID,
 		Name:      p.Name,
@@ -37,6 +44,7 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		Lang:      p.Lang,
 		IsTeam:    (p.UUID[0] == 't'),
 		Teams:     []model.Profile{},
+		IsAdmin:   isadmin,
 	}
 
 	teams, _ := getTeams(c)
