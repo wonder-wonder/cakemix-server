@@ -45,6 +45,7 @@ type DocData struct {
 	Revision   int         `json:"revision"`
 	Owner      string      `json:"owner"`
 	Permission int         `json:"permission"`
+	Editable   bool        `json:"editable"`
 }
 
 // ClientInfo is structure for client info
@@ -318,10 +319,12 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission == db.FilePermPrivate {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
+
+	editable := isRelatedUUID(c, dinfo.OwnerUUID) || dinfo.Permission == db.FilePermReadWrite
 
 	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
@@ -351,7 +354,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	// Send current session status
 	rev := sess.OT.Revision
-	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev, Owner: dinfo.OwnerUUID, Permission: int(dinfo.Permission)})
+	docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev, Owner: dinfo.OwnerUUID, Permission: int(dinfo.Permission), Editable: editable})
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
 		return
@@ -373,6 +376,11 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 				break
 			}
 			log.Printf("OT handler error: %v", err)
+			break
+		}
+
+		if !editable {
+			log.Printf("OT handler error: client tries to write on readonly document.")
 			break
 		}
 
