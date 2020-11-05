@@ -12,14 +12,14 @@ import (
 // ProfileHandler is handlers of profile
 func (h *Handler) ProfileHandler(r *gin.RouterGroup) {
 	profck := r.Group("profile", h.CheckAuthMiddleware())
-	profck.GET(":name", h.getProfileHandler)
-	profck.PUT(":name", h.updateProfileHandler)
+	profck.GET(":uuid", h.getProfileHandler)
+	profck.PUT(":uuid", h.updateProfileHandler)
 }
 
 func (h *Handler) getProfileHandler(c *gin.Context) {
 	var res model.Profile
-	name := c.Param("name")
-	p, err := h.db.GetProfile(name)
+	uuid := c.Param("uuid")
+	p, err := h.db.GetProfileByUUID(uuid)
 	if err == db.ErrUserTeamNotFound {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -27,6 +27,13 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	isadmin, err := h.db.IsAdmin(p.UUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	res = model.Profile{
 		UUID:      p.UUID,
 		Name:      p.Name,
@@ -37,6 +44,7 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		Lang:      p.Lang,
 		IsTeam:    (p.UUID[0] == 't'),
 		Teams:     []model.Profile{},
+		IsAdmin:   isadmin,
 	}
 
 	teams, _ := getTeams(c)
@@ -65,14 +73,14 @@ func (h *Handler) updateProfileHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	name := c.Param("name")
+	trguuid := c.Param("uuid")
 	uuid, ok := getUUID(c)
 	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	profdat, err := h.db.GetProfile(name)
+	profdat, err := h.db.GetProfileByUUID(trguuid)
 	if err == db.ErrUserTeamNotFound {
 		c.AbortWithStatus(http.StatusNotFound)
 		return

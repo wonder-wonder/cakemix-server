@@ -211,11 +211,11 @@ paths:
         name: token
         in: path
         required: true
-  '/profile/{user_name}':
+  '/profile/{uuid}':
     parameters:
       - schema:
           type: string
-        name: user_name
+        name: uuid
         in: path
         required: true
         description: Username or teamname
@@ -874,6 +874,9 @@ components:
         lang:
           type: string
           description: Language
+        isadmin:
+          type: boolean
+          description: Admin or not
       required:
         - uuid
         - name

@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const teamNameAdmin = "admin"
+
 // CreateTeam creates new team
 func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 	dateint := time.Now().Unix()
@@ -243,4 +245,16 @@ func (d *DB) GetTeamsByUser(useruuid string) ([]string, error) {
 		return res, err
 	}
 	return res, nil
+}
+
+// IsAdmin checks user is admin or not
+func (d *DB) IsAdmin(uuid string) (bool, error) {
+	cnt := 0
+	r := d.db.QueryRow("SELECT COUNT(*) FROM teammember, username WHERE teamuuid = uuid AND useruuid = $1 AND username = $2", uuid, teamNameAdmin)
+	err := r.Scan(&cnt)
+	if err != nil {
+		return false, err
+	}
+
+	return cnt == 1, nil
 }
