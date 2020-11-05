@@ -15,7 +15,7 @@ type Profile struct {
 
 //ProfileReq model
 type ProfileReq struct {
-	Name    *string `json:"name"`
+	// Name    *string `json:"name"`
 	Bio     *string `json:"bio"`
 	IconURI *string `json:"icon_uri"`
 	Lang    *string `json:"lang"`

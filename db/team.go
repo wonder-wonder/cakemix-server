@@ -51,7 +51,7 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 		return "", err
 	}
 
-	_, err = tx.Exec(`INSERT INTO profile VALUES($1,$2,'','',$3,'',$4)`, teamuuid, teamname, dateint, prof.Lang)
+	_, err = tx.Exec(`INSERT INTO profile VALUES($1,'','',$3,'',$4)`, teamuuid, dateint, prof.Lang)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

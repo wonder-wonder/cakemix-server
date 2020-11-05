@@ -87,9 +87,9 @@ func (h *Handler) updateProfileHandler(c *gin.Context) {
 		return
 	}
 
-	if req.Name != nil {
-		profdat.Name = *req.Name
-	}
+	// if req.Name != nil {
+	// 	profdat.Name = *req.Name
+	// }
 	if req.Bio != nil {
 		profdat.Bio = *req.Bio
 	}
