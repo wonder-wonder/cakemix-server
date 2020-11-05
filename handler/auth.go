@@ -184,7 +184,7 @@ func (h *Handler) checkUserNameHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = h.db.GetProfile(username)
+	_, err = h.db.GetProfileByUsername(username)
 	if err == nil {
 		c.AbortWithStatus(http.StatusConflict)
 		return

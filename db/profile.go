@@ -4,8 +4,8 @@ import (
 	"database/sql"
 )
 
-// GetProfile returns the profile info
-func (d *DB) GetProfile(name string) (Profile, error) {
+// GetProfileByUsername returns the profile info
+func (d *DB) GetProfileByUsername(name string) (Profile, error) {
 	var p Profile
 	r := d.db.QueryRow("SELECT p.uuid,p.name,p.bio,p.iconuri,p.createat,p.attr,p.lang FROM profile as p, username as u WHERE u.username = $1 AND p.uuid=u.uuid", name)
 	err := r.Scan(&p.UUID, &p.Name, &p.Bio, &p.IconURI, &p.CreateAt, &p.Attr, &p.Lang)
