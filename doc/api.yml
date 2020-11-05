@@ -874,7 +874,7 @@ components:
         lang:
           type: string
           description: Language
-        isadmin:
+        is_admin:
           type: boolean
           description: Admin or not
       required:
