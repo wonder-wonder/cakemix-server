@@ -7,7 +7,7 @@ INSERT INTO auth VALUES('ujafzavrqkqthqe54',	'root@localhost',	'DBerQ+J0ywuKJ+sS
 INSERT INTO profile VALUES('ujafzavrqkqthqe54','','',1,'','ja');
 
 -- System Admin Team
-INSERT INTO username VALUES('tqssoagvfvlg3mky2', 'systemadmin');
+INSERT INTO username VALUES('tqssoagvfvlg3mky2', 'admin');
 INSERT INTO profile VALUES('tqssoagvfvlg3mky2','','',1,'','ja');
 INSERT INTO teammember VALUES('tqssoagvfvlg3mky2', 'ujafzavrqkqthqe54', 0, 1);
 
