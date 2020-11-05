@@ -24,10 +24,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthLoginResModel'
-              examples:
-                example:
-                  value:
-                    jwt: JWT TOKEN
         '401':
           description: The ID or password is incorrect.
       tags:
@@ -39,15 +35,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthLoginReqModel'
-            examples:
-              example(email):
-                value:
-                  id: hoge@example.com
-                  pass: password
-              example(username):
-                value:
-                  id: hoge
-                  pass: password
         description: Login request.
   /auth/logout:
     post:
@@ -88,10 +75,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthRegistNewTokenResModel'
-              examples:
-                example:
-                  value:
-                    token: TOKEN
         '403':
           description: The user has not permission to generate token
   '/auth/regist/pre/{token}':
@@ -114,12 +97,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthRegistReqModel'
-            examples:
-              example:
-                value:
-                  email: hoge@example.com
-                  username: hoge
-                  password: password
         description: Regist information
       responses:
         '200':
@@ -177,11 +154,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthPassChangeReqModel'
-            examples:
-              example:
-                value:
-                  oldpass: password
-                  newpass: NEW password
         description: Old and new password.
   /auth/pass/reset:
     post:
@@ -196,10 +168,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthPassResetReqModel'
-            examples:
-              example:
-                value:
-                  email: hoge@example.com
         description: Email address to reset password.
       responses:
         '200':
@@ -236,10 +204,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthPassChangeReqModel'
-            examples:
-              example:
-                value:
-                  newpass: NEW password
         description: New password.
     parameters:
       - schema:
@@ -264,27 +228,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileModel'
-              examples:
-                example(WIP):
-                  value:
-                    uuid: u01234567
-                    name: hoge
-                    bio: The biography
-                    icon_uri: 'https://path/to/icon'
-                    created_at: 1514798825
-                    attr: SysAdmin
-                    is_team: false
-                    teams:
-                      - uuid: t01234567
-                        name: wonderwonder
-                        icon_uri: 'https://path/to/icon'
-                        attr: Official
-                        is_team: true
-                      - uuid: t23456789
-                        name: foobar
-                        icon_uri: 'https://path/to/icon'
-                        attr: ''
-                        is_team: true
         '404':
           description: The user/team is not found.
       operationId: get-user-profile-uuid
@@ -311,27 +254,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ProfileModel'
-            examples:
-              example(WIP):
-                value:
-                  uuid: u01234567
-                  name: hoge
-                  bio: The biography
-                  icon_uri: 'https://path/to/icon'
-                  created_at: 1514798825
-                  attr: SysAdmin
-                  is_team: false
-                  teams:
-                    - uuid: t01234567
-                      name: wonderwonder
-                      icon_uri: 'https://path/to/icon'
-                      attr: Official
-                      is_team: true
-                    - uuid: t23456789
-                      name: foobar
-                      icon_uri: 'https://path/to/icon'
-                      attr: ''
-                      is_team: true
         description: |-
           Updated profile data. The parameters can be omitted if no update.
           Some parameter cannot be changed because of readonly.
@@ -370,23 +292,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/MemberInfoModel'
-              examples:
-                example:
-                  value:
-                    - member:
-                        uuid: u01234567
-                        name: hoge
-                        icon_uri: 'https://path/to/icon'
-                        attr: SysAdmin
-                        is_team: false
-                      permission: 1
-                    - member:
-                        uuid: u23456789
-                        name: fuga
-                        icon_uri: 'https://path/to/icon'
-                        attr: Official
-                        is_team: false
-                      permission: 1
         '404':
           description: The team is not found.
       operationId: get-team-teamid-member
@@ -411,11 +316,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberInfoModel'
-            examples:
-              example:
-                value:
-                  member: u23456789
-                  permission: 1
         description: Member info.
       tags:
         - Team
@@ -437,11 +337,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberInfoModel'
-            examples:
-              example:
-                value:
-                  member: u23456789
-                  permission: 3
         description: Member info.
       tags:
         - Team
@@ -531,10 +426,6 @@ paths:
                 properties:
                   doc_id:
                     type: string
-              examples:
-                example-1:
-                  value:
-                    doc_id: generated token
         '400':
           description: Cannot create new document.
       operationId: create-new-doc
@@ -575,14 +466,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DocumentModifyReqModel'
-            examples:
-              example-1:
-                value:
-                  owneruuid: t12345678
-                  permission: 1
-              example-2:
-                value:
-                  permission: 2
   '/doc/{doc_id}/move/{folder_id}':
     parameters:
       - schema:
@@ -624,56 +507,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FolderListModel'
-              examples:
-                example (type=all):
-                  value:
-                    folder:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                    document:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        title: title
-                        body: body
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                    path:
-                      - folder_id: f12345678
-                        title: ''
-                      - folder_id: f87654321
-                        title: test
-                example (type=folder):
-                  value:
-                    folder:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                    path:
-                      - folder_id: f12345678
-                        title: ''
-                      - folder_id: f87654321
-                        title: test
-                example (type=document):
-                  value:
-                    document:
-                      - owner: ProfileModel
-                        updater: ProfileModel
-                        title: title
-                        body: body
-                        permission: 0
-                        created_at: DATE
-                        updated_at: DATE
-                    path:
-                      - folder_id: f12345678
-                        title: ''
-                      - folder_id: f87654321
-                        title: test
         '404':
           description: Not found target folder.
       operationId: get-list
@@ -699,10 +532,6 @@ paths:
                 properties:
                   folder_id:
                     type: string
-              examples:
-                example-1:
-                  value:
-                    folder_id: folder_id
         '400':
           description: Cannot create new folder.
       operationId: create-new-folder
@@ -740,19 +569,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FolderModifyReqModel'
-            examples:
-              example:
-                value:
-                  owneruuid: u12345678
-                  name: test
-                  permission: 1
-              example-2:
-                value:
-                  name: newname
-              example-3:
-                value:
-                  owneruuid: t12345678
-                  permission: 2
           application/javascript:
             schema:
               type: object
@@ -852,29 +668,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProfileModel'
-              examples:
-                example-1:
-                  value:
-                    - uuid: u12345678
-                      name: hoge
-                      bio: The bio text.
-                      icon_uri: 'http://path/to/icon'
-                      created_at: 0
-                      attr: admin
-                      is_team: true
-                      teams:
-                        - {}
-                      lang: ja
-                    - uuid: u87654321
-                      name: fuga
-                      bio: The bio text.
-                      icon_uri: 'http://path/to/icon'
-                      created_at: 0
-                      attr: ''
-                      is_team: true
-                      teams:
-                        - {}
-                      lang: ja
       operationId: get-search-team
       parameters:
         - schema:
@@ -911,29 +704,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProfileModel'
-              examples:
-                example-1:
-                  value:
-                    - uuid: u12345678
-                      name: hoge
-                      bio: The bio text.
-                      icon_uri: 'http://path/to/icon'
-                      created_at: 0
-                      attr: admin
-                      is_team: false
-                      teams:
-                        - {}
-                      lang: ja
-                    - uuid: u87654321
-                      name: fuga
-                      bio: The bio text.
-                      icon_uri: 'http://path/to/icon'
-                      created_at: 0
-                      attr: ''
-                      is_team: false
-                      teams:
-                        - {}
-                      lang: ja
       operationId: get-search-user
       parameters:
         - schema:

@@ -302,7 +302,7 @@ func (d *DB) RegistUser(token string) error {
 		return err
 	}
 	// Add user profile
-	_, err = tx.Exec(`INSERT INTO profile VALUES($1,$2,'','',$3,'','ja')`, uuid, username, dateint)
+	_, err = tx.Exec(`INSERT INTO profile VALUES($1,'','',$2,'','ja')`, uuid, dateint)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

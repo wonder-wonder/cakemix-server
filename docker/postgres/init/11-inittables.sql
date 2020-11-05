@@ -41,7 +41,6 @@ CREATE TABLE IF NOT EXISTS passreset(
 );
 CREATE TABLE IF NOT EXISTS profile(
   uuid TEXT PRIMARY KEY,
-  name TEXT,
   bio TEXT,
   iconuri TEXT,
   createat INTEGER,
