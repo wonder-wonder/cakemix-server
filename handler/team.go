@@ -26,6 +26,17 @@ func (h *Handler) createTeamHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
+	isadmin, err := h.db.IsAdmin(useruuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isadmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	teamuuid, err := h.db.CreateTeam(teamname, useruuid)
 	if err == db.ErrExistUser {
 		c.AbortWithStatus(http.StatusConflict)

@@ -40,6 +40,15 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 		return "", err
 	}
 
+	fid, err := GenerateID(IDTypeFolder)
+	if err != nil {
+		return "", err
+	}
+	rootfid, err := d.GetRootFID()
+	if err != nil {
+		return "", err
+	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return "", err
@@ -53,7 +62,7 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 		return "", err
 	}
 
-	_, err = tx.Exec(`INSERT INTO profile VALUES($1,'','',$3,'',$4)`, teamuuid, dateint, prof.Lang)
+	_, err = tx.Exec(`INSERT INTO profile VALUES($1,'','',$2,'',$3)`, teamuuid, dateint, prof.Lang)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
@@ -62,6 +71,14 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 	}
 
 	_, err = tx.Exec(`INSERT INTO teammember VALUES($1,$2,$3,$4)`, teamuuid, useruuid, TeamPermOwner, dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+
+	_, err = tx.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, fid, teamuuid, rootfid, teamname, FilePermPrivate, dateint, dateint, useruuid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
