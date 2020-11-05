@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const teamNameAdmin = "systemadmin"
+const teamNameAdmin = "admin"
 
 // CreateTeam creates new team
 func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
