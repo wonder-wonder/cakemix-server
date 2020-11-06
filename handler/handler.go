@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,14 @@ import (
 )
 
 const (
-	corsFrontHost = "*" // CORS front host
+	corsFrontHost   = "*" // CORS front host
+	imageDir        = "/img"
+	profileImageDir = imageDir + "/prof"
+	localImageBase  = "cakemix://"
+)
+
+var (
+	dataDir = "./cmdat"
 )
 
 // Handler is object for handler function
@@ -19,6 +27,9 @@ type Handler struct {
 
 // NewHandler generates new Handler instance
 func NewHandler(db *db.DB) *Handler {
+	if os.Getenv("DATADIR") != "" {
+		dataDir = os.Getenv("DATADIR")
+	}
 	return &Handler{db: db}
 }
 
