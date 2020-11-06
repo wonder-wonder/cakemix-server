@@ -721,6 +721,41 @@ paths:
           in: query
           name: offset
           description: search offset
+  '/profile/{uuid}/icon':
+    parameters:
+      - schema:
+          type: string
+        name: uuid
+        in: path
+        required: true
+        description: user uuid
+    get:
+      summary: Get profile icon
+      tags:
+        - Profile
+      responses:
+        '200':
+          description: Got profile icon
+        '404':
+          description: The profile icon is not set or not found.
+      operationId: get-profile-uuid-icon
+      description: ''
+    post:
+      summary: Update profile icon
+      operationId: post-profile-uuid-icon
+      responses:
+        '200':
+          description: The profile icon is updated successfully.
+      tags:
+        - Profile
+    delete:
+      summary: Delete profile icon
+      operationId: delete-profile-uuid-icon
+      responses:
+        '200':
+          description: The profile icon is deleted successfully
+      tags:
+        - Profile
 components:
   schemas:
     JWT:
