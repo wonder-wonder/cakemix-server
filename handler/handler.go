@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,16 @@ func NewHandler(db *db.DB) *Handler {
 	if os.Getenv("DATADIR") != "" {
 		dataDir = os.Getenv("DATADIR")
 	}
+
+	err := os.MkdirAll(dataDir, 0700)
+	if err != nil {
+		panic("Directory init error:" + dataDir)
+	}
+	err = os.MkdirAll(path.Join(dataDir, profileImageDir), 0700)
+	if err != nil {
+		panic("Directory init error:" + path.Join(dataDir, profileImageDir))
+	}
+
 	return &Handler{db: db}
 }
 
