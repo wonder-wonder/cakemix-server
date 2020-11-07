@@ -28,6 +28,7 @@ const (
 	IDTypeVerifyToken IDType = iota
 	IDTypeSessionID
 	IDTypeSalt
+	IDTypeImageID
 	IDTypeUser
 	IDTypeTeam
 	IDTypeFolder
@@ -38,6 +39,7 @@ const (
 	sizeVerifyToken = 24
 	sizeSessionID   = 9
 	sizeSalt        = 12
+	sizeImageID     = 36
 	sizeUser        = 10
 	sizeProject     = 10
 	sizeComment     = 10
@@ -95,6 +97,9 @@ func GenerateID(t IDType) (string, error) {
 	case IDTypeSalt:
 		size = sizeSalt
 		enc = base64.StdEncoding.EncodeToString
+	case IDTypeImageID:
+		size = sizeImageID
+		enc = base64.URLEncoding.EncodeToString
 	case IDTypeUser:
 		size = sizeUser
 		enc = func(src []byte) string {
