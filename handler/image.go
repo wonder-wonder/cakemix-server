@@ -14,10 +14,10 @@ func (h *Handler) ImageHandler(r *gin.RouterGroup) {
 	imgck := r.Group("image", h.CheckAuthMiddleware())
 	imgck.POST("/", h.uploadImageHandler)
 	img := r.Group("image")
-	img.GET(":id", h.getProfileIconHandler)
+	img.GET(":id", h.getImageHandler)
 }
 
-func (h *Handler) getProfileIconHandler(c *gin.Context) {
+func (h *Handler) getImageHandler(c *gin.Context) {
 	imgid := c.Param("id")
 
 	c.File(path.Join(dataDir, imageDir, imgid))
