@@ -721,6 +721,37 @@ paths:
           in: query
           name: offset
           description: search offset
+  /image:
+    post:
+      summary: Upload image
+      operationId: post-image
+      responses:
+        '200':
+          description: Image is uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Image ID
+  '/image/{imgid}':
+    parameters:
+      - schema:
+          type: string
+        name: imgid
+        in: path
+        required: true
+        description: Image ID
+    get:
+      summary: Get uploaded image
+      tags: []
+      responses:
+        '200':
+          description: Got image
+      operationId: get-image-imgid
+      security: []
 components:
   schemas:
     JWT:
