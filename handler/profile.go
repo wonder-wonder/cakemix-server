@@ -14,11 +14,12 @@ import (
 // ProfileHandler is handlers of profile
 func (h *Handler) ProfileHandler(r *gin.RouterGroup) {
 	profck := r.Group("profile", h.CheckAuthMiddleware())
+	prof := r.Group("profile")
 	profck.GET(":uuid", h.getProfileHandler)
 	profck.PUT(":uuid", h.updateProfileHandler)
-	profck.GET(":uuid/icon", h.notimplHandler)
+	prof.GET(":uuid/icon", h.getProfileIconHandler)
 	profck.POST(":uuid/icon", h.updateProfileIconHandler)
-	profck.DELETE(":uuid/icon", h.notimplHandler)
+	profck.DELETE(":uuid/icon", h.deleteProfileIconHandler)
 }
 
 func (h *Handler) getProfileHandler(c *gin.Context) {
@@ -125,6 +126,27 @@ func (h *Handler) updateProfileHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+func (h *Handler) getProfileIconHandler(c *gin.Context) {
+	trguuid := c.Param("uuid")
+
+	profdat, err := h.db.GetProfileByUUID(trguuid)
+	if err == db.ErrUserTeamNotFound {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	imguri := profdat.IconURI
+	if len(imguri) > len(localImageBase) && imguri[:len(localImageBase)] == localImageBase {
+		// Icon is in the system
+		oldimgid := imguri[len(localImageBase):]
+		c.File(path.Join(dataDir, profileImageDir, oldimgid))
+		return
+	}
+	c.AbortWithStatus(http.StatusNotFound)
+}
+
 func (h *Handler) updateProfileIconHandler(c *gin.Context) {
 	trguuid := c.Param("uuid")
 	uuid, ok := getUUID(c)
@@ -169,6 +191,54 @@ func (h *Handler) updateProfileIconHandler(c *gin.Context) {
 
 	oldimg := profdat.IconURI
 	profdat.IconURI = localImageBase + imgid
+
+	err = h.db.SetProfile(profdat)
+	if err == db.ErrUserTeamNotFound {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if len(oldimg) > len(localImageBase) && oldimg[:len(localImageBase)] == localImageBase {
+		// Icon is in the system
+		oldimgid := oldimg[len(localImageBase):]
+		err = os.Remove(path.Join(dataDir, profileImageDir, oldimgid))
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) deleteProfileIconHandler(c *gin.Context) {
+	trguuid := c.Param("uuid")
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	profdat, err := h.db.GetProfileByUUID(trguuid)
+	if err == db.ErrUserTeamNotFound {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	//TODO: Edit permission check(temporary user update only)
+	if profdat.UUID != uuid {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	oldimg := profdat.IconURI
+	profdat.IconURI = ""
 
 	err = h.db.SetProfile(profdat)
 	if err == db.ErrUserTeamNotFound {
