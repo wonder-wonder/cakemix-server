@@ -22,10 +22,11 @@ type WSMsgType int
 const (
 	WSMsgTypeUnknown WSMsgType = iota
 	WSMsgTypeDoc
-	WSMsgTypeOK
 	WSMsgTypeOp
+	WSMsgTypeOK
 	WSMsgTypeSel
 	WSMsgTypeQuit
+	OTReqResTypeJoin
 )
 
 // OT Errors
@@ -231,23 +232,13 @@ func OpenOTSession2(db *db.DB, docID string) (*OTSession2, error) {
 	return ots, nil
 }
 
-type OTReqResType int
-
-const (
-	OTReqResTypeJoin OTReqResType = iota
-	OTReqResTypeDoc
-	OTReqResTypeOp
-	OTReqResTypeOK
-	OTReqResTypeSel
-)
-
 type OTRequest struct {
-	Type     OTReqResType
+	Type     WSMsgType
 	ClientID string
 	Data     interface{}
 }
 type OTResponse struct {
-	Type OTReqResType
+	Type WSMsgType
 	Data interface{}
 }
 
@@ -261,9 +252,9 @@ func (sess *OTSession2) SessionLoop() {
 					sess.incnum++
 					v.ClientID = strconv.Itoa(sess.incnum)
 					sess.Clients[v.ClientID] = v
-					v.Response(OTReqResTypeOK, nil)
+					v.Response(WSMsgTypeOK, nil)
 				}
-			} else if req.Type == OTReqResTypeDoc {
+			} else if req.Type == WSMsgTypeDoc {
 				res := DocData2{Clients: map[string]ClientData2{}, Document: sess.OT.Text, Revision: sess.OT.Revision}
 				for _, cl := range sess.Clients {
 					if cl.ClientID == req.ClientID {
@@ -276,8 +267,8 @@ func (sess *OTSession2) SessionLoop() {
 					}
 					res.Clients[cl.ClientID] = rescl
 				}
-				go sess.Clients[req.ClientID].Response(OTReqResTypeDoc, res)
-			} else if req.Type == OTReqResTypeOp {
+				go sess.Clients[req.ClientID].Response(WSMsgTypeDoc, res)
+			} else if req.Type == WSMsgTypeOp {
 				opdat, ok := req.Data.(OpData2)
 				if !ok {
 					continue
@@ -319,12 +310,12 @@ func (sess *OTSession2) SessionLoop() {
 				opres := []interface{}{req.ClientID, opdat.Operation, opdat.Selection}
 				for cid, v := range sess.Clients {
 					if cid == req.ClientID {
-						go v.Response(OTReqResTypeOK, nil)
+						go v.Response(WSMsgTypeOK, nil)
 						continue
 					}
-					go v.Response(OTReqResTypeOp, opres)
+					go v.Response(WSMsgTypeOp, opres)
 				}
-			} else if req.Type == OTReqResTypeSel {
+			} else if req.Type == WSMsgTypeSel {
 				seldat, ok := req.Data.(RangesReq2)
 				if !ok {
 					continue
@@ -335,7 +326,7 @@ func (sess *OTSession2) SessionLoop() {
 					if cid == req.ClientID {
 						continue
 					}
-					go v.Response(OTReqResTypeSel, []interface{}{req.ClientID, selresdat})
+					go v.Response(WSMsgTypeSel, []interface{}{req.ClientID, selresdat})
 				}
 			}
 		}
@@ -381,27 +372,17 @@ func (cl *OTClient2) ClientLoop() {
 				if !ok {
 					panic("Logic error")
 				}
-				cl.sess.Request(OTReqResTypeOp, cl.ClientID, opdat)
+				cl.sess.Request(WSMsgTypeOp, cl.ClientID, opdat)
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(RangesReq2)
 				if !ok {
 					panic("Logic error")
 				}
-				cl.sess.Request(OTReqResTypeSel, cl.ClientID, opdat)
+				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
 		case resdat := <-cl.response:
 			fmt.Printf("res: %v\n", resdat)
-			wsmt := WSMsgTypeUnknown
-			if resdat.Type == OTReqResTypeDoc {
-				wsmt = WSMsgTypeDoc
-			} else if resdat.Type == OTReqResTypeOK {
-				wsmt = WSMsgTypeOK
-			} else if resdat.Type == OTReqResTypeOp {
-				wsmt = WSMsgTypeOp
-			} else if resdat.Type == OTReqResTypeSel {
-				wsmt = WSMsgTypeSel
-			}
-			resraw, err := convertToMsg(wsmt, resdat.Data)
+			resraw, err := convertToMsg(resdat.Type, resdat.Data)
 			if err != nil {
 				//TODO
 				panic(err)
@@ -410,10 +391,10 @@ func (cl *OTClient2) ClientLoop() {
 		}
 	}
 }
-func (cl *OTSession2) Request(t OTReqResType, cid string, dat interface{}) {
+func (cl *OTSession2) Request(t WSMsgType, cid string, dat interface{}) {
 	cl.request <- OTRequest{Type: t, ClientID: cid, Data: dat}
 }
-func (cl *OTClient2) Response(t OTReqResType, dat interface{}) {
+func (cl *OTClient2) Response(t WSMsgType, dat interface{}) {
 	cl.response <- OTResponse{Type: t, Data: dat}
 }
 func (sess *OTSession2) AddClient(cl *OTClient2) {
@@ -477,7 +458,7 @@ func (h *Handler) getOTHandler2(c *gin.Context) {
 	otc := NewOTClient2(conn, uuid, name)
 
 	sess.AddClient(otc)
-	sess.Request(OTReqResTypeDoc, otc.ClientID, nil)
+	sess.Request(WSMsgTypeDoc, otc.ClientID, nil)
 
 	otc.ClientLoop()
 	println(editable)
