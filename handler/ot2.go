@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"unicode/utf16"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -53,7 +54,7 @@ type RangesReq2 struct {
 	Ranges []SelData2 `json:"ranges"`
 }
 type RangesRes2 struct {
-	Ranges map[string][]SelData2 `json:"ranges"`
+	Ranges []SelData2 `json:"ranges"`
 }
 
 func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
@@ -118,6 +119,32 @@ func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
 	return WSMsgTypeUnknown, struct{}{}, nil
 }
 
+func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
+	var datraw []byte
+	if dat != nil {
+		var err error
+		datraw, err = json.Marshal(dat)
+		if err != nil {
+			return nil, err
+		}
+	}
+	msg := WSMsg{Data: datraw}
+	if t == WSMsgTypeOK {
+		msg.Event = "ok"
+	} else if t == WSMsgTypeOp {
+		msg.Event = "op"
+	} else if t == WSMsgTypeDoc {
+		msg.Event = "doc"
+	} else if t == WSMsgTypeSel {
+		msg.Event = "sel"
+	}
+	msgraw, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return msgraw, nil
+}
+
 type ClientData2 struct {
 	Name      string     `json:"name"`
 	Selection RangesReq2 `json:"selection"`
@@ -140,7 +167,7 @@ type OTClient2 struct {
 	conn *websocket.Conn
 	sess *OTSession2
 
-	response chan interface{}
+	response chan OTResponse
 	ClientID string
 	UserInfo struct {
 		UUID string
@@ -152,7 +179,7 @@ type OTClient2 struct {
 func NewOTClient2(conn *websocket.Conn, uuid string, name string) *OTClient2 {
 	otc := OTClient2{}
 	otc.conn = conn
-	otc.response = make(chan interface{})
+	otc.response = make(chan OTResponse)
 	otc.UserInfo.UUID = uuid
 	otc.UserInfo.Name = name
 	otc.Selection = []SelData2{}
@@ -168,7 +195,7 @@ type OTSession2 struct {
 	DocInfo db.Document
 	Clients map[string]*OTClient2
 	request chan OTRequest
-	OT      ot.OT
+	OT      *ot.OT
 }
 
 var (
@@ -197,39 +224,46 @@ func OpenOTSession2(db *db.DB, docID string) (*OTSession2, error) {
 	ots.request = make(chan OTRequest)
 
 	// TODO: restore OT
-	ots.OT.Text = "hoge"
+	ots.OT = ot.New("hoge")
 
 	go ots.SessionLoop()
 
 	return ots, nil
 }
 
-type OTReqType int
+type OTReqResType int
 
 const (
-	OTReqTypeJoin OTReqType = iota
-	OTReqTypeDoc
+	OTReqResTypeJoin OTReqResType = iota
+	OTReqResTypeDoc
+	OTReqResTypeOp
+	OTReqResTypeOK
+	OTReqResTypeSel
 )
 
 type OTRequest struct {
-	Type     OTReqType
+	Type     OTReqResType
 	ClientID string
 	Data     interface{}
+}
+type OTResponse struct {
+	Type OTReqResType
+	Data interface{}
 }
 
 func (sess *OTSession2) SessionLoop() {
 	for {
 		select {
 		case req := <-sess.request:
-			if req.Type == OTReqTypeJoin {
+			if req.Type == OTReqResTypeJoin {
 				if v, ok := req.Data.(*OTClient2); ok {
 					v.sess = sess
 					sess.incnum++
 					v.ClientID = strconv.Itoa(sess.incnum)
 					sess.Clients[v.ClientID] = v
-					v.Response(false)
+					v.Response(OTReqResTypeOK, nil)
 				}
-			} else if req.Type == OTReqTypeDoc {
+			} else if req.Type == OTReqResTypeDoc {
 				res := DocData2{Clients: map[string]ClientData2{}, Document: sess.OT.Text, Revision: sess.OT.Revision}
 				for _, cl := range sess.Clients {
 					if cl.ClientID == req.ClientID {
@@ -242,7 +276,67 @@ func (sess *OTSession2) SessionLoop() {
 					}
 					res.Clients[cl.ClientID] = rescl
 				}
-				go sess.Clients[req.ClientID].Response(res)
+				go sess.Clients[req.ClientID].Response(OTReqResTypeDoc, res)
+			} else if req.Type == OTReqResTypeOp {
+				opdat, ok := req.Data.(OpData2)
+				if !ok {
+					continue
+				}
+				ops := ot.Ops{User: req.ClientID, Ops: []ot.Op{}}
+				for _, op := range opdat.Operation {
+					switch opt := op.(type) {
+					case float64:
+						opi := int(opt)
+						if opi < 0 {
+							ops.Ops = append(ops.Ops, ot.Op{OpType: ot.OpTypeDelete, Len: -opi})
+						} else {
+							ops.Ops = append(ops.Ops, ot.Op{OpType: ot.OpTypeRetain, Len: opi})
+						}
+					case string:
+						ops.Ops = append(ops.Ops, ot.Op{OpType: ot.OpTypeInsert, Len: len(utf16.Encode([]rune(opt))), Text: opt})
+					default:
+						continue
+					}
+				}
+				optrans, err := sess.OT.Operate(opdat.Revision, ops)
+				if err != nil {
+					fmt.Printf("%v\n", err)
+				}
+				opraw := []interface{}{}
+				for _, v := range optrans.Ops {
+					if v.OpType == ot.OpTypeRetain {
+						opraw = append(opraw, v.Len)
+					} else if v.OpType == ot.OpTypeInsert {
+						opraw = append(opraw, v.Text)
+					} else if v.OpType == ot.OpTypeDelete {
+						opraw = append(opraw, -v.Len)
+					}
+				}
+				opdat.Operation = opraw
+
+				sess.Clients[req.ClientID].Selection = opdat.Selection.Ranges
+
+				opres := []interface{}{req.ClientID, opdat.Operation, opdat.Selection}
+				for cid, v := range sess.Clients {
+					if cid == req.ClientID {
+						go v.Response(OTReqResTypeOK, nil)
+						continue
+					}
+					go v.Response(OTReqResTypeOp, opres)
+				}
+			} else if req.Type == OTReqResTypeSel {
+				seldat, ok := req.Data.(RangesReq2)
+				if !ok {
+					continue
+				}
+				selresdat := RangesRes2{}
+				selresdat.Ranges = seldat.Ranges
+				for cid, v := range sess.Clients {
+					if cid == req.ClientID {
+						continue
+					}
+					go v.Response(OTReqResTypeSel, []interface{}{req.ClientID, selresdat})
+				}
 			}
 		}
 	}
@@ -282,32 +376,48 @@ func (cl *OTClient2) ClientLoop() {
 				panic(err)
 			}
 			fmt.Printf("%v: %v\n", mtype, dat)
+			if mtype == WSMsgTypeOp {
+				opdat, ok := dat.(OpData2)
+				if !ok {
+					panic("Logic error")
+				}
+				cl.sess.Request(OTReqResTypeOp, cl.ClientID, opdat)
+			} else if mtype == WSMsgTypeSel {
+				opdat, ok := dat.(RangesReq2)
+				if !ok {
+					panic("Logic error")
+				}
+				cl.sess.Request(OTReqResTypeSel, cl.ClientID, opdat)
+			}
 		case resdat := <-cl.response:
 			fmt.Printf("res: %v\n", resdat)
-
-			resdatraw, err := json.Marshal(resdat)
+			wsmt := WSMsgTypeUnknown
+			if resdat.Type == OTReqResTypeDoc {
+				wsmt = WSMsgTypeDoc
+			} else if resdat.Type == OTReqResTypeOK {
+				wsmt = WSMsgTypeOK
+			} else if resdat.Type == OTReqResTypeOp {
+				wsmt = WSMsgTypeOp
+			} else if resdat.Type == OTReqResTypeSel {
+				wsmt = WSMsgTypeSel
+			}
+			resraw, err := convertToMsg(wsmt, resdat.Data)
 			if err != nil {
 				//TODO
 				panic(err)
 			}
-			resraw, err := json.Marshal(WSMsg2{Event: "doc", Data: resdatraw})
-			if err != nil {
-				//TODO
-				panic(err)
-			}
-
 			cl.conn.WriteMessage(websocket.TextMessage, resraw)
 		}
 	}
 }
-func (cl *OTSession2) Request(t OTReqType, cid string, dat interface{}) {
+func (cl *OTSession2) Request(t OTReqResType, cid string, dat interface{}) {
 	cl.request <- OTRequest{Type: t, ClientID: cid, Data: dat}
 }
-func (cl *OTClient2) Response(dat interface{}) {
-	cl.response <- dat
+func (cl *OTClient2) Response(t OTReqResType, dat interface{}) {
+	cl.response <- OTResponse{Type: t, Data: dat}
 }
 func (sess *OTSession2) AddClient(cl *OTClient2) {
-	sess.Request(OTReqTypeJoin, "", cl)
+	sess.Request(OTReqResTypeJoin, "", cl)
 	<-cl.response
 }
 
@@ -367,7 +477,7 @@ func (h *Handler) getOTHandler2(c *gin.Context) {
 	otc := NewOTClient2(conn, uuid, name)
 
 	sess.AddClient(otc)
-	sess.Request(OTReqTypeDoc, otc.ClientID, nil)
+	sess.Request(OTReqResTypeDoc, otc.ClientID, nil)
 
 	otc.ClientLoop()
 	println(editable)
