@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 	"unicode/utf16"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +44,7 @@ type WSMsg2 struct {
 type OpData2 struct {
 	Revision  int
 	Operation []interface{}
-	Selection RangesReq2
+	Selection Ranges2
 }
 
 // SelData2 is structure for selection data
@@ -51,10 +52,7 @@ type SelData2 struct {
 	Anchor int `json:"anchor"`
 	Head   int `json:"head"`
 }
-type RangesReq2 struct {
-	Ranges []SelData2 `json:"ranges"`
-}
-type RangesRes2 struct {
+type Ranges2 struct {
 	Ranges []SelData2 `json:"ranges"`
 }
 
@@ -66,17 +64,14 @@ func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
 	}
 	if msg.Event == "op" {
 		dat := OpData2{}
-		fmt.Println(string(msg.Data))
 
 		// Separate revision, ops, selections
 		var rawdat []json.RawMessage
 		err := json.Unmarshal(msg.Data, &rawdat)
 		if err != nil {
-			println(1)
 			return WSMsgTypeUnknown, nil, ErrorInvalidWSMsg
 		}
 		if len(rawdat) != 3 {
-			println(2)
 			return WSMsgTypeUnknown, nil, ErrorInvalidWSMsg
 		}
 
@@ -84,7 +79,6 @@ func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
 		revfloat := 0.0
 		err = json.Unmarshal(rawdat[0], &revfloat)
 		if err != nil {
-			println(3)
 			return WSMsgTypeUnknown, nil, ErrorInvalidWSMsg
 		}
 		dat.Revision = int(revfloat)
@@ -103,7 +97,7 @@ func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
 
 		return WSMsgTypeOp, dat, nil
 	} else if msg.Event == "sel" {
-		dat := RangesReq2{}
+		dat := Ranges2{}
 		// Selections
 		err = json.Unmarshal(msg.Data, &dat)
 		if err != nil {
@@ -138,6 +132,8 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 		msg.Event = "doc"
 	} else if t == WSMsgTypeSel {
 		msg.Event = "sel"
+	} else if t == WSMsgTypeQuit {
+		msg.Event = "quit"
 	}
 	msgraw, err := json.Marshal(msg)
 	if err != nil {
@@ -147,8 +143,8 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 }
 
 type ClientData2 struct {
-	Name      string     `json:"name"`
-	Selection RangesReq2 `json:"selection"`
+	Name      string  `json:"name"`
+	Selection Ranges2 `json:"selection"`
 }
 
 // DocData2 is structure for document data
@@ -189,8 +185,11 @@ func NewOTClient2(conn *websocket.Conn, uuid string, name string) *OTClient2 {
 
 // OTClient2 is structure for OT session
 type OTSession2 struct {
-	db     *db.DB
-	incnum int
+	db                 *db.DB
+	incnum             int
+	saveRequest        chan bool
+	isSaveTimerRunning bool
+	lastUpdater        string
 
 	DocID   string
 	DocInfo db.Document
@@ -214,6 +213,7 @@ func OpenOTSession2(db *db.DB, docID string) (*OTSession2, error) {
 	otSessions[docID] = ots
 	ots.db = db
 	ots.incnum = 0
+	ots.saveRequest = make(chan bool)
 
 	ots.DocID = docID
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -225,11 +225,42 @@ func OpenOTSession2(db *db.DB, docID string) (*OTSession2, error) {
 	ots.request = make(chan OTRequest)
 
 	// TODO: restore OT
-	ots.OT = ot.New("hoge")
+	text, err := db.GetLatestDocument(docID)
+	if err != nil {
+		return nil, err
+	}
+	ots.OT = ot.New(text)
 
 	go ots.SessionLoop()
 
 	return ots, nil
+}
+
+func (sess *OTSession2) Close() {
+	sess.isSaveTimerRunning = false
+	close(sess.saveRequest)
+	otSessionsLock <- true
+	defer func() { <-otSessionsLock }()
+	delete(otSessions, sess.DocID)
+	if len(sess.OT.History) > 0 {
+		updateruuid := sess.lastUpdater
+		err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
+		if err != nil {
+			//TODO
+			fmt.Printf("%v\n", err)
+		}
+		err = sess.db.UpdateDocument(sess.DocID, updateruuid)
+		if err != nil {
+			//TODO
+			fmt.Printf("%v\n", err)
+		}
+		fmt.Printf("Session(%s) closed (total %d ops): ", sess.DocID, sess.OT.Revision)
+		if len(sess.OT.Text) <= 10 {
+			fmt.Printf("%s\n", sess.OT.Text)
+		} else {
+			fmt.Printf("%s...\n", sess.OT.Text[:9])
+		}
+	}
 }
 
 type OTRequest struct {
@@ -291,6 +322,7 @@ func (sess *OTSession2) SessionLoop() {
 				}
 				optrans, err := sess.OT.Operate(opdat.Revision, ops)
 				if err != nil {
+					//TODO
 					fmt.Printf("%v\n", err)
 				}
 				opraw := []interface{}{}
@@ -315,18 +347,72 @@ func (sess *OTSession2) SessionLoop() {
 					}
 					go v.Response(WSMsgTypeOp, opres)
 				}
+
+				sess.lastUpdater = sess.Clients[req.ClientID].UserInfo.UUID
+
+				// Start autosave timer
+				go func() {
+					defer func() {
+						if r := recover(); r != nil {
+							return
+						}
+					}()
+
+					if sess.isSaveTimerRunning {
+						return
+					}
+					sess.isSaveTimerRunning = true
+					time.Sleep(time.Second * 10)
+					if !sess.isSaveTimerRunning {
+						return
+					}
+					sess.isSaveTimerRunning = false
+					sess.saveRequest <- true
+				}()
 			} else if req.Type == WSMsgTypeSel {
-				seldat, ok := req.Data.(RangesReq2)
+				seldat, ok := req.Data.(Ranges2)
 				if !ok {
 					continue
 				}
-				selresdat := RangesRes2{}
+				selresdat := Ranges2{}
 				selresdat.Ranges = seldat.Ranges
 				for cid, v := range sess.Clients {
 					if cid == req.ClientID {
 						continue
 					}
 					go v.Response(WSMsgTypeSel, []interface{}{req.ClientID, selresdat})
+				}
+			} else if req.Type == WSMsgTypeQuit {
+				for cid, v := range sess.Clients {
+					if cid == req.ClientID {
+						delete(sess.Clients, cid)
+						continue
+					}
+					go v.Response(WSMsgTypeQuit, req.ClientID)
+				}
+				if len(sess.Clients) == 0 {
+					sess.Close()
+					return
+				}
+			}
+		case <-sess.saveRequest:
+			if len(sess.OT.History) > 0 {
+				updateruuid := sess.lastUpdater
+				err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
+				if err != nil {
+					//TODO
+					fmt.Printf("%v\n", err)
+				}
+				err = sess.db.UpdateDocument(sess.DocID, updateruuid)
+				if err != nil {
+					//TODO
+					fmt.Printf("%v\n", err)
+				}
+				fmt.Printf("Session(%s) auto saved (total %d ops): ", sess.DocID, sess.OT.Revision)
+				if len(sess.OT.Text) <= 10 {
+					fmt.Printf("%s\n", sess.OT.Text)
+				} else {
+					fmt.Printf("%s...\n", sess.OT.Text[:9])
 				}
 			}
 		}
@@ -358,7 +444,9 @@ func (cl *OTClient2) ClientLoop() {
 		case req, ok := <-request:
 			if !ok {
 				// TODO: close request
-				panic("cclosed")
+				// panic("cclosed")
+				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+				return
 			}
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
@@ -366,7 +454,6 @@ func (cl *OTClient2) ClientLoop() {
 				fmt.Printf("%v:%v\n", dat)
 				panic(err)
 			}
-			fmt.Printf("%v: %v\n", mtype, dat)
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData2)
 				if !ok {
@@ -374,14 +461,13 @@ func (cl *OTClient2) ClientLoop() {
 				}
 				cl.sess.Request(WSMsgTypeOp, cl.ClientID, opdat)
 			} else if mtype == WSMsgTypeSel {
-				opdat, ok := dat.(RangesReq2)
+				opdat, ok := dat.(Ranges2)
 				if !ok {
 					panic("Logic error")
 				}
 				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
 		case resdat := <-cl.response:
-			fmt.Printf("res: %v\n", resdat)
 			resraw, err := convertToMsg(resdat.Type, resdat.Data)
 			if err != nil {
 				//TODO
@@ -426,6 +512,11 @@ func (h *Handler) getOTHandler2(c *gin.Context) {
 	}
 
 	editable := isRelatedUUID(c, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
+	if !editable {
+		// TODO: support readonly OT
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 
 	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
@@ -456,124 +547,12 @@ func (h *Handler) getOTHandler2(c *gin.Context) {
 		return
 	}
 	otc := NewOTClient2(conn, uuid, name)
-
+	defer func() { close(otc.response) }()
 	sess.AddClient(otc)
 	sess.Request(WSMsgTypeDoc, otc.ClientID, nil)
 
 	otc.ClientLoop()
-	println(editable)
-	// sess, err := h.getSession(did)
-	// if err != nil {
-	// 	log.Printf("OT handler error: %v", err)
-	// 	return
-	// }
-	// // Send current session status
-	// rev := sess.OT.Revision
-	// docdatraw, err := json.Marshal(DocData{Clients: sess.Clinets, Document: sess.OT.Text, Revision: rev, Owner: dinfo.OwnerUUID, Permission: int(dinfo.Permission), Editable: editable})
-	// if err != nil {
-	// 	log.Printf("OT handler error: %v", err)
-	// 	return
-	// }
-	// initDocRaw, err := json.Marshal(WSMsg{Event: "doc", Data: docdatraw})
-	// if err != nil {
-	// 	log.Printf("OT handler error: %v", err)
-	// 	return
-	// }
-	// conn.WriteMessage(websocket.TextMessage, initDocRaw)
 
-	// // Add client to session
-	// userid := sess.GetNewUserID()
-	// sess.AddClient(ClientInfo{Conn: conn, Name: name, ID: userid, UUID: uuid, LastRev: rev})
-	// for {
-	// 	_, msg, err := conn.ReadMessage()
-	// 	if err != nil {
-	// 		if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
-	// 			break
-	// 		}
-	// 		log.Printf("OT handler error: %v", err)
-	// 		break
-	// 	}
-
-	// 	if !editable {
-	// 		log.Printf("OT handler error: client tries to write on readonly document.")
-	// 		break
-	// 	}
-
-	// 	dat := WSMsg{}
-	// 	err = json.Unmarshal(msg, &dat)
-	// 	if err != nil {
-	// 		log.Printf("OT handler error: %v", err)
-	// 		break
-	// 	}
-	// 	if dat.Event == "op" {
-	// 		opdat, err := ParseOp(dat.Data, userid)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-
-	// 		op, err := sess.OT.Operate(opdat.Revision, opdat.Operation)
-	// 		opraw := []interface{}{}
-	// 		for _, v := range op.Ops {
-	// 			if v.OpType == ot.OpTypeRetain {
-	// 				opraw = append(opraw, v.Len)
-	// 			} else if v.OpType == ot.OpTypeInsert {
-	// 				opraw = append(opraw, v.Text)
-	// 			} else if v.OpType == ot.OpTypeDelete {
-	// 				opraw = append(opraw, -v.Len)
-	// 			}
-	// 		}
-	// 		opres := []interface{}{op.User, opraw, map[string][]SelData{"ranges": opdat.Selection}}
-	// 		opresraw, err := json.Marshal(opres)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		dat.Data = opresraw
-	// 		datraw, err := json.Marshal(dat)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		sess.Broadcast(userid, datraw)
-
-	// 		sess.LastUpdater = uuid
-	// 		sess.SaveTimer(h)
-	// 		cl, _ := sess.Clinets[userid]
-	// 		cl.LastRev = opdat.Revision
-	// 		sess.Clinets[userid] = cl
-
-	// 		res := WSMsg{Event: "ok"}
-	// 		resraw, err := json.Marshal(res)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		conn.WriteMessage(websocket.TextMessage, resraw)
-	// 	} else if dat.Event == "sel" {
-	// 		sel, err := ParseSel(dat.Data)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		cl, _ := sess.Clinets[userid]
-	// 		cl.Selection = sel
-	// 		sess.Clinets[userid] = cl
-
-	// 		selres := []interface{}{userid, map[string][]SelData{"ranges": sel}}
-	// 		selresraw, err := json.Marshal(selres)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		dat.Data = selresraw
-	// 		datraw, err := json.Marshal(dat)
-	// 		if err != nil {
-	// 			log.Printf("OT handler error: %v", err)
-	// 			break
-	// 		}
-	// 		sess.Broadcast(userid, datraw)
-	// 	}
-	// }
-	// sess.QuitClient(userid)
+	// TODO list
+	// OT garbage collection
 }
