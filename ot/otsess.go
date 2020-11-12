@@ -14,7 +14,7 @@ import (
 const (
 	autoSaveInterval     = 60  //Sec
 	otHistGCThreshold    = 200 //Ops
-	otClientPingInterval = 30  //Ops
+	otClientPingInterval = 30  //Sec
 )
 
 // OT session management
