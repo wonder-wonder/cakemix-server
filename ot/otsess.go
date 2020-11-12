@@ -16,13 +16,14 @@ const (
 )
 
 // OT session management
-// OTClient is structure for client connection
-type OTClient struct {
+
+// Client is structure for client connection
+type Client struct {
 	conn    *websocket.Conn
-	sess    *OTSession
+	sess    *Session
 	lastRev int
 
-	response chan OTResponse
+	response chan Response
 	ClientID string
 	UserInfo struct {
 		UUID string
@@ -31,22 +32,24 @@ type OTClient struct {
 	Selection []SelData
 }
 
-func NewOTClient(conn *websocket.Conn, uuid string, name string) *OTClient {
-	otc := OTClient{}
+// NewOTClient generates OT client data
+func NewOTClient(conn *websocket.Conn, uuid string, name string) *Client {
+	otc := Client{}
 	otc.conn = conn
-	otc.response = make(chan OTResponse)
+	otc.response = make(chan Response)
 	otc.UserInfo.UUID = uuid
 	otc.UserInfo.Name = name
 	otc.Selection = []SelData{}
 	return &otc
 }
 
-func (cl *OTClient) Close() {
+// Close finishes OT client data
+func (cl *Client) Close() {
 	close(cl.response)
 }
 
-// OTClient is structure for OT session
-type OTSession struct {
+// Session is structure for OT session
+type Session struct {
 	db                 *db.DB
 	incnum             int
 	saveRequest        chan bool
@@ -56,23 +59,24 @@ type OTSession struct {
 
 	DocID   string
 	DocInfo db.Document
-	Clients map[string]*OTClient
-	request chan OTRequest
+	Clients map[string]*Client
+	request chan Request
 	OT      *OT
 }
 
 var (
-	otSessions     = map[string]*OTSession{}
+	otSessions     = map[string]*Session{}
 	otSessionsLock = make(chan bool, 1)
 )
 
-func OpenOTSession(db *db.DB, docID string) (*OTSession, error) {
+// OpenSession returns OT session. If unavailable, generates new session.
+func OpenSession(db *db.DB, docID string) (*Session, error) {
 	otSessionsLock <- true
 	defer func() { <-otSessionsLock }()
 	if v, ok := otSessions[docID]; ok {
 		return v, nil
 	}
-	ots := &OTSession{}
+	ots := &Session{}
 	otSessions[docID] = ots
 	ots.db = db
 	ots.incnum = 0
@@ -85,8 +89,8 @@ func OpenOTSession(db *db.DB, docID string) (*OTSession, error) {
 		return nil, err
 	}
 	ots.DocInfo = docInfo
-	ots.Clients = map[string]*OTClient{}
-	ots.request = make(chan OTRequest)
+	ots.Clients = map[string]*Client{}
+	ots.request = make(chan Request)
 
 	// TODO: restore OT
 	text, err := db.GetLatestDocument(docID)
@@ -100,7 +104,8 @@ func OpenOTSession(db *db.DB, docID string) (*OTSession, error) {
 	return ots, nil
 }
 
-func (sess *OTSession) Close() {
+// Close finishes OT session
+func (sess *Session) Close() {
 	sess.isSaveTimerRunning = false
 	close(sess.saveRequest)
 	otSessionsLock <- true
@@ -127,22 +132,26 @@ func (sess *OTSession) Close() {
 	}
 }
 
-type OTRequest struct {
+// Request is structure for OT session request
+type Request struct {
 	Type     WSMsgType
 	ClientID string
 	Data     interface{}
 }
-type OTResponse struct {
+
+// Response is structure for OT session response
+type Response struct {
 	Type WSMsgType
 	Data interface{}
 }
 
-func (sess *OTSession) SessionLoop() {
+// SessionLoop is main loop for OT session
+func (sess *Session) SessionLoop() {
 	for {
 		select {
 		case req := <-sess.request:
 			if req.Type == OTReqResTypeJoin {
-				if v, ok := req.Data.(*OTClient); ok {
+				if v, ok := req.Data.(*Client); ok {
 					v.sess = sess
 					sess.incnum++
 					v.ClientID = strconv.Itoa(sess.incnum)
@@ -299,7 +308,8 @@ func (sess *OTSession) SessionLoop() {
 	}
 }
 
-func (cl *OTClient) ClientLoop() {
+// ClientLoop is main loop for OT client
+func (cl *Client) ClientLoop() {
 	request := make(chan []byte)
 	// Reader routine
 	cancel := false
@@ -331,7 +341,7 @@ func (cl *OTClient) ClientLoop() {
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				//TODO
-				fmt.Printf("%v:%v\n", dat)
+				fmt.Printf("%v\n", dat)
 				panic(err)
 			}
 			if mtype == WSMsgTypeOp {
@@ -357,13 +367,19 @@ func (cl *OTClient) ClientLoop() {
 		}
 	}
 }
-func (cl *OTSession) Request(t WSMsgType, cid string, dat interface{}) {
-	cl.request <- OTRequest{Type: t, ClientID: cid, Data: dat}
+
+// Request requests to session
+func (sess *Session) Request(t WSMsgType, cid string, dat interface{}) {
+	sess.request <- Request{Type: t, ClientID: cid, Data: dat}
 }
-func (cl *OTClient) Response(t WSMsgType, dat interface{}) {
-	cl.response <- OTResponse{Type: t, Data: dat}
+
+// Response responds to client
+func (cl *Client) Response(t WSMsgType, dat interface{}) {
+	cl.response <- Response{Type: t, Data: dat}
 }
-func (sess *OTSession) AddClient(cl *OTClient) {
+
+// AddClient requests to server to add new client
+func (sess *Session) AddClient(cl *Client) {
 	sess.Request(OTReqResTypeJoin, "", cl)
 	<-cl.response
 }

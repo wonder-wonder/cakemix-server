@@ -30,6 +30,7 @@ type WSMsg struct {
 	Data  json.RawMessage `json:"d,omitempty"`
 }
 
+// OpData is structure for OT operation data
 type OpData struct {
 	Revision  int
 	Operation []interface{}
@@ -41,6 +42,8 @@ type SelData struct {
 	Anchor int `json:"anchor"`
 	Head   int `json:"head"`
 }
+
+// Ranges is structure for selection array data
 type Ranges struct {
 	Ranges []SelData `json:"ranges"`
 }
@@ -131,6 +134,7 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 	return msgraw, nil
 }
 
+// ClientData is structure for client information
 type ClientData struct {
 	Name      string `json:"name"`
 	Selection Ranges `json:"selection"`

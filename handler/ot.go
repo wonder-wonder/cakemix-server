@@ -63,7 +63,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	name := p.Name
 
-	sess, err := ot.OpenOTSession(h.db, docID)
+	sess, err := ot.OpenSession(h.db, docID)
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
 		return
