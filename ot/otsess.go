@@ -175,6 +175,9 @@ func (sess *Session) SessionLoop() {
 					res.Clients[cl.ClientID] = rescl
 				}
 				sess.Clients[req.ClientID].lastRev = res.Revision
+				res.Owner = sess.DocInfo.OwnerUUID
+				res.Permission = int(sess.DocInfo.Permission)
+				res.Editable = !sess.Clients[req.ClientID].readOnly
 				go sess.Clients[req.ClientID].Response(WSMsgTypeDoc, res)
 			} else if req.Type == WSMsgTypeOp {
 				opdat, ok := req.Data.(OpData)
