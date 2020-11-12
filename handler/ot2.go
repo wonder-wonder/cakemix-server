@@ -161,8 +161,9 @@ type DocData2 struct {
 // OT session management
 // OTClient2 is structure for client connection
 type OTClient2 struct {
-	conn *websocket.Conn
-	sess *OTSession2
+	conn    *websocket.Conn
+	sess    *OTSession2
+	lastRev int
 
 	response chan OTResponse
 	ClientID string
@@ -190,6 +191,7 @@ type OTSession2 struct {
 	saveRequest        chan bool
 	isSaveTimerRunning bool
 	lastUpdater        string
+	lastGCRev          int
 
 	DocID   string
 	DocInfo db.Document
@@ -214,6 +216,7 @@ func OpenOTSession2(db *db.DB, docID string) (*OTSession2, error) {
 	ots.db = db
 	ots.incnum = 0
 	ots.saveRequest = make(chan bool)
+	ots.lastGCRev = 0
 
 	ots.DocID = docID
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -298,6 +301,7 @@ func (sess *OTSession2) SessionLoop() {
 					}
 					res.Clients[cl.ClientID] = rescl
 				}
+				sess.Clients[req.ClientID].lastRev = res.Revision
 				go sess.Clients[req.ClientID].Response(WSMsgTypeDoc, res)
 			} else if req.Type == WSMsgTypeOp {
 				opdat, ok := req.Data.(OpData2)
@@ -338,6 +342,7 @@ func (sess *OTSession2) SessionLoop() {
 				opdat.Operation = opraw
 
 				sess.Clients[req.ClientID].Selection = opdat.Selection.Ranges
+				sess.Clients[req.ClientID].lastRev = sess.OT.Revision
 
 				opres := []interface{}{req.ClientID, opdat.Operation, opdat.Selection}
 				for cid, v := range sess.Clients {
@@ -349,6 +354,7 @@ func (sess *OTSession2) SessionLoop() {
 				}
 
 				sess.lastUpdater = sess.Clients[req.ClientID].UserInfo.UUID
+				sess.lastGCRev++
 
 				// Start autosave timer
 				go func() {
@@ -369,6 +375,19 @@ func (sess *OTSession2) SessionLoop() {
 					sess.isSaveTimerRunning = false
 					sess.saveRequest <- true
 				}()
+				if sess.lastGCRev >= 10 {
+					min := sess.OT.Revision
+					for _, c := range sess.Clients {
+						if c.lastRev < min {
+							min = c.lastRev
+						}
+					}
+					for i := sess.OT.Revision - len(sess.OT.History); i < min-1; i++ {
+						delete(sess.OT.History, i)
+					}
+					sess.lastGCRev = 0
+					fmt.Printf("Session(%s) OT GC: rev is %d, hist len is %d\n", sess.DocID, sess.OT.Revision, len(sess.OT.History))
+				}
 			} else if req.Type == WSMsgTypeSel {
 				seldat, ok := req.Data.(Ranges2)
 				if !ok {
@@ -552,7 +571,4 @@ func (h *Handler) getOTHandler2(c *gin.Context) {
 	sess.Request(WSMsgTypeDoc, otc.ClientID, nil)
 
 	otc.ClientLoop()
-
-	// TODO list
-	// OT garbage collection
 }
