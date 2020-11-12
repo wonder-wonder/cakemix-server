@@ -5,9 +5,9 @@ type TeamPerm int
 
 // TeamPerm list
 const (
-	TeamPermOwner TeamPerm = iota
+	TeamPermUser TeamPerm = iota
 	TeamPermAdmin
-	TeamPermUser
+	TeamPermOwner
 )
 
 // FilePerm is enum of file and folder permission.
