@@ -17,6 +17,7 @@ const (
 	WSMsgTypeSel
 	WSMsgTypeQuit
 	OTReqResTypeJoin
+	OTReqResTypePing
 )
 
 // OT Errors
