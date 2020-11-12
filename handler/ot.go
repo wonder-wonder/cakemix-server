@@ -34,11 +34,6 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 
 	editable := isRelatedUUID(c, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
-	if !editable {
-		// TODO: support readonly OT
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
 	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
@@ -68,7 +63,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		log.Printf("OT handler error: %v", err)
 		return
 	}
-	otc := ot.NewOTClient(conn, uuid, name)
+	otc := ot.NewOTClient(conn, uuid, name, editable)
 	defer otc.Close()
 	sess.AddClient(otc)
 	sess.Request(ot.WSMsgTypeDoc, otc.ClientID, nil)

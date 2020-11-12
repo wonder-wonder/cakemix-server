@@ -19,9 +19,10 @@ const (
 
 // Client is structure for client connection
 type Client struct {
-	conn    *websocket.Conn
-	sess    *Session
-	lastRev int
+	conn     *websocket.Conn
+	sess     *Session
+	lastRev  int
+	readOnly bool
 
 	response chan Response
 	ClientID string
@@ -33,9 +34,11 @@ type Client struct {
 }
 
 // NewOTClient generates OT client data
-func NewOTClient(conn *websocket.Conn, uuid string, name string) *Client {
+func NewOTClient(conn *websocket.Conn, uuid string, name string, readOnly bool) *Client {
 	otc := Client{}
 	otc.conn = conn
+	otc.readOnly = readOnly
+
 	otc.response = make(chan Response)
 	otc.UserInfo.UUID = uuid
 	otc.UserInfo.Name = name
@@ -333,8 +336,13 @@ func (cl *Client) ClientLoop() {
 		select {
 		case req, ok := <-request:
 			if !ok {
-				// TODO: close request
+				// TODO: error logging
 				// panic("cclosed")
+				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+				return
+			}
+			if cl.readOnly {
+				// TODO: error logging
 				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
 				return
 			}
