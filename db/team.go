@@ -101,7 +101,10 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 func (d *DB) DeleteTeam(teamuuid string) error {
 	cnt := 0
 	//Check team exists
-	r := d.db.QueryRow("SELECT count(useruuid) FROM teammember WHERE teamuuid = $1", teamuuid)
+	if teamuuid[0] != 't' {
+		return ErrUserTeamNotFound
+	}
+	r := d.db.QueryRow("SELECT count(*) FROM username WHERE uuid = $1 AND username != $2", teamuuid, teamNameAdmin)
 	err := r.Scan(&cnt)
 	if err != nil {
 		return err
@@ -114,6 +117,29 @@ func (d *DB) DeleteTeam(teamuuid string) error {
 	if err != nil {
 		return err
 	}
+	owneruuid := ""
+	r = tx.QueryRow("SELECT useruuid FROM teammember WHERE teamuuid = $1 AND permission = $2", teamuuid, TeamPermOwner)
+	err = r.Scan(&owneruuid)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("UPDATE folder SET owneruuid = $1 WHERE owneruuid = $2", owneruuid, teamuuid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	_, err = tx.Exec("UPDATE document SET owneruuid = $1 WHERE owneruuid = $2", owneruuid, teamuuid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
 	_, err = tx.Exec("DELETE FROM teammember WHERE teamuuid = $1", teamuuid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {

@@ -72,7 +72,7 @@ func (h *Handler) createDocumentHandler(c *gin.Context) {
 		owneruuid = finfo.OwnerUUID
 	}
 
-	did, err := h.db.CreateDocument("Untitled", db.FilePermPrivate, parentfid, owneruuid)
+	did, err := h.db.CreateDocument("Untitled", db.FilePermPrivate, parentfid, owneruuid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return

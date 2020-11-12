@@ -64,14 +64,14 @@ func (d *DB) GetFolderInfo(fid string) (Folder, error) {
 }
 
 // CreateFolder creates new folder
-func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, owneruuid string) (string, error) {
+func (d *DB) CreateFolder(name string, permission FilePerm, parentfid string, owneruuid string, updateruuid string) (string, error) {
 	dateint := time.Now().Unix()
 	fid, err := GenerateID(IDTypeFolder)
 	if err != nil {
 		return "", err
 	}
 	_, err = d.db.Exec(`INSERT INTO folder VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-		fid, owneruuid, parentfid, name, permission, dateint, dateint, owneruuid)
+		fid, owneruuid, parentfid, name, permission, dateint, dateint, updateruuid)
 	if err != nil {
 		return "", err
 	}

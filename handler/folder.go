@@ -201,7 +201,7 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		owneruuid = finfo.OwnerUUID
 	}
 
-	fid, err := h.db.CreateFolder(fname, db.FilePermPrivate, parentfid, owneruuid)
+	fid, err := h.db.CreateFolder(fname, db.FilePermPrivate, parentfid, owneruuid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
