@@ -15,11 +15,6 @@ import (
 	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
-const (
-	autoSaveInterval  = 60  //Sec
-	otHistGCThreshold = 200 //Ops
-)
-
 // {
 // 	"e":"op",
 // 	"d":

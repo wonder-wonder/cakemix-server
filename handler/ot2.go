@@ -29,6 +29,10 @@ const (
 	WSMsgTypeQuit
 	OTReqResTypeJoin
 )
+const (
+	autoSaveInterval  = 60  //Sec
+	otHistGCThreshold = 200 //Ops
+)
 
 // OT Errors
 var (
@@ -368,14 +372,14 @@ func (sess *OTSession2) SessionLoop() {
 						return
 					}
 					sess.isSaveTimerRunning = true
-					time.Sleep(time.Second * 10)
+					time.Sleep(time.Second * autoSaveInterval)
 					if !sess.isSaveTimerRunning {
 						return
 					}
 					sess.isSaveTimerRunning = false
 					sess.saveRequest <- true
 				}()
-				if sess.lastGCRev >= 10 {
+				if sess.lastGCRev >= otHistGCThreshold {
 					min := sess.OT.Revision
 					for _, c := range sess.Clients {
 						if c.lastRev < min {
