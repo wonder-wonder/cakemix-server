@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	autoSaveInterval  = 60  //Sec
-	otHistGCThreshold = 200 //Ops
+	autoSaveInterval     = 60  //Sec
+	otHistGCThreshold    = 200 //Ops
+	otClientPingInterval = 30  //Ops
 )
 
 // OT session management
@@ -330,6 +331,12 @@ func (cl *Client) ClientLoop() {
 			request <- msg
 		}
 	}()
+	go func() {
+		for !cancel {
+			cl.Response(OTReqResTypePing, nil)
+			time.Sleep(time.Second * otClientPingInterval)
+		}
+	}()
 	for {
 		select {
 		case req, ok := <-request:
@@ -361,12 +368,16 @@ func (cl *Client) ClientLoop() {
 				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
 		case resdat := <-cl.response:
-			resraw, err := convertToMsg(resdat.Type, resdat.Data)
-			if err != nil {
-				log.Printf("OT client error: response error: %v\n", err)
-				panic(err)
+			if resdat.Type == OTReqResTypePing {
+				cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+			} else {
+				resraw, err := convertToMsg(resdat.Type, resdat.Data)
+				if err != nil {
+					log.Printf("OT client error: response error: %v\n", err)
+					panic(err)
+				}
+				cl.conn.WriteMessage(websocket.TextMessage, resraw)
 			}
-			cl.conn.WriteMessage(websocket.TextMessage, resraw)
 		}
 	}
 }
@@ -378,6 +389,9 @@ func (sess *Session) Request(t WSMsgType, cid string, dat interface{}) {
 
 // Response responds to client
 func (cl *Client) Response(t WSMsgType, dat interface{}) {
+	defer func() {
+		recover()
+	}()
 	cl.response <- Response{Type: t, Data: dat}
 }
 
