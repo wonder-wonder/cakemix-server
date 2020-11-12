@@ -35,8 +35,8 @@ type OT struct {
 	Revision int
 }
 
-// New creates OT
-func New(text string) *OT {
+// NewOT creates OT
+func NewOT(text string) *OT {
 	return &OT{Text: text, Revision: 0, History: map[int]Ops{}}
 }
 
