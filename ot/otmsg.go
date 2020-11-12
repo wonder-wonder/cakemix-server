@@ -24,35 +24,35 @@ var (
 	ErrorInvalidWSMsg = errors.New("WSMessage is invalid")
 )
 
-// WSMsg2 is structure for websocket message
-type WSMsg2 struct {
+// WSMsg is structure for websocket message
+type WSMsg struct {
 	Event string          `json:"e"`
 	Data  json.RawMessage `json:"d,omitempty"`
 }
 
-type OpData2 struct {
+type OpData struct {
 	Revision  int
 	Operation []interface{}
-	Selection Ranges2
+	Selection Ranges
 }
 
-// SelData2 is structure for selection data
-type SelData2 struct {
+// SelData is structure for selection data
+type SelData struct {
 	Anchor int `json:"anchor"`
 	Head   int `json:"head"`
 }
-type Ranges2 struct {
-	Ranges []SelData2 `json:"ranges"`
+type Ranges struct {
+	Ranges []SelData `json:"ranges"`
 }
 
 func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
-	msg := WSMsg2{}
+	msg := WSMsg{}
 	err := json.Unmarshal(rawmsg, &msg)
 	if err != nil {
 		return WSMsgTypeUnknown, nil, ErrorInvalidWSMsg
 	}
 	if msg.Event == "op" {
-		dat := OpData2{}
+		dat := OpData{}
 
 		// Separate revision, ops, selections
 		var rawdat []json.RawMessage
@@ -86,7 +86,7 @@ func parseMsg(rawmsg []byte) (WSMsgType, interface{}, error) {
 
 		return WSMsgTypeOp, dat, nil
 	} else if msg.Event == "sel" {
-		dat := Ranges2{}
+		dat := Ranges{}
 		// Selections
 		err = json.Unmarshal(msg.Data, &dat)
 		if err != nil {
@@ -112,7 +112,7 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 			return nil, err
 		}
 	}
-	msg := WSMsg2{Data: datraw}
+	msg := WSMsg{Data: datraw}
 	if t == WSMsgTypeOK {
 		msg.Event = "ok"
 	} else if t == WSMsgTypeOp {
@@ -131,17 +131,17 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 	return msgraw, nil
 }
 
-type ClientData2 struct {
-	Name      string  `json:"name"`
-	Selection Ranges2 `json:"selection"`
+type ClientData struct {
+	Name      string `json:"name"`
+	Selection Ranges `json:"selection"`
 }
 
-// DocData2 is structure for document data
-type DocData2 struct {
+// DocData is structure for document data
+type DocData struct {
 	// Clients  map[string]ClientInfo2 `json:"clients"`
-	Clients  map[string]ClientData2 `json:"clients"`
-	Document string                 `json:"document"`
-	Revision int                    `json:"revision"`
+	Clients  map[string]ClientData `json:"clients"`
+	Document string                `json:"document"`
+	Revision int                   `json:"revision"`
 	// Owner      string                 `json:"owner"`
 	// Permission int                    `json:"permission"`
 	// Editable   bool                   `json:"editable"`
