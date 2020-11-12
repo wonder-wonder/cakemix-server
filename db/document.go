@@ -22,7 +22,7 @@ func (d *DB) GetDocumentInfo(fid string) (Document, error) {
 }
 
 // CreateDocument creates new document
-func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string, owneruuid string) (string, error) {
+func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string, owneruuid string, updateruuid string) (string, error) {
 	dateint := time.Now().Unix()
 	did, err := GenerateID(IDTypeDocument)
 	if err != nil {
@@ -34,7 +34,7 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 	}
 
 	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-		did, owneruuid, parentfid, title, permission, dateint, dateint, owneruuid, 0)
+		did, owneruuid, parentfid, title, permission, dateint, dateint, updateruuid, 0)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
