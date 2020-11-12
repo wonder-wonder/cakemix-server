@@ -15,6 +15,11 @@ import (
 	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
+const (
+	autoSaveInterval  = 60  //Sec
+	otHistGCThreshold = 200 //Ops
+)
+
 // {
 // 	"e":"op",
 // 	"d":
@@ -285,7 +290,7 @@ func (h *Handler) getSession(docid string) (*Session, error) {
 		if err != nil {
 			return nil, err
 		}
-		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.New(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1), IDLock: make(chan bool, 1)}
+		sess = &Session{UUID: docid, Clinets: map[string]ClientInfo{}, OT: ot.NewOT(text), TotalClients: 0, BCCh: make(chan BCMsg, 1), AddCh: make(chan ClientInfo, 1), QuitCh: make(chan string, 1), IDLock: make(chan bool, 1)}
 		sessions[sess.UUID] = sess
 		go sess.SessionLoop(h)
 	}
