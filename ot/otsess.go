@@ -2,6 +2,7 @@ package ot
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 	"unicode/utf16"
@@ -95,7 +96,6 @@ func OpenSession(db *db.DB, docID string) (*Session, error) {
 	ots.Clients = map[string]*Client{}
 	ots.request = make(chan Request)
 
-	// TODO: restore OT
 	text, err := db.GetLatestDocument(docID)
 	if err != nil {
 		return nil, err
@@ -118,13 +118,11 @@ func (sess *Session) Close() {
 		updateruuid := sess.lastUpdater
 		err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
 		if err != nil {
-			//TODO
-			fmt.Printf("%v\n", err)
+			log.Printf("OT session close error: %v\n", err)
 		}
 		err = sess.db.UpdateDocument(sess.DocID, updateruuid)
 		if err != nil {
-			//TODO
-			fmt.Printf("%v\n", err)
+			log.Printf("OT session close error: %v\n", err)
 		}
 		fmt.Printf("Session(%s) closed (total %d ops): ", sess.DocID, sess.OT.Revision)
 		if len(sess.OT.Text) <= 10 {
@@ -202,8 +200,7 @@ func (sess *Session) SessionLoop() {
 				}
 				optrans, err := sess.OT.Operate(opdat.Revision, ops)
 				if err != nil {
-					//TODO
-					fmt.Printf("%v\n", err)
+					log.Printf("OT session error: operate error: %v\n", err)
 				}
 				opraw := []interface{}{}
 				for _, v := range optrans.Ops {
@@ -295,13 +292,11 @@ func (sess *Session) SessionLoop() {
 				updateruuid := sess.lastUpdater
 				err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
 				if err != nil {
-					//TODO
-					fmt.Printf("%v\n", err)
+					log.Printf("OT session error: save error: %v\n", err)
 				}
 				err = sess.db.UpdateDocument(sess.DocID, updateruuid)
 				if err != nil {
-					//TODO
-					fmt.Printf("%v\n", err)
+					log.Printf("OT session error: save error: %v\n", err)
 				}
 				fmt.Printf("Session(%s) auto saved (total %d ops): ", sess.DocID, sess.OT.Revision)
 				if len(sess.OT.Text) <= 10 {
@@ -328,7 +323,7 @@ func (cl *Client) ClientLoop() {
 					close(request)
 					return
 				}
-				// TODO
+				log.Printf("OT client error: read error: %v\n", err)
 				close(request)
 				return
 			}
@@ -339,20 +334,17 @@ func (cl *Client) ClientLoop() {
 		select {
 		case req, ok := <-request:
 			if !ok {
-				// TODO: error logging
-				// panic("cclosed")
 				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
 				return
 			}
 			if cl.readOnly {
-				// TODO: error logging
+				log.Printf("OT client error: permission denied\n")
 				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
 				return
 			}
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
-				//TODO
-				fmt.Printf("%v\n", dat)
+				log.Printf("OT client error: %v\n", err)
 				panic(err)
 			}
 			if mtype == WSMsgTypeOp {
@@ -371,7 +363,7 @@ func (cl *Client) ClientLoop() {
 		case resdat := <-cl.response:
 			resraw, err := convertToMsg(resdat.Type, resdat.Data)
 			if err != nil {
-				//TODO
+				log.Printf("OT client error: response error: %v\n", err)
 				panic(err)
 			}
 			cl.conn.WriteMessage(websocket.TextMessage, resraw)

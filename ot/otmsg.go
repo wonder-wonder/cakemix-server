@@ -142,7 +142,6 @@ type ClientData struct {
 
 // DocData is structure for document data
 type DocData struct {
-	// Clients  map[string]ClientInfo2 `json:"clients"`
 	Clients    map[string]ClientData `json:"clients"`
 	Document   string                `json:"document"`
 	Revision   int                   `json:"revision"`
