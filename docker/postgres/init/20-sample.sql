@@ -6,7 +6,7 @@ INSERT INTO auth VALUES('ujuxj7nrznlg655jt',	'test@localhost',	'CgL73Jxt1TcOIemW
 INSERT INTO profile VALUES('ujuxj7nrznlg655jt','','',1595073002,'','ja');
 INSERT INTO folder VALUES('fde2uhiehs25fahxk','ujuxj7nrznlg655jt','fdahpbkboamdbgnua','test',0,1595073002,1595073002,'ujuxj7nrznlg655jt');
 
-INSERT INTO teammember VALUES('tqssoagvfvlg3mky2', 'ujuxj7nrznlg655jt', 0, 1595073002);
+INSERT INTO teammember VALUES('tqssoagvfvlg3mky2', 'ujuxj7nrznlg655jt', 1, 1595073002);
 
 insert into tag values (1,'tag1');
 insert into document values ('dotyrr3hpdeyvpwhy','ujuxj7nrznlg655jt','fde2uhiehs25fahxk','title',2,1595073002,1595073002,'ujuxj7nrznlg655jt',0);
