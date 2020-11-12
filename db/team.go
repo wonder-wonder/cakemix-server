@@ -101,7 +101,10 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 func (d *DB) DeleteTeam(teamuuid string) error {
 	cnt := 0
 	//Check team exists
-	r := d.db.QueryRow("SELECT count(useruuid) FROM teammember WHERE teamuuid = $1", teamuuid)
+	if teamuuid[0] != 't' {
+		return ErrUserTeamNotFound
+	}
+	r := d.db.QueryRow("SELECT count(*) FROM username WHERE uuid = $1 AND username != $2", teamuuid, teamNameAdmin)
 	err := r.Scan(&cnt)
 	if err != nil {
 		return err
