@@ -15,7 +15,7 @@ func (h *Handler) TeamHandler(r *gin.RouterGroup) {
 	teamck.POST(":teamid/member", h.addTeamMemberHandler)
 	teamck.PUT(":teamid/member", h.editTeamMemberHandler)
 	teamck.DELETE(":teamid/member", h.deleteTeamMemberHandler)
-	teamck.POST("/", h.createTeamHandler)
+	teamck.POST("", h.createTeamHandler)
 	teamck.DELETE(":teamid", h.deleteTeamHandler)
 }
 

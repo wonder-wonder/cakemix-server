@@ -23,7 +23,7 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	auth.POST("pass/reset/verify/:token", h.passResetVerifyHandler)
 	auth.GET("check/user/:name/:token", h.checkUserNameHandler)
 
-	authck := auth.Group("/", h.CheckAuthMiddleware())
+	authck := auth.Group("", h.CheckAuthMiddleware())
 	authck.POST("logout", h.logoutHandler)
 	authck.GET("check/token", h.checkTokenHandler)
 	authck.GET("regist/gen/token", h.registTokenGenerateHandler)
