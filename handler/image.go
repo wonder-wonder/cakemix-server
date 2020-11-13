@@ -12,7 +12,7 @@ import (
 // ImageHandler is handlers of profile
 func (h *Handler) ImageHandler(r *gin.RouterGroup) {
 	imgck := r.Group("image", h.CheckAuthMiddleware())
-	imgck.POST("/", h.uploadImageHandler)
+	imgck.POST("", h.uploadImageHandler)
 	img := r.Group("image")
 	img.GET(":id", h.getImageHandler)
 }
