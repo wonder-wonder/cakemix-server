@@ -362,7 +362,7 @@ paths:
           required: true
       tags:
         - Team
-  /team/:
+  /team:
     post:
       summary: Create team
       operationId: post-team
