@@ -383,6 +383,7 @@ paths:
           name: name
           description: Teamname
           required: true
+    parameters: []
   '/team/{teamid}':
     parameters:
       - schema:
@@ -960,6 +961,8 @@ components:
           description: document creation date
         uuid:
           type: string
+        editable:
+          type: boolean
     DocumentResModel:
       title: DocumentResModel
       type: object
@@ -998,6 +1001,8 @@ components:
           type: string
         uuid:
           type: string
+        editable:
+          type: boolean
     BreadcrumbModel:
       title: BreadcrumbModel
       type: object
