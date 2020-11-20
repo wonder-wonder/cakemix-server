@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
@@ -20,12 +20,19 @@ func main() {
 	}
 
 	// API handler
-	r.GET("/", helloHandler)
 	r.Use(handler.CORS())
-
 	v1 := r.Group("v1")
 	v1Handler(v1, db)
 
+	r.Static("/dist", "./dist")
+	r.NoRoute(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/dist") {
+			c.Request.URL.Path = "/dist/"
+		} else {
+			c.Request.URL.Path = "/dist" + c.Request.URL.Path
+		}
+		r.HandleContext(c)
+	})
 	// Start web server
 	fmt.Println("Start server")
 
@@ -38,11 +45,6 @@ func main() {
 		APIPort = os.Getenv("PORT")
 	}
 	r.Run(APIAddr + ":" + APIPort)
-}
-func helloHandler(c *gin.Context) {
-	// c.Abort()
-	c.String(http.StatusOK, "Hello, world!")
-	c.Abort()
 }
 
 func v1Handler(r *gin.RouterGroup, db *db.DB) {
