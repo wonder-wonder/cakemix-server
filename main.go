@@ -24,7 +24,12 @@ func main() {
 	v1 := r.Group("v1")
 	v1Handler(v1, db)
 
-	r.Static("/dist", "./dist")
+	// Front serve
+	FrontDir := "./dist"
+	if os.Getenv("FRONTDIR") != "" {
+		FrontDir = os.Getenv("FRONTDIR")
+	}
+	r.Static("/dist", FrontDir)
 	r.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/dist") {
 			c.Request.URL.Path = "/dist/"
@@ -33,6 +38,7 @@ func main() {
 		}
 		r.HandleContext(c)
 	})
+
 	// Start web server
 	fmt.Println("Start server")
 

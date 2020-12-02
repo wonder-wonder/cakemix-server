@@ -18,6 +18,7 @@ services:
       DBUSER: postgres
       DBPASS: postgres
       DBNAME: cakemix
+      FRONTDIR: ./dist
     networks:
       - shared-network
       - cakemix-network
