@@ -25,7 +25,7 @@ func main() {
 	v1Handler(v1, db)
 
 	// Front serve
-	FrontDir := "./dist"
+	FrontDir := ""
 	if os.Getenv("FRONTDIR") != "" {
 		FrontDir = os.Getenv("FRONTDIR")
 	}
