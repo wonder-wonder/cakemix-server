@@ -24,15 +24,26 @@ func main() {
 	v1 := r.Group("v1")
 	v1Handler(v1, db)
 
-	r.Static("/dist", "./dist")
-	r.NoRoute(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/dist") {
-			c.Request.URL.Path = "/dist/"
-		} else {
-			c.Request.URL.Path = "/dist" + c.Request.URL.Path
-		}
-		r.HandleContext(c)
-	})
+	// Front serve
+	FrontDir := ""
+	if os.Getenv("FRONTDIR") != "" {
+		FrontDir = os.Getenv("FRONTDIR")
+	}
+	if FrontDir != "" {
+		r.Static("/dist", FrontDir)
+		r.NoRoute(func(c *gin.Context) {
+			if c.Request.URL.Path == "/dist/" {
+				return
+			}
+			if strings.HasPrefix(c.Request.URL.Path, "/dist") {
+				c.Request.URL.Path = "/dist/"
+			} else {
+				c.Request.URL.Path = "/dist" + c.Request.URL.Path
+			}
+			r.HandleContext(c)
+		})
+	}
+
 	// Start web server
 	fmt.Println("Start server")
 
