@@ -31,6 +31,9 @@ func main() {
 	}
 	r.Static("/dist", FrontDir)
 	r.NoRoute(func(c *gin.Context) {
+		if c.Request.URL.Path == "/dist/" {
+			return
+		}
 		if strings.HasPrefix(c.Request.URL.Path, "/dist") {
 			c.Request.URL.Path = "/dist/"
 		} else {
