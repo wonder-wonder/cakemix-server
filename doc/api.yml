@@ -701,7 +701,7 @@ paths:
                 properties:
                   total:
                     type: integer
-                  users:
+                  teams:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProfileModel'

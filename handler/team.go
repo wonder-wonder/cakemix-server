@@ -37,7 +37,7 @@ func (h *Handler) createTeamHandler(c *gin.Context) {
 		return
 	}
 
-	teamuuid, err := h.db.CreateTeam(teamname, useruuid)
+	_, err = h.db.CreateTeam(teamname, useruuid)
 	if err == db.ErrExistUser {
 		c.AbortWithStatus(http.StatusConflict)
 		return
@@ -45,7 +45,6 @@ func (h *Handler) createTeamHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	println(teamuuid)
 	c.AbortWithStatus(http.StatusOK)
 }
 

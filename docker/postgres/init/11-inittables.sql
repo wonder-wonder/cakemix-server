@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS auth(
 CREATE TABLE IF NOT EXISTS session(
   uuid TEXT,
   sessionid TEXT,
-  logindate INTEGER,
-  lastdate INTEGER,
-  expiredate INTEGER,
+  logindate BIGINT,
+  lastdate BIGINT,
+  expiredate BIGINT,
   ipaddr TEXT,
   devicedata TEXT,
   PRIMARY KEY (uuid, sessionid),
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS session(
 CREATE TABLE IF NOT EXISTS invitetoken(
   fromuuid TEXT,
   token TEXT PRIMARY KEY,
-  expdate INTEGER
+  expdate BIGINT
 );
 -- User may fail so that uuid, username, and email can be duplicate. (System checks them when inserting)
 CREATE TABLE IF NOT EXISTS preuser(
@@ -31,19 +31,19 @@ CREATE TABLE IF NOT EXISTS preuser(
   password TEXT,
   salt TEXT,
   token TEXT PRIMARY KEY,
-  expdate INTEGER
+  expdate BIGINT
 );
 CREATE TABLE IF NOT EXISTS passreset(
   uuid TEXT,
   token TEXT PRIMARY KEY,
-  expdate INTEGER,
+  expdate BIGINT,
   FOREIGN KEY (uuid) REFERENCES auth(uuid)
 );
 CREATE TABLE IF NOT EXISTS profile(
   uuid TEXT PRIMARY KEY,
   bio TEXT,
   iconuri TEXT,
-  createat INTEGER,
+  createat BIGINT,
   attr TEXT,
   lang TEXT,
   FOREIGN KEY (uuid) REFERENCES username(uuid)
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS teammember(
   teamuuid TEXT,
   useruuid TEXT,
   permission INTEGER,
-  joinat INTEGER,
+  joinat BIGINT,
   PRIMARY KEY (teamuuid, useruuid),
   FOREIGN KEY (teamuuid) REFERENCES username(UUID),
   FOREIGN KEY (useruuid) REFERENCES auth(uuid)
@@ -64,8 +64,8 @@ CREATE TABLE IF NOT EXISTS folder(
   parentfolderuuid TEXT,
   name TEXT,
   permission INTEGER,
-  createdat INTEGER,
-  updatedat INTEGER,
+  createdat BIGINT,
+  updatedat BIGINT,
   updateruuid TEXT,
   FOREIGN KEY (owneruuid) REFERENCES username(uuid),
   FOREIGN KEY (updateruuid) REFERENCES username(uuid)
@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS document(
   parentfolderuuid TEXT,
   title TEXT,
   permission INTEGER,
-  createdat INTEGER,
-  updatedat INTEGER,
+  createdat BIGINT,
+  updatedat BIGINT,
   updateruuid TEXT,
   tagid INTEGER,
   FOREIGN KEY (owneruuid) REFERENCES username(uuid),
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS document(
 CREATE TABLE IF NOT EXISTS documentrevision(
   uuid TEXT,
   text TEXT,
-  updatedat INTEGER,
+  updatedat BIGINT,
   PRIMARY KEY (uuid, updatedat),
   FOREIGN KEY (uuid) REFERENCES document(uuid)
 );

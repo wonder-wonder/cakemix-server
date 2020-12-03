@@ -81,7 +81,7 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 		res = append(res, prof)
 	}
 
-	c.JSON(http.StatusOK, model.SearchUserTeamRes{Total: count, Users: res})
+	c.JSON(http.StatusOK, model.SearchUserRes{Total: count, Users: res})
 }
 
 func (h *Handler) searchTeamHandler(c *gin.Context) {
@@ -131,5 +131,5 @@ func (h *Handler) searchTeamHandler(c *gin.Context) {
 		res = append(res, prof)
 	}
 
-	c.JSON(http.StatusOK, model.SearchUserTeamRes{Total: count, Users: res})
+	c.JSON(http.StatusOK, model.SearchTeamRes{Total: count, Teams: res})
 }
