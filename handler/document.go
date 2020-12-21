@@ -143,7 +143,7 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 }
 func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
-	targetfid := c.Param("targetfid")
+	targetfid := c.Param("folderid")
 
 	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
