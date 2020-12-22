@@ -27,11 +27,6 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 
 	fid = strings.TrimLeft(fid, "/")
 
-	if fid[0] != 'f' {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
 	if fid == "" {
 		var err error
 		fid, err = h.db.GetRootFID()
@@ -39,6 +34,11 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
+	}
+
+	if fid[0] != 'f' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
 
 	finfo, err := h.db.GetFolderInfo(fid)
@@ -187,7 +187,7 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 		return
 	}
 
-	if parentfid[0] != 'f' {
+	if parentfid == "" || parentfid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -229,7 +229,7 @@ func (h *Handler) createFolderHandler(c *gin.Context) {
 func (h *Handler) deleteFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
 
-	if fid[0] != 'f' {
+	if fid == "" || fid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -302,11 +302,11 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
 	targetfid := c.Param("targetfid")
 
-	if fid[0] != 'f' {
+	if fid == "" || fid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	if targetfid[0] != 'f' {
+	if targetfid == "" || targetfid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -387,7 +387,7 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 func (h *Handler) modifyFolderHandler(c *gin.Context) {
 	fid := c.Param("folderid")
 
-	if fid[0] != 'f' {
+	if fid == "" || fid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

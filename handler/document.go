@@ -25,7 +25,7 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 func (h *Handler) getDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
-	if did[0] != 'd' {
+	if did == "" || did[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -55,7 +55,7 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 func (h *Handler) createDocumentHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
 
-	if parentfid[0] != 'f' {
+	if parentfid == "" || parentfid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -103,7 +103,7 @@ func (h *Handler) createDocumentHandler(c *gin.Context) {
 func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
-	if did[0] != 'd' {
+	if did == "" || did[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -160,11 +160,11 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 	targetfid := c.Param("folderid")
 
-	if did[0] != 'd' {
+	if did == "" || did[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	if targetfid[0] != 'f' {
+	if targetfid == "" || targetfid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -252,7 +252,7 @@ func (h *Handler) setJWTFromQuery() gin.HandlerFunc {
 func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
-	if did[0] != 'd' {
+	if did == "" || did[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -327,7 +327,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 
 	docID := c.Param("docid")
 
-	if docID[0] != 'd' {
+	if docID == "" || docID[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
