@@ -25,6 +25,11 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 func (h *Handler) getDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
+	if did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
@@ -49,6 +54,11 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 
 func (h *Handler) createDocumentHandler(c *gin.Context) {
 	parentfid := c.Param("folderid")
+
+	if parentfid[0] != 'f' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	uuid, ok := getUUID(c)
 	if !ok {
@@ -92,6 +102,11 @@ func (h *Handler) createDocumentHandler(c *gin.Context) {
 
 func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
+
+	if did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
@@ -144,6 +159,15 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 	targetfid := c.Param("folderid")
+
+	if did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if targetfid[0] != 'f' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
@@ -228,6 +252,11 @@ func (h *Handler) setJWTFromQuery() gin.HandlerFunc {
 func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
+	if did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
 	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
@@ -296,8 +325,14 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		return
 	}
 
-	// Check permission
 	docID := c.Param("docid")
+
+	if docID[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	// Check permission
 	docInfo, err := h.db.GetDocumentInfo(docID)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
