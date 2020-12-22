@@ -81,7 +81,7 @@ func (h *Handler) deleteTeamHandler(c *gin.Context) {
 }
 
 func (h *Handler) getTeamMemberHandler(c *gin.Context) {
-	var res []model.MemberInfoRes
+	res := model.MemberInfoRes{Members: []model.MemberInfo{}}
 	teamid := c.Param("teamid")
 
 	mem, err := h.db.GetTeamMember(teamid)
@@ -100,7 +100,7 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-		res = append(res, model.MemberInfoRes{
+		res.Members = append(res.Members, model.MemberInfo{
 			Member: model.Profile{
 				UUID:    prof.UUID,
 				Name:    prof.Name,
