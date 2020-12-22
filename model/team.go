@@ -8,6 +8,12 @@ type MemberInfoReq struct {
 
 //MemberInfoRes model
 type MemberInfoRes struct {
+	Total   int          `json:"total"`
+	Members []MemberInfo `json:"members"`
+}
+
+//MemberInfo model
+type MemberInfo struct {
 	Member     Profile `json:"member"`
 	Permission int     `json:"permission"`
 }
