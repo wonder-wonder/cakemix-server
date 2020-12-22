@@ -17,6 +17,8 @@ import (
 const (
 	loginSessionExpHours = 24 * 7
 	verifyTokenExpHours  = 12
+	rsaPrivateKeyFile    = "./signkey"
+	rsaPublicKeyFile     = "./signkey.pub"
 )
 
 var (
@@ -24,9 +26,10 @@ var (
 	verifyKey *rsa.PublicKey
 )
 
-func openKeys() error {
+// LoadKeys read public/private keys
+func LoadKeys() error {
 	// Signing (private) key
-	signBytes, err := ioutil.ReadFile("./signkey")
+	signBytes, err := ioutil.ReadFile(rsaPrivateKeyFile)
 	if err != nil {
 		return err
 	}
@@ -36,7 +39,7 @@ func openKeys() error {
 	}
 
 	// Verification (public) key
-	verifyBytes, err := ioutil.ReadFile("./signkey.pub")
+	verifyBytes, err := ioutil.ReadFile(rsaPublicKeyFile)
 	if err != nil {
 		return err
 	}
@@ -79,10 +82,6 @@ func passhash(pass string, salt string) string {
 
 // GenerateJWT generates JWT using UUID and sessionID
 func GenerateJWT(uuid string, sessionid string) (string, error) {
-	if signKey == nil {
-		openKeys()
-	}
-
 	// create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.StandardClaims{
 		Audience:  uuid,
@@ -125,10 +124,6 @@ func (d *DB) RemoveSession(uuid string, sessionID string) error {
 // VerifyToken verifies JWT and returns UUID of JWT holder
 func (d *DB) VerifyToken(token string) (string, error) {
 	var claims jwt.StandardClaims
-
-	if verifyKey == nil {
-		openKeys()
-	}
 
 	_, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
