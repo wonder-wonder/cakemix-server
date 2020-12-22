@@ -14,6 +14,11 @@ func main() {
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
+	err := db.LoadKeys()
+	if err != nil {
+		panic(err)
+	}
+
 	db, err := db.OpenDB()
 	if err != nil {
 		panic(err)
