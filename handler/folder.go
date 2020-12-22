@@ -310,6 +310,10 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	if fid == targetfid {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
 	// Check folder permission
 	finfo, err := h.db.GetFolderInfo(fid)
