@@ -665,7 +665,7 @@ paths:
                 properties:
                   total:
                     type: integer
-                  users:
+                  teams:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProfileModel'
@@ -701,7 +701,7 @@ paths:
                 properties:
                   total:
                     type: integer
-                  teams:
+                  users:
                     type: array
                     items:
                       $ref: '#/components/schemas/ProfileModel'
@@ -737,6 +737,8 @@ paths:
                   id:
                     type: string
                     description: Image ID
+      tags:
+        - Image
   '/image/{imgid}':
     parameters:
       - schema:
@@ -747,7 +749,8 @@ paths:
         description: Image ID
     get:
       summary: Get uploaded image
-      tags: []
+      tags:
+        - Image
       responses:
         '200':
           description: Got image
@@ -1073,5 +1076,6 @@ tags:
     description: Folder API
   - name: Search
     description: Search API
+  - name: Image
 security:
   - JWT: []
