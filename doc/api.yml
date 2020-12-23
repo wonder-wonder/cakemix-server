@@ -739,6 +739,24 @@ paths:
                     description: Image ID
       tags:
         - Image
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              description: ''
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+            examples: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {}
+        description: ''
   '/image/{imgid}':
     parameters:
       - schema:
