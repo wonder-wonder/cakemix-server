@@ -19,8 +19,10 @@ services:
       DBPASS: postgres
       DBNAME: cakemix
       FRONTDIR: /root/dist
+      DATADIR: /root/data
     volumes:
       - ./dist:/root/dist
+      - ./data:/root/data
     networks:
       - shared-network
       - cakemix-network
