@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -17,17 +18,25 @@ import (
 const (
 	loginSessionExpHours = 24 * 7
 	verifyTokenExpHours  = 12
-	rsaPrivateKeyFile    = "./signkey"
-	rsaPublicKeyFile     = "./signkey.pub"
 )
 
 var (
-	signKey   *rsa.PrivateKey
-	verifyKey *rsa.PublicKey
+	signKey           *rsa.PrivateKey
+	verifyKey         *rsa.PublicKey
+	rsaPrivateKeyFile = "./signkey"
+	rsaPublicKeyFile  = "./signkey.pub"
 )
 
 // LoadKeys read public/private keys
 func LoadKeys() error {
+	// Check env
+	if os.Getenv("SIGNPRVKEY") != "" {
+		rsaPrivateKeyFile = os.Getenv("SIGNPRVKEY")
+	}
+	if os.Getenv("SIGNPUBKEY") != "" {
+		rsaPublicKeyFile = os.Getenv("SIGNPUBKEY")
+	}
+
 	// Signing (private) key
 	signBytes, err := ioutil.ReadFile(rsaPrivateKeyFile)
 	if err != nil {
