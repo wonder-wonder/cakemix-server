@@ -1,9 +1,14 @@
+# Debug files
 signkey
 signkey.pub
-
-cakemixsv
-docker/postgres/data
 cmdat
+
+# Production file
+docker/postgres/data
+docker/server
+
+# Common files
+cakemixsv
 dist
 
 sendgrid.env
