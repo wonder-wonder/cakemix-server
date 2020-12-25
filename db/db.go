@@ -51,11 +51,6 @@ type DB struct {
 }
 
 func initVars() {
-	dbHost = os.Getenv("DBHOST")
-	dbPort = os.Getenv("DBPORT")
-	dbUser = os.Getenv("DBUSER")
-	dbPass = os.Getenv("DBPASS")
-	dbName = os.Getenv("DBNAME")
 	if os.Getenv("DBHOST") != "" {
 		dbHost = os.Getenv("DBHOST")
 	}

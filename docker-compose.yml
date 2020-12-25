@@ -20,9 +20,12 @@ services:
       DBNAME: cakemix
       FRONTDIR: /root/dist
       DATADIR: /root/cmdat
+      SIGNPRVKEY: /root/keys/signkey
+      SIGNPUBKEY: /root/keys/signkey.pub
     volumes:
       - ./dist:/root/dist
-      - ./cmdat:/root/cmdat
+      - ./docker/server/cmdat:/root/cmdat
+      - ./docker/server/keys:/root/keys
     networks:
       - shared-network
       - cakemix-network

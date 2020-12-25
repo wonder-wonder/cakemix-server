@@ -8,7 +8,7 @@ stopdb:
 	docker stop cakemixdbdev
 	docker rm cakemixdbdev
 
-runprod:
+runprod: keyprod
 	docker-compose up --build -d
 
 down:
@@ -21,3 +21,11 @@ key:
 	yes|ssh-keygen -t rsa -f signkey -m PEM -N ""
 	ssh-keygen -f signkey.pub -e -m pkcs8 > signkey.pub2
 	mv signkey.pub2 signkey.pub
+
+keyprod:
+	@test ! -f docker/server/keys/signkey &&\
+	echo Generating signing keys &&\
+	mkdir -p docker/server/keys &&\
+	cd docker/server/keys &&\
+	make -f ../../../Makefile key ||\
+	echo Skipping key generation

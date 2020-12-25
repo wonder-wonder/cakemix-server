@@ -6,6 +6,6 @@ COPY . .
 
 ENV GOPATH /go:/root
 
-RUN make key && make build
+RUN make build
 
 CMD ["./cakemixsv"]

@@ -1,10 +1,17 @@
+# Debug files
 signkey
 signkey.pub
-
-cakemixsv
-docker/postgres/data
 cmdat
+
+# Production file
+docker/postgres/data
+docker/server
+
+# Common files
+cakemixsv
 dist
+
+sendgrid.env
 
 ### https://raw.github.com/github/gitignore/5c5a1b536b6f9bf11515518f03d58addaf29f681/Global/macOS.gitignore
 
@@ -34,5 +41,3 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
-sendgrid.env
