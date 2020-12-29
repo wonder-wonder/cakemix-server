@@ -43,13 +43,44 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
-
-	doc, err := h.db.GetLatestDocument(did)
+	ownp, err := h.db.GetProfileByUUID(dinfo.OwnerUUID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	c.AbortWithStatusJSON(http.StatusOK, struct{ Text string }{Text: doc})
+	updp, err := h.db.GetProfileByUUID(dinfo.UpdaterUUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	res := model.Document{
+		UUID: did,
+		Owner: model.Profile{
+			UUID:    ownp.UUID,
+			Name:    ownp.Name,
+			IconURI: ownp.IconURI,
+			Attr:    ownp.Attr,
+			IsTeam:  (ownp.UUID[0] == 't'),
+		},
+		Updater: model.Profile{
+			UUID:    updp.UUID,
+			Name:    updp.Name,
+			IconURI: updp.IconURI,
+			Attr:    updp.Attr,
+			IsTeam:  (updp.UUID[0] == 't'),
+		},
+		Title:      dinfo.Title,
+		Permission: int(dinfo.Permission),
+		CreatedAt:  dinfo.CreatedAt,
+		UpdatedAt:  dinfo.UpdatedAt,
+		Editable:   dinfo.Permission == db.FilePermReadWrite,
+	}
+	// doc, err := h.db.GetLatestDocument(did)
+	// if err != nil {
+	// 	c.AbortWithError(http.StatusInternalServerError, err)
+	// 	return
+	// }
+	c.AbortWithStatusJSON(http.StatusOK, res)
 }
 
 func (h *Handler) createDocumentHandler(c *gin.Context) {
