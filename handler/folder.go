@@ -153,11 +153,12 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 					Attr:    updp.Attr,
 					IsTeam:  (updp.UUID[0] == 't'),
 				},
-				Title:      docinfo.Title,
-				Permission: int(docinfo.Permission),
-				CreatedAt:  docinfo.CreatedAt,
-				UpdatedAt:  docinfo.UpdatedAt,
-				Editable:   editable,
+				Title:          docinfo.Title,
+				Permission:     int(docinfo.Permission),
+				CreatedAt:      docinfo.CreatedAt,
+				UpdatedAt:      docinfo.UpdatedAt,
+				Editable:       editable,
+				ParentFolderID: v,
 			})
 		}
 	}
