@@ -467,6 +467,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DocumentModifyReqModel'
+    get:
+      summary: ''
+      operationId: get-doc-doc_id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentModel'
+      tags:
+        - Document
   '/doc/{doc_id}/move/{folder_id}':
     parameters:
       - schema:
@@ -984,6 +996,8 @@ components:
           type: string
         editable:
           type: boolean
+        parentfolderid:
+          type: string
     DocumentResModel:
       title: DocumentResModel
       type: object
