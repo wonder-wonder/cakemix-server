@@ -73,7 +73,7 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 		Permission:     int(dinfo.Permission),
 		CreatedAt:      dinfo.CreatedAt,
 		UpdatedAt:      dinfo.UpdatedAt,
-		Editable:       dinfo.Permission == db.FilePermReadWrite,
+		Editable:       isRelatedUUID(c, dinfo.OwnerUUID) || dinfo.Permission == db.FilePermReadWrite,
 		ParentFolderID: dinfo.ParentFolderUUID,
 	}
 	// doc, err := h.db.GetLatestDocument(did)
