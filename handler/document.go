@@ -69,11 +69,12 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 			Attr:    updp.Attr,
 			IsTeam:  (updp.UUID[0] == 't'),
 		},
-		Title:      dinfo.Title,
-		Permission: int(dinfo.Permission),
-		CreatedAt:  dinfo.CreatedAt,
-		UpdatedAt:  dinfo.UpdatedAt,
-		Editable:   dinfo.Permission == db.FilePermReadWrite,
+		Title:          dinfo.Title,
+		Permission:     int(dinfo.Permission),
+		CreatedAt:      dinfo.CreatedAt,
+		UpdatedAt:      dinfo.UpdatedAt,
+		Editable:       dinfo.Permission == db.FilePermReadWrite,
+		ParentFolderID: dinfo.ParentFolderUUID,
 	}
 	// doc, err := h.db.GetLatestDocument(did)
 	// if err != nil {
