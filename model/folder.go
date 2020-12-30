@@ -9,14 +9,15 @@ type FolderList struct {
 
 // Folder is structure for folder info
 type Folder struct {
-	UUID       string  `json:"uuid"`
-	Owner      Profile `json:"owner"`
-	Updater    Profile `json:"updater"`
-	Name       string  `json:"name"`
-	Permission int     `json:"permission"`
-	CreatedAt  int64   `json:"created_at"`
-	UpdatedAt  int64   `json:"updated_at"`
-	Editable   bool    `json:"editable"`
+	UUID           string  `json:"uuid"`
+	Owner          Profile `json:"owner"`
+	Updater        Profile `json:"updater"`
+	Name           string  `json:"name"`
+	Permission     int     `json:"permission"`
+	CreatedAt      int64   `json:"created_at"`
+	UpdatedAt      int64   `json:"updated_at"`
+	Editable       bool    `json:"editable"`
+	ParentFolderID string  `json:"parentfolderid"`
 }
 
 // CreateFolderRes is structure for response of creation folder
