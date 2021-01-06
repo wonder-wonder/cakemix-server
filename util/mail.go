@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -20,6 +21,12 @@ var (
 // SendMail sends email. The mail is sent as plain text if textHTML is empty.
 func SendMail(ToAddr, ToName, subject, text, textHTML string) error {
 	if SendGridAPIKey == "" {
+		return nil
+	} else if SendGridAPIKey == "DEBUG" {
+		fmt.Printf("SendMail debug mode.\n"+
+			"To: %s <%s>\n"+
+			"Suject: %s\n"+
+			"Contents:\n%s\n", ToAddr, ToName, subject, text)
 		return nil
 	}
 	from := mail.NewEmail(MailFromName, MailFromAddr)
