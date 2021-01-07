@@ -175,8 +175,50 @@ func TestAuthHandler(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			header map[string]string
+			body   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					body:   `{"oldpass":"cakemix","newpass":"mixcake"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+			{
+				name: "Root2",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					body:   `{"oldpass":"mixcake","newpass":"cakemix"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/pass/change", bytes.NewBufferString(tt.req.body))
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				assert.Equal(t, tt.res.code, w.Code)
+			})
+		}
 	})
 	t.Run("Logout", func(t *testing.T) {
 		if token == "" {
