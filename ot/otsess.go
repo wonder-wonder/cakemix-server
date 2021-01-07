@@ -204,6 +204,8 @@ func (sess *Session) SessionLoop() {
 				optrans, err := sess.OT.Operate(opdat.Revision, ops)
 				if err != nil {
 					log.Printf("OT session error: operate error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				opraw := []interface{}{}
 				for _, v := range optrans.Ops {
@@ -296,10 +298,14 @@ func (sess *Session) SessionLoop() {
 				err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				err = sess.db.UpdateDocument(sess.DocID, updateruuid)
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				fmt.Printf("Session(%s) auto saved (total %d ops): ", sess.DocID, sess.OT.Revision)
 				if len(sess.OT.Text) <= 10 {
