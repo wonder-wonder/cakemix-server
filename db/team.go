@@ -175,9 +175,21 @@ func (d *DB) DeleteTeam(teamuuid string) error {
 }
 
 // GetTeamMember returns the member list of the team
-func (d *DB) GetTeamMember(teamuuid string) ([]TeamMember, error) {
+func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) ([]TeamMember, error) {
 	var res []TeamMember
-	rows, err := d.db.Query("SELECT useruuid, permission FROM teammember WHERE teamuuid = $1", teamuuid)
+
+	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1"
+	param := []interface{}{teamuuid}
+	if limit > 0 {
+		param = append(param, limit)
+		sql += " LIMIT $2"
+		if offset > 0 {
+			param = append(param, offset)
+			sql += " OFFSET $3"
+		}
+	}
+
+	rows, err := d.db.Query(sql, param...)
 	if err != nil {
 		return res, err
 	}

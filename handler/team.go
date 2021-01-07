@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
@@ -83,8 +84,25 @@ func (h *Handler) deleteTeamHandler(c *gin.Context) {
 func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 	res := model.MemberInfoRes{Members: []model.MemberInfo{}}
 	teamid := c.Param("teamid")
+	limit := -1
+	offset := -1
+	var err error
+	if c.Query("limit") != "" {
+		limit, err = strconv.Atoi(c.Query("limit"))
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+	}
+	if c.Query("offset") != "" {
+		offset, err = strconv.Atoi(c.Query("offset"))
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+	}
 
-	mem, err := h.db.GetTeamMember(teamid)
+	mem, err := h.db.GetTeamMember(teamid, limit, offset)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
