@@ -46,7 +46,9 @@ func TestAuthHandler(t *testing.T) {
 				w := httptest.NewRecorder()
 				req, _ := http.NewRequest("POST", "/v1/auth/login", bytes.NewBufferString(tt.req.body))
 				r.ServeHTTP(w, req)
-				assert.Equal(t, tt.res.code, w.Code)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
 
 				resraw := w.Body.Bytes()
 				if string(resraw) == "" {
@@ -106,7 +108,9 @@ func TestAuthHandler(t *testing.T) {
 					req.Header.Set(hk, hv)
 				}
 				r.ServeHTTP(w, req)
-				assert.Equal(t, tt.res.code, w.Code)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
 			})
 		}
 	})
@@ -143,7 +147,9 @@ func TestAuthHandler(t *testing.T) {
 					req.Header.Set(hk, hv)
 				}
 				r.ServeHTTP(w, req)
-				assert.Equal(t, tt.res.code, w.Code)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
 
 				resraw := w.Body.Bytes()
 				if !assert.NotEmpty(t, resraw, "should be string, got empty string") {
@@ -210,7 +216,9 @@ func TestAuthHandler(t *testing.T) {
 					req.Header.Set(hk, hv)
 				}
 				r.ServeHTTP(w, req)
-				assert.Equal(t, tt.res.code, w.Code)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
 			})
 		}
 	})
@@ -247,7 +255,9 @@ func TestAuthHandler(t *testing.T) {
 					req.Header.Set(hk, hv)
 				}
 				r.ServeHTTP(w, req)
-				assert.Equal(t, tt.res.code, w.Code)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
 			})
 		}
 	})
