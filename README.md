@@ -20,3 +20,12 @@ make runprod                         # Build docker image and start
 # When you want to stop server...
 make down
 ```
+
+## Used envrionments
+- `DBHOST` is hostname for postgres database (default: `cakemixpg`)
+- `DBPORT` is port number for postgres database (default: `5432`)
+- `DBUSER` is user for postgres database (default: `postgres`)
+- `DBPASS` is password for postgres database (default: `postgres`)
+- `DBNAME` is database name for postgres database (default: `cakemix`)
+- `APIADDR` is API server socket address (default: )
+- `PORT` is API server port (default: `8081`)
