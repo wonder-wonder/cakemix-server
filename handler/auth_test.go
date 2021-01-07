@@ -11,10 +11,7 @@ import (
 )
 
 func TestAuthHandler(t *testing.T) {
-	r, db, v1 := testInit(t)
-
-	h := NewHandler(db)
-	h.AuthHandler(v1)
+	r, _ := testInit(t)
 	token := ""
 
 	t.Run("Login", func(t *testing.T) {

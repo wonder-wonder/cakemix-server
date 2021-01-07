@@ -13,7 +13,7 @@ import (
 	"github.com/wonder-wonder/cakemix-server/db"
 )
 
-func testInit(tb testing.TB) (*gin.Engine, *db.DB, *gin.RouterGroup) {
+func testInit(tb testing.TB) (*gin.Engine, *db.DB) {
 	tb.Helper()
 	os.Setenv("SIGNPRVKEY", "../signkey")
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
@@ -28,8 +28,18 @@ func testInit(tb testing.TB) (*gin.Engine, *db.DB, *gin.RouterGroup) {
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
 	}
+
 	v1 := r.Group("v1")
-	return r, db, v1
+	h := NewHandler(db)
+	h.AuthHandler(v1)
+	h.DocumentHandler(v1)
+	h.FolderHandler(v1)
+	h.ProfileHandler(v1)
+	h.TeamHandler(v1)
+	h.SearchHandler(v1)
+	h.ImageHandler(v1)
+
+	return r, db
 }
 
 func testGetToken(tb testing.TB, r *gin.Engine) string {
