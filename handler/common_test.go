@@ -1,10 +1,15 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"github.com/wonder-wonder/cakemix-server/db"
 )
 
@@ -25,4 +30,28 @@ func testInit(tb testing.TB) (*gin.Engine, *db.DB, *gin.RouterGroup) {
 	}
 	v1 := r.Group("v1")
 	return r, db, v1
+}
+
+func testGetToken(tb testing.TB, r *gin.Engine) string {
+	tb.Helper()
+
+	reqbody := `{"id":"root","pass":"cakemix"}`
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/v1/auth/login", bytes.NewBufferString(reqbody))
+	r.ServeHTTP(w, req)
+	if !assert.Equal(tb, 200, w.Code) {
+		tb.FailNow()
+	}
+
+	var res map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &res)
+	if !assert.NoError(tb, err, "fail to umarshal json:\n%v", err) {
+		tb.FailNow()
+	}
+	jwt := res["jwt"]
+	if !assert.NotEmpty(tb, jwt) {
+		tb.FailNow()
+	}
+	return jwt
 }
