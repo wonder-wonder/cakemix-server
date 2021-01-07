@@ -61,6 +61,7 @@ type Session struct {
 	isSaveTimerRunning bool
 	lastUpdater        string
 	lastGCRev          int
+	panicStop          chan bool
 
 	DocID   string
 	DocInfo db.Document
@@ -87,6 +88,7 @@ func OpenSession(db *db.DB, docID string) (*Session, error) {
 	ots.incnum = 0
 	ots.saveRequest = make(chan bool)
 	ots.lastGCRev = 0
+	ots.panicStop = make(chan bool)
 
 	ots.DocID = docID
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -202,6 +204,8 @@ func (sess *Session) SessionLoop() {
 				optrans, err := sess.OT.Operate(opdat.Revision, ops)
 				if err != nil {
 					log.Printf("OT session error: operate error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				opraw := []interface{}{}
 				for _, v := range optrans.Ops {
@@ -294,10 +298,14 @@ func (sess *Session) SessionLoop() {
 				err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				err = sess.db.UpdateDocument(sess.DocID, updateruuid)
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
+					go func() { sess.panicStop <- true }()
+					continue
 				}
 				fmt.Printf("Session(%s) auto saved (total %d ops): ", sess.DocID, sess.OT.Revision)
 				if len(sess.OT.Text) <= 10 {
@@ -306,6 +314,11 @@ func (sess *Session) SessionLoop() {
 					fmt.Printf("%s...\n", sess.OT.Text[:9])
 				}
 			}
+		case <-sess.panicStop:
+			for _, v := range sess.Clients {
+				v.Close()
+			}
+			sess.Close()
 		}
 	}
 }
@@ -352,29 +365,38 @@ func (cl *Client) ClientLoop() {
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				log.Printf("OT client error: %v\n", err)
-				panic(err)
+				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+				return
 			}
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData)
 				if !ok {
-					panic("Logic error")
+					log.Printf("OT client error: invalid request data\n")
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.sess.Request(WSMsgTypeOp, cl.ClientID, opdat)
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
-					panic("Logic error")
+					log.Printf("OT client error: invalid request data\n")
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
-		case resdat := <-cl.response:
+		case resdat, ok := <-cl.response:
+			if !ok {
+				return
+			}
 			if resdat.Type == OTReqResTypePing {
 				cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 			} else {
 				resraw, err := convertToMsg(resdat.Type, resdat.Data)
 				if err != nil {
 					log.Printf("OT client error: response error: %v\n", err)
-					panic(err)
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.conn.WriteMessage(websocket.TextMessage, resraw)
 			}
