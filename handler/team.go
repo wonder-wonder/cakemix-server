@@ -82,7 +82,6 @@ func (h *Handler) deleteTeamHandler(c *gin.Context) {
 }
 
 func (h *Handler) getTeamMemberHandler(c *gin.Context) {
-	res := model.MemberInfoRes{Members: []model.MemberInfo{}}
 	teamid := c.Param("teamid")
 	limit := -1
 	offset := -1
@@ -102,15 +101,17 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 		}
 	}
 
-	mem, err := h.db.GetTeamMember(teamid, limit, offset)
+	total, mem, err := h.db.GetTeamMember(teamid, limit, offset)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if len(mem) == 0 {
+	if total == 0 {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+
+	res := model.MemberInfoRes{Total: total, Members: []model.MemberInfo{}}
 
 	for _, v := range mem {
 		prof, err := h.db.GetProfileByUUID(v.UserUUID)
