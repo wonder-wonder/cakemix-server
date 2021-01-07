@@ -359,18 +359,23 @@ func (cl *Client) ClientLoop() {
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				log.Printf("OT client error: %v\n", err)
-				panic(err)
+				cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+				return
 			}
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData)
 				if !ok {
-					panic("Logic error")
+					log.Printf("OT client error: invalid request data\n")
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.sess.Request(WSMsgTypeOp, cl.ClientID, opdat)
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
-					panic("Logic error")
+					log.Printf("OT client error: invalid request data\n")
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
@@ -384,7 +389,8 @@ func (cl *Client) ClientLoop() {
 				resraw, err := convertToMsg(resdat.Type, resdat.Data)
 				if err != nil {
 					log.Printf("OT client error: response error: %v\n", err)
-					panic(err)
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
 				}
 				cl.conn.WriteMessage(websocket.TextMessage, resraw)
 			}
