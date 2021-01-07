@@ -31,7 +31,7 @@ func (d *DB) SearchUser(query string, limit int, offset int) (int, []string, err
 		param = append(param, query+"%")
 		sql += " AND username like $" + strconv.Itoa(len(param))
 	}
-
+	sql += " ORDER BY username"
 	if limit > 0 {
 		param = append(param, limit)
 		sql += " limit $" + strconv.Itoa(len(param))
@@ -87,6 +87,7 @@ func (d *DB) SearchTeam(query string, limit int, offset int) (int, []string, err
 		param = append(param, query+"%")
 		sql += " AND username like $" + strconv.Itoa(len(param))
 	}
+	sql += " ORDER BY username"
 	if limit > 0 {
 		param = append(param, limit)
 		sql += " limit $" + strconv.Itoa(len(param))

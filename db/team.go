@@ -175,11 +175,30 @@ func (d *DB) DeleteTeam(teamuuid string) error {
 }
 
 // GetTeamMember returns the member list of the team
-func (d *DB) GetTeamMember(teamuuid string) ([]TeamMember, error) {
+func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) (int, []TeamMember, error) {
 	var res []TeamMember
-	rows, err := d.db.Query("SELECT useruuid, permission FROM teammember WHERE teamuuid = $1", teamuuid)
+	var count = 0
+
+	r := d.db.QueryRow("SELECT useruuid, permission FROM teammember WHERE teamuuid = $1", teamuuid)
+	err := r.Scan(&count)
 	if err != nil {
-		return res, err
+		return 0, res, err
+	}
+
+	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1 ORDER BY permission,useruuid"
+	param := []interface{}{teamuuid}
+	if limit > 0 {
+		param = append(param, limit)
+		sql += " LIMIT $2"
+		if offset > 0 {
+			param = append(param, offset)
+			sql += " OFFSET $3"
+		}
+	}
+
+	rows, err := d.db.Query(sql, param...)
+	if err != nil {
+		return 0, res, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -187,14 +206,14 @@ func (d *DB) GetTeamMember(teamuuid string) ([]TeamMember, error) {
 		var perm TeamPerm
 		err = rows.Scan(&useruuid, &perm)
 		if err != nil {
-			return res, err
+			return 0, res, err
 		}
 		res = append(res, TeamMember{TeamUUID: teamuuid, UserUUID: useruuid, Permission: perm})
 	}
 	if err = rows.Err(); err != nil {
-		return res, err
+		return 0, res, err
 	}
-	return res, nil
+	return count, res, nil
 }
 
 // GetTeamMemberPerm returns team member permission
