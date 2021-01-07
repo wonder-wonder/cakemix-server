@@ -13,6 +13,7 @@ import (
 func TestAuthHandler(t *testing.T) {
 	r, _ := testInit(t)
 	token := ""
+	invitetoken := ""
 
 	t.Run("Login", func(t *testing.T) {
 		type req struct {
@@ -165,6 +166,7 @@ func TestAuthHandler(t *testing.T) {
 				if !assert.NotEmpty(t, invtoken) {
 					t.FailNow()
 				}
+				invitetoken = invtoken
 			})
 		}
 	})
@@ -260,28 +262,58 @@ func TestAuthHandler(t *testing.T) {
 	})
 
 	t.Run("CheckUserName", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			username string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					username: "test",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/check/user/"+tt.req.username+"/"+invitetoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("GetRegistPre", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
 		// TODO: impl test
 		t.Skip("Not implemented.")
 	})
 	t.Run("PostRegistPre", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
 		// TODO: impl test
 		t.Skip("Not implemented.")
 	})
 	t.Run("RegistVerify", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
 		// TODO: impl test
