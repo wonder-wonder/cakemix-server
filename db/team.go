@@ -178,7 +178,7 @@ func (d *DB) DeleteTeam(teamuuid string) error {
 func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) ([]TeamMember, error) {
 	var res []TeamMember
 
-	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1"
+	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1 ORDER BY permission"
 	param := []interface{}{teamuuid}
 	if limit > 0 {
 		param = append(param, limit)
