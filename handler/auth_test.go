@@ -333,8 +333,37 @@ func TestAuthHandler(t *testing.T) {
 		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			body string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					body: `{"email":"test@example.com","username":"test","password":"pass"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/regist/pre/"+invitetoken, bytes.NewBufferString(tt.req.body))
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("RegistVerify", func(t *testing.T) {
 		if invitetoken == "" {
