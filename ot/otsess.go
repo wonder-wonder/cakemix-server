@@ -61,6 +61,7 @@ type Session struct {
 	isSaveTimerRunning bool
 	lastUpdater        string
 	lastGCRev          int
+	panicStop          chan bool
 
 	DocID   string
 	DocInfo db.Document
@@ -87,6 +88,7 @@ func OpenSession(db *db.DB, docID string) (*Session, error) {
 	ots.incnum = 0
 	ots.saveRequest = make(chan bool)
 	ots.lastGCRev = 0
+	ots.panicStop = make(chan bool)
 
 	ots.DocID = docID
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -306,6 +308,11 @@ func (sess *Session) SessionLoop() {
 					fmt.Printf("%s...\n", sess.OT.Text[:9])
 				}
 			}
+		case <-sess.panicStop:
+			for _, v := range sess.Clients {
+				v.Close()
+			}
+			sess.Close()
 		}
 	}
 }
@@ -367,7 +374,10 @@ func (cl *Client) ClientLoop() {
 				}
 				cl.sess.Request(WSMsgTypeSel, cl.ClientID, opdat)
 			}
-		case resdat := <-cl.response:
+		case resdat, ok := <-cl.response:
+			if !ok {
+				return
+			}
 			if resdat.Type == OTReqResTypePing {
 				cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 			} else {
