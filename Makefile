@@ -1,4 +1,5 @@
 rundev: main.go
+	test -f sendgrid.env && . sendgrid.env && echo
 	DBHOST="localhost" DBPORT="5432" DBUSER="postgres" DBPASS="postgres" DBNAME="cakemix" APIADDR="localhost" PORT="8081" go run -race main.go
 
 startdb:
