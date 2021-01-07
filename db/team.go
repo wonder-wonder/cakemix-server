@@ -179,7 +179,7 @@ func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) (int, []TeamM
 	var res []TeamMember
 	var count = 0
 
-	r := d.db.QueryRow("SELECT useruuid, permission FROM teammember WHERE teamuuid = $1", teamuuid)
+	r := d.db.QueryRow("SELECT COUNT(*) FROM teammember WHERE teamuuid = $1", teamuuid)
 	err := r.Scan(&count)
 	if err != nil {
 		return 0, res, err
