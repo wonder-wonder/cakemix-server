@@ -455,8 +455,47 @@ func TestAuthHandler(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			email string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					email: "test@example.com",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				veritoken := ""
+				dateint := time.Now().Unix()
+				row := db.QueryRow("SELECT token FROM passreset,auth WHERE email = $1 AND expdate > $2 AND passreset.uuid = auth.uuid", tt.req.email, dateint)
+				err := row.Scan(&veritoken)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, veritoken) {
+					t.FailNow()
+				}
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/pass/reset/verify/"+veritoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("PostPassResetVerify", func(t *testing.T) {
 		if token == "" {
