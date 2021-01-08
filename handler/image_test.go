@@ -5,7 +5,7 @@ import (
 )
 
 func TestImageHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("UploadImage", func(t *testing.T) {

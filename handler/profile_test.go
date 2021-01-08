@@ -5,7 +5,7 @@ import (
 )
 
 func TestProfileHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("GetProfile", func(t *testing.T) {

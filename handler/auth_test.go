@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
+	db := testOpenDB(t)
 	token := ""
 	invitetoken := ""
 
@@ -369,8 +371,48 @@ func TestAuthHandler(t *testing.T) {
 		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			username string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					username: "test",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				veritoken := ""
+				dateint := time.Now().Unix()
+				row := db.QueryRow("SELECT token FROM preuser WHERE username = $1 AND expdate > $2", tt.req.username, dateint)
+				err := row.Scan(&veritoken)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, veritoken) {
+					t.FailNow()
+				}
+
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/regist/verify/"+veritoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 
 	t.Run("PassReset", func(t *testing.T) {

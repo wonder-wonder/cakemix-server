@@ -5,7 +5,7 @@ import (
 )
 
 func TestSearchHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("SearchUser", func(t *testing.T) {
