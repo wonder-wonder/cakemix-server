@@ -5,7 +5,7 @@ import (
 )
 
 func TestDocumentHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("DocWebSocket", func(t *testing.T) {

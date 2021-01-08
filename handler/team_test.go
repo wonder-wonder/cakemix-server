@@ -5,7 +5,7 @@ import (
 )
 
 func TestTeamHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("GetTeamMember", func(t *testing.T) {

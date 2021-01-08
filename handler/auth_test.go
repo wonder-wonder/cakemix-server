@@ -6,13 +6,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
+	db := testOpenDB(t)
 	token := ""
+	invitetoken := ""
 
 	t.Run("Login", func(t *testing.T) {
 		type req struct {
@@ -165,6 +168,7 @@ func TestAuthHandler(t *testing.T) {
 				if !assert.NotEmpty(t, invtoken) {
 					t.FailNow()
 				}
+				invitetoken = invtoken
 			})
 		}
 	})
@@ -260,53 +264,287 @@ func TestAuthHandler(t *testing.T) {
 	})
 
 	t.Run("CheckUserName", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			username string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					username: "test",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/check/user/"+tt.req.username+"/"+invitetoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("GetRegistPre", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type res struct {
+			code int
+			// body string
+		}
+		tests := []struct {
+			name string
+			res  res
+		}{
+			{
+				name: "Normal",
+				res: res{
+					code: 200,
+					// body: "",
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/regist/pre/"+invitetoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("PostRegistPre", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			body string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					body: `{"email":"test@example.com","username":"test","password":"pass"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/regist/pre/"+invitetoken, bytes.NewBufferString(tt.req.body))
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("RegistVerify", func(t *testing.T) {
-		if token == "" {
+		if invitetoken == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			username string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					username: "test",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				veritoken := ""
+				dateint := time.Now().Unix()
+				row := db.QueryRow("SELECT token FROM preuser WHERE username = $1 AND expdate > $2", tt.req.username, dateint)
+				err := row.Scan(&veritoken)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, veritoken) {
+					t.FailNow()
+				}
+
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/regist/verify/"+veritoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 
 	t.Run("PassReset", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			body string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					body: `{"email":"test@example.com"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/pass/reset", bytes.NewBufferString(tt.req.body))
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("GetPassResetVerify", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			email string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					email: "test@example.com",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				veritoken := ""
+				dateint := time.Now().Unix()
+				row := db.QueryRow("SELECT token FROM passreset,auth WHERE email = $1 AND expdate > $2 AND passreset.uuid = auth.uuid", tt.req.email, dateint)
+				err := row.Scan(&veritoken)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, veritoken) {
+					t.FailNow()
+				}
+
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/pass/reset/verify/"+veritoken, nil)
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("PostPassResetVerify", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			email string
+			body  string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Test",
+				req: req{
+					email: "test@example.com",
+					body:  `{"newpass":"resetpass"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				veritoken := ""
+				dateint := time.Now().Unix()
+				row := db.QueryRow("SELECT token FROM passreset,auth WHERE email = $1 AND expdate > $2 AND passreset.uuid = auth.uuid", tt.req.email, dateint)
+				err := row.Scan(&veritoken)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, veritoken) {
+					t.FailNow()
+				}
+
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/pass/reset/verify/"+veritoken, bytes.NewBufferString(tt.req.body))
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 }

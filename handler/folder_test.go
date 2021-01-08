@@ -5,7 +5,7 @@ import (
 )
 
 func TestFolderHandler(t *testing.T) {
-	r, _ := testInit(t)
+	r := testInit(t)
 	token := testGetToken(t, r)
 
 	t.Run("GetFolder", func(t *testing.T) {
