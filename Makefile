@@ -13,7 +13,7 @@ rundev: main.go
 
 test: main.go
 	test -f signkey || make key
-	DBHOST=$(DBHOST) DBPORT=$(DBPORT) DBUSER=$(DBUSER) DBPASS=$(DBPASS) DBNAME=$(DBNAME) APIADDR=$(APIADDR) PORT=$(PORT) go test -v ./handler #--run=TestAuthHandler
+	DBHOST=$(DBHOST) DBPORT=$(DBPORT) DBUSER=$(DBUSER) DBPASS=$(DBPASS) DBNAME=$(DBNAME) APIADDR=$(APIADDR) PORT=$(PORT) go test -v ./handler -count=1 -cover #--run=TestAuthHandler
 
 startdb:
 	docker run -dp 5432:5432 -v `pwd`/docker/postgres/init:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres
