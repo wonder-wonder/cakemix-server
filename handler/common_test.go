@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,6 +14,47 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wonder-wonder/cakemix-server/db"
 )
+
+func TestMain(m *testing.M) {
+	println("Prepare test data...")
+	db, err := testOpenDB()
+	if err != nil {
+		panic(err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	dbexec := func(sql string) {
+		_, err := tx.Exec(sql)
+		if err != nil {
+			if err2 := tx.Rollback(); err2 != nil {
+				err = fmt.Errorf("%v: %v", err2, err)
+			}
+			panic(err)
+		}
+	}
+
+	// Test user
+	// Username: test1, Email: user1@example.com, Pass: pass
+	dbexec("INSERT INTO username VALUES('urtsqctxpdg3ypzan','user1');")
+	dbexec("INSERT INTO auth VALUES('urtsqctxpdg3ypzan','user1@example.com','4NoWTUFzUl9cllIfpxpp8MssVY8sYYfNpG3Y3dTMLewKqMTSGjiNInvKc0VEA8hUVIuPrIH1xXy3jI74vBAZ4A==','K7CNjNYcvH1XXq8R');")
+	dbexec("INSERT INTO profile VALUES('urtsqctxpdg3ypzan','','',1610798538,'','ja');")
+	dbexec("INSERT INTO folder VALUES('fw2ytzvb2y5qqpjfk','urtsqctxpdg3ypzan','fdahpbkboamdbgnua','user1',0,1610798538,1610798538,'urtsqctxpdg3ypzan');")
+
+	err = tx.Commit()
+	if err != nil {
+		if err2 := tx.Rollback(); err2 != nil {
+			err = fmt.Errorf("%v: %v", err2, err)
+		}
+		panic(err)
+	}
+
+	code := m.Run()
+	os.Exit(code)
+}
 
 func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
@@ -67,7 +109,7 @@ func testGetToken(tb testing.TB, r *gin.Engine) string {
 	return jwt
 }
 
-func testOpenDB(tb testing.TB) *sql.DB {
+func testOpenDB() (*sql.DB, error) {
 	var (
 		dbHost = "cakemixpg"
 		dbPort = "5432"
@@ -91,7 +133,5 @@ func testOpenDB(tb testing.TB) *sql.DB {
 	if os.Getenv("DBNAME") != "" {
 		dbName = os.Getenv("DBNAME")
 	}
-	db, err := sql.Open("postgres", "host= "+dbHost+" port="+dbPort+" user="+dbUser+" dbname="+dbName+" password="+dbPass+" sslmode=disable")
-	assert.NoError(tb, err)
-	return db
+	return sql.Open("postgres", "host= "+dbHost+" port="+dbPort+" user="+dbUser+" dbname="+dbName+" password="+dbPass+" sslmode=disable")
 }
