@@ -47,7 +47,11 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		IsAdmin:   isadmin,
 	}
 
-	teams, _ := getTeams(c)
+	teams, err := h.db.GetTeamsByUser(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	for _, v := range teams {
 		prof, err := h.db.GetProfileByUUID(v)
 		if err != nil {
