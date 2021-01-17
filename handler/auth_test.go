@@ -13,7 +13,8 @@ import (
 
 func TestAuthHandler(t *testing.T) {
 	r := testInit(t)
-	db := testOpenDB(t)
+	db, err := testOpenDB()
+	assert.NoError(t, err)
 	token := ""
 	invitetoken := ""
 
