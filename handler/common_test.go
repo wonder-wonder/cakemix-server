@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	// Username: test1, Email: user1@example.com, Pass: pass
 	dbexec("INSERT INTO username VALUES('urtsqctxpdg3ypzan','user1');")
 	dbexec("INSERT INTO auth VALUES('urtsqctxpdg3ypzan','user1@example.com','4NoWTUFzUl9cllIfpxpp8MssVY8sYYfNpG3Y3dTMLewKqMTSGjiNInvKc0VEA8hUVIuPrIH1xXy3jI74vBAZ4A==','K7CNjNYcvH1XXq8R');")
-	dbexec("INSERT INTO profile VALUES('urtsqctxpdg3ypzan','','',1610798538,'','ja');")
+	dbexec("INSERT INTO profile VALUES('urtsqctxpdg3ypzan','user1bio','user1iconuri',1610798538,'user1attr','ja');")
 	dbexec("INSERT INTO folder VALUES('fw2ytzvb2y5qqpjfk','urtsqctxpdg3ypzan','fdahpbkboamdbgnua','user1',0,1610798538,1610798538,'urtsqctxpdg3ypzan');")
 
 	err = tx.Commit()
