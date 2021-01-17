@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -123,7 +124,47 @@ func TestProfileHandler(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+
+		type req struct {
+			header map[string]string
+			uuid   string
+			body   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "ujafzavrqkqthqe54",
+					body: `{
+						"bio": "root bio update test",
+						"lang": "en"
+					}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/profile/"+tt.req.uuid, bytes.NewBufferString(tt.req.body))
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 }
