@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -159,8 +160,85 @@ func TestTeamHandler(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+
+		type req struct {
+			header   map[string]string
+			teamname string
+			query    string
+		}
+		type res struct {
+			code int
+			body string
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "TestTeam",
+				req: req{
+					header:   map[string]string{"Authorization": `Bearer ` + token},
+					teamname: "testteam",
+					query:    ``,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				teamid := ""
+				row := db.QueryRow("SELECT uuid FROM username WHERE username = $1", tt.req.teamname)
+				err := row.Scan(&teamid)
+				assert.NoError(t, err)
+
+				url := "/v1/team/" + teamid + "/member"
+				if tt.req.query != "" {
+					url += "?" + tt.req.query
+				}
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", url, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if string(resraw) == "" {
+					t.Fatalf("should be string, got empty string")
+				}
+
+				var res map[string]interface{}
+				err = json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+				total, ok := res["total"]
+				if !assert.True(t, ok, "should has total, got:\n%v", res) {
+					t.FailNow()
+				}
+				if !assert.Equal(t, total, 2.0) {
+					t.FailNow()
+				}
+				members, ok := res["members"]
+				if !assert.True(t, ok, "should has members, got:\n%v", res) {
+					t.FailNow()
+				}
+				memarr, ok := members.([]interface{})
+				if !assert.True(t, ok, "members is not array, got:\n%v", members) {
+					t.FailNow()
+				}
+				if !assert.Equal(t, len(memarr), 2) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("DeleteTeamMember", func(t *testing.T) {
 		if token == "" {
