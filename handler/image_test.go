@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -105,7 +106,64 @@ func TestImageHandler(t *testing.T) {
 		if imageid == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+
+		type req struct {
+			header map[string]string
+			imgid  string
+		}
+		type res struct {
+			code     int
+			filepath string
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "test.png",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					imgid:  imageid,
+				},
+				res: res{
+					code:     200,
+					filepath: "test.png",
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/image/"+tt.req.imgid, nil)
+
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+				res := w.Body.Bytes()
+				if len(res) == 0 {
+					t.Fatalf("response size should be > 0, got size==0")
+				}
+
+				exp, err := ioutil.ReadFile(tt.res.filepath)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				if !assert.Equal(t, len(exp), len(res)) {
+					t.FailNow()
+				}
+				for i := range exp {
+					if exp[i] != res[i] {
+						t.Error("Response data is mismatch")
+						t.FailNow()
+					}
+				}
+			})
+		}
 	})
 }
