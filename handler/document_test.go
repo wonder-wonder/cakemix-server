@@ -282,14 +282,14 @@ func TestDocumentHandler(t *testing.T) {
 			})
 		}
 	})
-	t.Run("DocWebSocket", func(t *testing.T) {
-		if token == "" {
-			t.SkipNow()
-		}
-		if newdid == "" {
-			t.SkipNow()
-		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
-	})
+	// t.Run("DocWebSocket", func(t *testing.T) {
+	// 	if token == "" {
+	// 		t.SkipNow()
+	// 	}
+	// 	if newdid == "" {
+	// 		t.SkipNow()
+	// 	}
+	// 	// TODO: impl test
+	// 	t.Skip("Not implemented.")
+	// })
 }
