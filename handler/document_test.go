@@ -8,7 +8,7 @@ func TestDocumentHandler(t *testing.T) {
 	r := testInit(t)
 	token := testGetToken(t, r)
 
-	t.Run("DocWebSocket", func(t *testing.T) {
+	t.Run("CreateDoc", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
@@ -22,14 +22,7 @@ func TestDocumentHandler(t *testing.T) {
 		// TODO: impl test
 		t.Skip("Not implemented.")
 	})
-	t.Run("CreateDoc", func(t *testing.T) {
-		if token == "" {
-			t.SkipNow()
-		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
-	})
-	t.Run("RemoveDoc", func(t *testing.T) {
+	t.Run("UpdateDocInfo", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
@@ -43,7 +36,14 @@ func TestDocumentHandler(t *testing.T) {
 		// TODO: impl test
 		t.Skip("Not implemented.")
 	})
-	t.Run("UodateDocInfo", func(t *testing.T) {
+	t.Run("RemoveDoc", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		// TODO: impl test
+		t.Skip("Not implemented.")
+	})
+	t.Run("DocWebSocket", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
