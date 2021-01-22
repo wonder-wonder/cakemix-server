@@ -156,7 +156,7 @@ func TestProfileHandler(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest("GET", "/v1/profile/"+tt.req.uuid, bytes.NewBufferString(tt.req.body))
+				req, _ := http.NewRequest("PUT", "/v1/profile/"+tt.req.uuid, bytes.NewBufferString(tt.req.body))
 				for hk, hv := range tt.req.header {
 					req.Header.Set(hk, hv)
 				}
