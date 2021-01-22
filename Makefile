@@ -1,6 +1,20 @@
+DBHOST="localhost"
+DBPORT="5432"
+DBUSER="postgres"
+DBPASS="postgres"
+DBNAME="cakemix"
+APIADDR="localhost"
+PORT="8081"
+
 rundev: main.go
-	test -f sendgrid.env && . sendgrid.env && echo
-	DBHOST="localhost" DBPORT="5432" DBUSER="postgres" DBPASS="postgres" DBNAME="cakemix" APIADDR="localhost" PORT="8081" go run -race main.go
+	test -f signkey || make key
+	test ! -f sendgrid.env || . sendgrid.env
+	DBHOST=$(DBHOST) DBPORT=$(DBPORT) DBUSER=$(DBUSER) DBPASS=$(DBPASS) DBNAME=$(DBNAME) APIADDR=$(APIADDR) PORT=$(PORT) go run -race main.go
+
+test: main.go
+	test -f signkey || make key
+	DBHOST=$(DBHOST) DBPORT=$(DBPORT) DBUSER=$(DBUSER) DBPASS=$(DBPASS) DBNAME=$(DBNAME) APIADDR=$(APIADDR) PORT=$(PORT) go test -v ./handler -count=1 -coverprofile=cover.out
+	go tool cover -html=cover.out -o cover.html
 
 startdb:
 	docker run -dp 5432:5432 -v `pwd`/docker/postgres/init:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres

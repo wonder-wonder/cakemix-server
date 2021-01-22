@@ -1,0 +1,32 @@
+name: Test Cakemix
+
+on:
+  - push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: test
+      run: |
+        cat ./docker/postgres/init/* | PGPASSWORD=postgres psql -h localhost -U postgres
+        make test DBHOST=\"localhost\"
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v2
+      with:
+        name: cover.html
+        path: cover.html
