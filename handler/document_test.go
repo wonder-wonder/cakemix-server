@@ -282,6 +282,7 @@ func TestDocumentHandler(t *testing.T) {
 			})
 		}
 	})
+	// TODO: impl DocWebSocket test
 	// t.Run("DocWebSocket", func(t *testing.T) {
 	// 	if token == "" {
 	// 		t.SkipNow()
