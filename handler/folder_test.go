@@ -12,6 +12,7 @@ import (
 func TestFolderHandler(t *testing.T) {
 	r := testInit(t)
 	token := testGetToken(t, r)
+	newfid := ""
 
 	t.Run("GetFolder", func(t *testing.T) {
 		if token == "" {
@@ -106,18 +107,73 @@ func TestFolderHandler(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
-	})
-	t.Run("RemoveFolder", func(t *testing.T) {
-		if token == "" {
-			t.SkipNow()
+		type req struct {
+			header   map[string]string
+			folderid string
+			name     string
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header:   map[string]string{"Authorization": `Bearer ` + token},
+					folderid: "fwk6al7nyj4qdufaz",
+					name:     "FolderTest",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/folder/"+tt.req.folderid+"?name="+tt.req.name, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if !assert.NotEmpty(t, resraw, "should be string, got empty string") {
+					t.FailNow()
+				}
+
+				var res map[string]interface{}
+				err := json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				newfidraw, ok := res["folder_id"]
+				if !assert.True(t, ok, "should has folder_id, got:\n%v", res) {
+					t.FailNow()
+				}
+				newfid, ok = newfidraw.(string)
+				if !assert.True(t, ok, "should be string, got:\n%v", res) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, newfid) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("MoveFolder", func(t *testing.T) {
 		if token == "" {
+			t.SkipNow()
+		}
+		if newfid == "" {
 			t.SkipNow()
 		}
 		// TODO: impl test
@@ -125,6 +181,19 @@ func TestFolderHandler(t *testing.T) {
 	})
 	t.Run("UpdateFolderInfo", func(t *testing.T) {
 		if token == "" {
+			t.SkipNow()
+		}
+		if newfid == "" {
+			t.SkipNow()
+		}
+		// TODO: impl test
+		t.Skip("Not implemented.")
+	})
+	t.Run("RemoveFolder", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		if newfid == "" {
 			t.SkipNow()
 		}
 		// TODO: impl test
