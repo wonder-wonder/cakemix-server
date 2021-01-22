@@ -85,8 +85,71 @@ func TestDocumentHandler(t *testing.T) {
 		if newdid == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			header map[string]string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "TestDocument",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/doc/"+newdid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if !assert.NotEmpty(t, resraw, "should be string, got empty string") {
+					t.FailNow()
+				}
+
+				var res map[string]interface{}
+				err := json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				attrs := []string{"owner", "updater", "title", "body", "permission", "created_at", "updated_at", "editable", "parentfolderid"}
+				for _, v := range attrs {
+					_, ok := res[v]
+					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+						t.FailNow()
+					}
+				}
+
+				uuid, ok := res["uuid"]
+				if !assert.True(t, ok, "should has uuid, got:\n%v", res) {
+					t.FailNow()
+				}
+				uuidstr, ok := uuid.(string)
+				if !assert.True(t, ok, "path should string, got:\n%v", uuid) {
+					t.FailNow()
+				}
+				if !assert.Equal(t, newdid, uuidstr) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("UpdateDocInfo", func(t *testing.T) {
 		if token == "" {
