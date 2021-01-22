@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -220,8 +221,42 @@ func TestFolderHandler(t *testing.T) {
 		if newfid == "" {
 			t.SkipNow()
 		}
-		// TODO: impl test
-		t.Skip("Not implemented.")
+		type req struct {
+			header map[string]string
+			body   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "TestFolder",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					body:   `{"name":"NewName"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("PUT", "/v1/folder/"+newfid, bytes.NewBufferString(tt.req.body))
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
 	})
 	t.Run("RemoveFolder", func(t *testing.T) {
 		if token == "" {
