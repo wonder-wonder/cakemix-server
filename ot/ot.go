@@ -11,7 +11,7 @@ type OpType int
 
 // OpType enums
 const (
-	OpTypeRetain = iota
+	OpTypeRetain OpType = iota
 	OpTypeInsert
 	OpTypeDelete
 )
