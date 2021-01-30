@@ -53,7 +53,10 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	// Check all history after rev
 	// for _, h := range ot.History[rev:] {
 	for i := rev; i < ot.Revision; i++ {
-		h := ot.History[i]
+		h, ok := ot.History[i]
+		if !ok {
+			return Ops{}, errors.New("Revision is not in history")
+		}
 		//temporary new ops
 		tops := Ops{User: ret.User}
 		//History op counter
