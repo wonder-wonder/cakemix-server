@@ -2,6 +2,9 @@ package ot
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"strings"
 	"unicode/utf16"
 )
 
@@ -10,7 +13,7 @@ type OpType int
 
 // OpType enums
 const (
-	OpTypeRetain = iota
+	OpTypeRetain OpType = iota
 	OpTypeInsert
 	OpTypeDelete
 )
@@ -42,14 +45,20 @@ func NewOT(text string) *OT {
 
 // Transform converts OT operations
 func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
-	if rev < 0 || rev > ot.Revision {
-		return Ops{}, errors.New("Revision is out of range")
+	if rev < 0 {
+		return Ops{}, fmt.Errorf("Revision should be lager than 0")
+	}
+	if rev > ot.Revision {
+		return Ops{}, fmt.Errorf("Revision is out of range")
 	}
 	ret := ops
 	// Check all history after rev
 	// for _, h := range ot.History[rev:] {
 	for i := rev; i < ot.Revision; i++ {
-		h := ot.History[i]
+		h, ok := ot.History[i]
+		if !ok {
+			return Ops{}, errors.New("Revision is not in history")
+		}
 		//temporary new ops
 		tops := Ops{User: ret.User}
 		//History op counter
@@ -84,7 +93,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 					}
 					// If remain is not left, the operation is inconsistent
 					if remain == 0 {
-						return Ops{}, errors.New("Operation is inconsistent")
+						return Ops{}, errors.New("Operation is inconsistent (incoming operation is too much)")
 					}
 				}
 
@@ -116,7 +125,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 			}
 			if j < len(h.Ops) {
 				// If stil remain, it's inconsistent
-				return Ops{}, errors.New("Operation is inconsistent")
+				return Ops{}, errors.New("Operation is inconsistent (incoming operation is not enough)")
 			}
 		}
 		//Merge same type
@@ -133,6 +142,29 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 		ret = tops
 	}
 	return ret, nil
+}
+
+func showOps(docid string, prefix string, rev int, ops Ops) {
+	file, err := os.OpenFile(docid, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	opstr := ""
+	for _, v := range ops.Ops {
+		if v.OpType == OpTypeInsert {
+			opstr += fmt.Sprintf(", ins(%s(%d))", v.Text, v.Len)
+		} else if v.OpType == OpTypeRetain {
+			opstr += fmt.Sprintf(", ret(%d)", v.Len)
+		} else if v.OpType == OpTypeDelete {
+			opstr += fmt.Sprintf(", del(%d)", v.Len)
+		} else {
+			panic("OpType error: unknown type")
+		}
+	}
+	opstr = strings.TrimLeft(opstr, ", ")
+	fmt.Fprintf(file, "[DEBUG] [%s] %s ops from rev %d: [%s]\n", prefix, ops.User, rev, opstr)
 }
 
 // Operate applies OT operation
