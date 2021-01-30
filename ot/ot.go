@@ -2,6 +2,7 @@ package ot
 
 import (
 	"errors"
+	"fmt"
 	"unicode/utf16"
 )
 
@@ -42,8 +43,11 @@ func NewOT(text string) *OT {
 
 // Transform converts OT operations
 func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
-	if rev < 0 || rev > ot.Revision {
-		return Ops{}, errors.New("Revision is out of range")
+	if rev < 0 {
+		return Ops{}, fmt.Errorf("Revision should be lager than 0")
+	}
+	if rev > ot.Revision {
+		return Ops{}, fmt.Errorf("Revision is out of range")
 	}
 	ret := ops
 	// Check all history after rev
