@@ -3,6 +3,7 @@ package ot
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"unicode/utf16"
 )
@@ -143,7 +144,13 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	return ret, nil
 }
 
-func showOps(prefix string, rev int, ops Ops) {
+func showOps(docid string, prefix string, rev int, ops Ops) {
+	file, err := os.OpenFile(docid, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
 	opstr := ""
 	for _, v := range ops.Ops {
 		if v.OpType == OpTypeInsert {
@@ -157,12 +164,11 @@ func showOps(prefix string, rev int, ops Ops) {
 		}
 	}
 	opstr = strings.TrimLeft(opstr, ", ")
-	fmt.Printf("[DEBUG] [%s] %s ops from rev %d: [%s]\n", prefix, ops.User, rev, opstr)
+	fmt.Fprintf(file, "[DEBUG] [%s] %s ops from rev %d: [%s]\n", prefix, ops.User, rev, opstr)
 }
 
 // Operate applies OT operation
 func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
-	showOps("req", rev, ops)
 	opstrans, err := ot.Transform(rev, ops)
 	if err != nil {
 		return Ops{}, err
@@ -182,6 +188,5 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 	ot.Text = string(utf16.Decode(trune))
 	ot.History[ot.Revision] = opstrans
 	ot.Revision++
-	showOps("trans", ot.Revision, opstrans)
 	return opstrans, nil
 }
