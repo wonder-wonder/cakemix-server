@@ -3,6 +3,7 @@ package ot
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unicode/utf16"
 )
 
@@ -142,8 +143,26 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 	return ret, nil
 }
 
+func showOps(prefix string, rev int, ops Ops) {
+	opstr := ""
+	for _, v := range ops.Ops {
+		if v.OpType == OpTypeInsert {
+			opstr += fmt.Sprintf(", ins(%s(%d))", v.Text, v.Len)
+		} else if v.OpType == OpTypeRetain {
+			opstr += fmt.Sprintf(", ret(%d)", v.Len)
+		} else if v.OpType == OpTypeDelete {
+			opstr += fmt.Sprintf(", del(%d)", v.Len)
+		} else {
+			panic("OpType error: unknown type")
+		}
+	}
+	opstr = strings.TrimLeft(opstr, ", ")
+	fmt.Printf("[DEBUG] [%s] %s ops from rev %d: [%s]\n", prefix, ops.User, rev, opstr)
+}
+
 // Operate applies OT operation
 func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
+	showOps("req", rev, ops)
 	opstrans, err := ot.Transform(rev, ops)
 	if err != nil {
 		return Ops{}, err
@@ -163,5 +182,6 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 	ot.Text = string(utf16.Decode(trune))
 	ot.History[ot.Revision] = opstrans
 	ot.Revision++
+	showOps("trans", ot.Revision, opstrans)
 	return opstrans, nil
 }
