@@ -91,7 +91,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 					}
 					// If remain is not left, the operation is inconsistent
 					if remain == 0 {
-						return Ops{}, errors.New("Operation is inconsistent")
+						return Ops{}, errors.New("Operation is inconsistent (incoming operation is too much)")
 					}
 				}
 
@@ -123,7 +123,7 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 			}
 			if j < len(h.Ops) {
 				// If stil remain, it's inconsistent
-				return Ops{}, errors.New("Operation is inconsistent")
+				return Ops{}, errors.New("Operation is inconsistent (incoming operation is not enough)")
 			}
 		}
 		//Merge same type
