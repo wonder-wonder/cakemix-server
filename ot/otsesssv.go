@@ -171,7 +171,10 @@ func (sess *Session) SessionLoop() {
 				showOps(sess.DocID, "trans", sess.OT.Revision, optrans)
 				if err != nil {
 					log.Printf("OT session error: operate error: %v\n", err)
-					go func() { sess.panicStop <- true }()
+					cl, ok := sess.Clients[req.ClientID]
+					if ok {
+						cl.Close()
+					}
 					continue
 				}
 				opraw := []interface{}{}
