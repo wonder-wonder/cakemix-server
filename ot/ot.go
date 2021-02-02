@@ -185,6 +185,9 @@ func (ot *OT) Operate(rev int, ops Ops) (Ops, error) {
 			trune = append(trune[:loc], trune[v.Len+loc:]...)
 		}
 	}
+	if loc != len(trune) {
+		return Ops{}, errors.New("Operation is inconsistent (total text len is not match)")
+	}
 	ot.Text = string(utf16.Decode(trune))
 	ot.History[ot.Revision] = opstrans
 	ot.Revision++
