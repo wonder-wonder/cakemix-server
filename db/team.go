@@ -185,7 +185,7 @@ func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) (int, []TeamM
 		return 0, res, err
 	}
 
-	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1 ORDER BY permission,useruuid"
+	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1 ORDER BY permission DESC, useruuid"
 	param := []interface{}{teamuuid}
 	if limit > 0 {
 		param = append(param, limit)
