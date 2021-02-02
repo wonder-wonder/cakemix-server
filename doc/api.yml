@@ -277,6 +277,11 @@ paths:
           in: query
           name: offset
           description: member offset
+        - schema:
+            type: string
+          in: query
+          name: uuid
+          description: uuid
       responses:
         '200':
           description: Got team member list
