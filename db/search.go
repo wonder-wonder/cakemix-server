@@ -12,7 +12,7 @@ func (d *DB) SearchUser(query string, limit int, offset int) (int, []string, err
 	var err error
 	var count = 0
 	if query != "" {
-		r := d.db.QueryRow("SELECT COUNT(*) FROM auth as a, username as u WHERE a.uuid = u.uuid AND username like $1", query+"%")
+		r := d.db.QueryRow("SELECT COUNT(*) FROM auth as a, username as u WHERE a.uuid = u.uuid AND username ilike $1", query+"%")
 		err = r.Scan(&count)
 		if err != nil {
 			return 0, res, err
@@ -29,7 +29,7 @@ func (d *DB) SearchUser(query string, limit int, offset int) (int, []string, err
 	param := []interface{}{}
 	if query != "" {
 		param = append(param, query+"%")
-		sql += " AND username like $" + strconv.Itoa(len(param))
+		sql += " AND username ilike $" + strconv.Itoa(len(param))
 	}
 	sql += " ORDER BY username"
 	if limit > 0 {
@@ -68,7 +68,7 @@ func (d *DB) SearchTeam(query string, limit int, offset int) (int, []string, err
 
 	var count = 0
 	if query != "" {
-		r := d.db.QueryRow("SELECT COUNT(*) FROM username WHERE uuid like 't%' AND username like $1", query+"%")
+		r := d.db.QueryRow("SELECT COUNT(*) FROM username WHERE uuid like 't%' AND username ilike $1", query+"%")
 		err = r.Scan(&count)
 		if err != nil {
 			return 0, res, err
@@ -85,7 +85,7 @@ func (d *DB) SearchTeam(query string, limit int, offset int) (int, []string, err
 	param := []interface{}{}
 	if query != "" {
 		param = append(param, query+"%")
-		sql += " AND username like $" + strconv.Itoa(len(param))
+		sql += " AND username ilike $" + strconv.Itoa(len(param))
 	}
 	sql += " ORDER BY username"
 	if limit > 0 {
