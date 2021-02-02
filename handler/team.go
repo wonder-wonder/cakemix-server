@@ -85,6 +85,7 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 	teamid := c.Param("teamid")
 	limit := -1
 	offset := -1
+	userid := c.Query("uuid")
 	var err error
 	if c.Query("limit") != "" {
 		limit, err = strconv.Atoi(c.Query("limit"))
@@ -101,7 +102,7 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 		}
 	}
 
-	total, mem, err := h.db.GetTeamMember(teamid, limit, offset)
+	total, mem, err := h.db.GetTeamMember(teamid, limit, offset, userid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
