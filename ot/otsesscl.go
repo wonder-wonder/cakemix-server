@@ -7,22 +7,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Client is structure for client connection
-type Client struct {
-	conn     *websocket.Conn
-	sess     *Session
-	lastRev  int
-	readOnly bool
-
-	response chan Response
-	ClientID string
-	UserInfo struct {
-		UUID string
-		Name string
-	}
-	Selection []SelData
-}
-
 // NewOTClient generates OT client data
 func NewOTClient(conn *websocket.Conn, uuid string, name string, readOnly bool) *Client {
 	otc := Client{}
