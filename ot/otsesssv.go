@@ -18,23 +18,6 @@ const (
 
 // OT session management
 
-// Session is structure for OT session
-type Session struct {
-	db                 *db.DB
-	incnum             int
-	saveRequest        chan bool
-	isSaveTimerRunning bool
-	lastUpdater        string
-	lastGCRev          int
-	panicStop          chan bool
-
-	DocID   string
-	DocInfo db.Document
-	Clients map[string]*Client
-	request chan Request
-	OT      *OT
-}
-
 var (
 	otSessions     = map[string]*Session{}
 	otSessionsLock = make(chan bool, 1)
@@ -101,19 +84,6 @@ func (sess *Session) Close() {
 	}
 }
 
-// Request is structure for OT session request
-type Request struct {
-	Type     WSMsgType
-	ClientID string
-	Data     interface{}
-}
-
-// Response is structure for OT session response
-type Response struct {
-	Type WSMsgType
-	Data interface{}
-}
-
 // SessionLoop is main loop for OT session
 func (sess *Session) SessionLoop() {
 	for {
@@ -171,7 +141,10 @@ func (sess *Session) SessionLoop() {
 				showOps(sess.DocID, "trans", sess.OT.Revision, optrans)
 				if err != nil {
 					log.Printf("OT session error: operate error: %v\n", err)
-					go func() { sess.panicStop <- true }()
+					cl, ok := sess.Clients[req.ClientID]
+					if ok {
+						cl.Close()
+					}
 					continue
 				}
 				opraw := []interface{}{}
