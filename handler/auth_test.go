@@ -2,9 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -223,6 +225,112 @@ func TestAuthHandler(t *testing.T) {
 				}
 			})
 		}
+	})
+	t.Run("GetSession", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		type req struct {
+			header map[string]string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/session", nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if string(resraw) == "" {
+					t.Fatalf("should be string, got empty string")
+				}
+
+				var res []interface{}
+				err := json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+				if !assert.LessOrEqual(t, 1, len(res)) {
+					t.FailNow()
+				}
+
+				res1, ok := res[0].(map[string]interface{})
+				if !assert.True(t, ok, "res[0] should map[string]interface{}, got:\n%v", res) {
+					t.FailNow()
+				}
+
+				attrs := []string{"sessionid", "lastlogin", "lastused", "ipaddr", "devinfo", "iscurrent"}
+				for _, v := range attrs {
+					_, ok := res1[v]
+					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+						t.FailNow()
+					}
+				}
+			})
+		}
+	})
+	t.Run("DeleteSession", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		jwtbase64 := strings.Split(token, ".")[1]
+		jwtbase64len := len(jwtbase64)
+		if len(jwtbase64)%4 > 0 {
+			for i := 0; i < (4 - (jwtbase64len % 4)); i++ {
+				jwtbase64 += "="
+			}
+		}
+		jwtraw, err := base64.StdEncoding.DecodeString(jwtbase64)
+		if !assert.NoError(t, err, "fail to decode base64:\n%v", err) {
+			t.FailNow()
+		}
+		var res map[string]interface{}
+		err = json.Unmarshal(jwtraw, &res)
+		if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+			t.FailNow()
+		}
+		sessid, ok := res["jti"]
+		if !assert.True(t, ok, "should has key 'jti', got:\n%v", res) {
+			t.FailNow()
+		}
+		sessidstr, ok := res["jti"].(string)
+		if !assert.True(t, ok, "should be string, got:\n%v", sessid) {
+			t.FailNow()
+		}
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("DELETE", "/v1/auth/session/"+sessidstr, nil)
+
+		req.Header.Set("Authorization", `Bearer `+token)
+
+		r.ServeHTTP(w, req)
+		if !assert.Equal(t, 200, w.Code) {
+			t.FailNow()
+		}
+		token = testGetToken(t, r)
 	})
 	t.Run("Logout", func(t *testing.T) {
 		if token == "" {
