@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	loginSessionExpHours = 24 * 7
+	loginSessionExpHours = 24 * 14
 	verifyTokenExpHours  = 12
 )
 
