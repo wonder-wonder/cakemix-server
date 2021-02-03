@@ -791,6 +791,40 @@ paths:
           description: Got image
       operationId: get-image-imgid
       security: []
+  /auth/session:
+    get:
+      summary: Get session list
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthSessionModel'
+      operationId: get-auth-session
+      description: Get session list
+  '/auth/session/{id}':
+    delete:
+      summary: Revoke session
+      operationId: delete-auth-session
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      tags:
+        - Auth
+      description: Revoke session
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
 components:
   schemas:
     JWT:
@@ -1096,6 +1130,23 @@ components:
             $ref: '#/components/schemas/BreadcrumbModel'
       required:
         - path
+    AuthSessionModel:
+      title: AuthSessionModel
+      type: object
+      properties:
+        sessionid:
+          type: string
+        lastlogin:
+          type: integer
+        lastused:
+          type: integer
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+        iscurrent:
+          type: boolean
+      description: Session info
   securitySchemes:
     JWT:
       type: http

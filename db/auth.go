@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	loginSessionExpHours = 24 * 7
+	loginSessionExpHours = 24 * 14
 	verifyTokenExpHours  = 12
 )
 
@@ -121,6 +121,26 @@ func (d *DB) AddSession(uuid string, sessionID string, IPAddr string, DeviceData
 	return nil
 }
 
+// GetSession deletes the session
+func (d *DB) GetSession(uuid string) ([]Session, error) {
+	res := []Session{}
+	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1", uuid)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		s := Session{}
+		err = rows.Scan(&s.UUID, &s.SessionID, &s.LoginDate,
+			&s.LastDate, &s.ExpireDate, &s.IPAddr, &s.DeviceData)
+		if err != nil {
+			return []Session{}, err
+		}
+		res = append(res, s)
+	}
+	return res, nil
+}
+
 // RemoveSession deletes the session
 func (d *DB) RemoveSession(uuid string, sessionID string) error {
 	_, err := d.db.Exec(`DELETE FROM session WHERE uuid = $1 AND sessionid = $2`, uuid, sessionID)
@@ -130,8 +150,18 @@ func (d *DB) RemoveSession(uuid string, sessionID string) error {
 	return nil
 }
 
-// VerifyToken verifies JWT and returns UUID of JWT holder
-func (d *DB) VerifyToken(token string) (string, error) {
+// UpdateSessionLastUsed deletes the session
+func (d *DB) UpdateSessionLastUsed(uuid string, sessionID string) error {
+	dateint := time.Now().Unix()
+	_, err := d.db.Exec(`UPDATE session SET lastdate = $1 WHERE uuid = $2 AND sessionid = $3`, dateint, uuid, sessionID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// VerifyToken verifies JWT and returns UUID and sessionID of JWT holder
+func (d *DB) VerifyToken(token string) (string, string, error) {
 	var claims jwt.StandardClaims
 
 	_, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
@@ -141,24 +171,24 @@ func (d *DB) VerifyToken(token string) (string, error) {
 		return verifyKey, nil
 	})
 	if err != nil {
-		return "", ErrInvalidToken
+		return "", "", ErrInvalidToken
 	}
 
 	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
-		return "", ErrInvalidToken
+		return "", "", ErrInvalidToken
 	}
 	var expdate int64
 	r := d.db.QueryRow("SELECT expiredate FROM session WHERE uuid = $1 AND sessionid = $2", claims.Audience, claims.Id)
 	err = r.Scan(&expdate)
 	if err == sql.ErrNoRows {
-		return "", ErrInvalidToken
+		return "", "", ErrInvalidToken
 	} else if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if time.Now().Unix() > expdate {
-		return "", ErrInvalidToken
+		return "", "", ErrInvalidToken
 	}
-	return claims.Audience, nil
+	return claims.Audience, claims.Id, nil
 }
 
 // GenerateInviteToken generates token for invitation

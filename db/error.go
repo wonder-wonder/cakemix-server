@@ -5,9 +5,10 @@ import "errors"
 // Errors
 var (
 	// Auth
-	ErrIDPassInvalid = errors.New("ID or password is incorrect")
-	ErrInvalidToken  = errors.New("Token is expired or invalid")
-	ErrExistUser     = errors.New("UserName or email is already exist")
+	ErrIDPassInvalid  = errors.New("ID or password is incorrect")
+	ErrInvalidToken   = errors.New("Token is expired or invalid")
+	ErrExistUser      = errors.New("UserName or email is already exist")
+	ErrInvalidSession = errors.New("SessionID is invalid")
 
 	// User/Team
 	ErrUserNotFound     = errors.New("The user is not found")

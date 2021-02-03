@@ -54,7 +54,7 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		uuid, err := h.db.VerifyToken(hs[1])
+		uuid, sessionid, err := h.db.VerifyToken(hs[1])
 		if err == db.ErrInvalidToken {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
@@ -62,30 +62,14 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-		c.Set("UUID", uuid)
-		teams, err := h.db.GetTeamsByUser(uuid)
+
+		err = h.db.UpdateSessionLastUsed(uuid, sessionid)
 		if err != nil {
-			return
-		}
-		c.Set("Teams", teams)
-	}
-}
-
-// GetUUIDMiddleware generates middleware to set UUID if valid JWT is available
-func (h *Handler) GetUUIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		header := c.Request.Header.Get("Authorization")
-		hs := strings.SplitN(header, " ", 2)
-		if len(hs) != 2 || hs[0] != "Bearer" {
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
-		uuid, err := h.db.VerifyToken(hs[1])
-		if err != nil {
-			return
-		}
 		c.Set("UUID", uuid)
-
 		teams, err := h.db.GetTeamsByUser(uuid)
 		if err != nil {
 			return
