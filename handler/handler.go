@@ -54,7 +54,7 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		uuid, err := h.db.VerifyToken(hs[1])
+		uuid, sessionid, err := h.db.VerifyToken(hs[1])
 		if err == db.ErrInvalidToken {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
@@ -62,6 +62,13 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
+
+		err = h.db.UpdateSessionLastUsed(uuid, sessionid)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
 		c.Set("UUID", uuid)
 		teams, err := h.db.GetTeamsByUser(uuid)
 		if err != nil {
