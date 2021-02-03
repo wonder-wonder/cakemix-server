@@ -28,6 +28,8 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck.GET("check/token", h.checkTokenHandler)
 	authck.GET("regist/gen/token", h.registTokenGenerateHandler)
 	authck.POST("pass/change", h.passChangeHandler)
+	authck.GET("session", h.getSessionHandler)
+	authck.DELETE("session/:id", h.removeSessuonHandler)
 }
 
 func (h *Handler) loginHandler(c *gin.Context) {
@@ -286,6 +288,55 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) getSessionHandler(c *gin.Context) {
+	res := []model.AuthSession{}
+
+	var claims jwt.StandardClaims
+	header := c.Request.Header.Get("Authorization")
+	hs := strings.SplitN(header, " ", 2)
+	if len(hs) != 2 || hs[0] != "Bearer" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
+	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	sess, err := h.db.GetSession(claims.Audience)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	for _, v := range sess {
+		res = append(res, model.AuthSession{
+			SessionID:  v.SessionID,
+			LastLogin:  v.LoginDate,
+			LastUsed:   v.LastDate,
+			IPAddr:     v.IPAddr,
+			DeviceInfo: v.DeviceData,
+			IsCurrent:  v.SessionID == claims.Id,
+		})
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) removeSessuonHandler(c *gin.Context) {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	token := c.Param("id")
+	err := h.db.RemoveSession(uuid, token)
+	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

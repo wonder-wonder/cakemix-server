@@ -121,6 +121,26 @@ func (d *DB) AddSession(uuid string, sessionID string, IPAddr string, DeviceData
 	return nil
 }
 
+// GetSession deletes the session
+func (d *DB) GetSession(uuid string) ([]Session, error) {
+	res := []Session{}
+	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1", uuid)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		s := Session{}
+		err = rows.Scan(&s.UUID, &s.SessionID, &s.LoginDate,
+			&s.LastDate, &s.ExpireDate, &s.IPAddr, &s.DeviceData)
+		if err != nil {
+			return []Session{}, err
+		}
+		res = append(res, s)
+	}
+	return res, nil
+}
+
 // RemoveSession deletes the session
 func (d *DB) RemoveSession(uuid string, sessionID string) error {
 	_, err := d.db.Exec(`DELETE FROM session WHERE uuid = $1 AND sessionid = $2`, uuid, sessionID)

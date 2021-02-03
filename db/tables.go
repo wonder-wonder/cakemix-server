@@ -77,3 +77,14 @@ type DocumentRevision struct {
 	Text      string
 	UpdatedAt int64
 }
+
+// Session table model
+type Session struct {
+	UUID       string
+	SessionID  string
+	LoginDate  int64
+	LastDate   int64
+	ExpireDate int64
+	IPAddr     string
+	DeviceData string
+}

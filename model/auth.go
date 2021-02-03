@@ -33,3 +33,13 @@ type AuthPassChangeReq struct {
 type AuthPassResetReq struct {
 	Email string `json:"email"`
 }
+
+//AuthSession model
+type AuthSession struct {
+	SessionID  string `json:"sessionid"`
+	LastLogin  int64  `json:"lastlogin"`
+	LastUsed   int64  `json:"lastused"`
+	IPAddr     string `json:"ipaddr"`
+	DeviceInfo string `json:"devinfo"`
+	IsCurrent  bool   `json:"iscurrent"`
+}

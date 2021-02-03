@@ -88,7 +88,7 @@ func GenerateID(t IDType) (string, error) {
 		enc = base64.URLEncoding.EncodeToString
 	case IDTypeSessionID:
 		size = sizeSessionID
-		enc = base64.StdEncoding.EncodeToString
+		enc = base64.URLEncoding.EncodeToString
 	case IDTypeSalt:
 		size = sizeSalt
 		enc = base64.StdEncoding.EncodeToString
