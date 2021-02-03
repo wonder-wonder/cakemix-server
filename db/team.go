@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -175,24 +176,37 @@ func (d *DB) DeleteTeam(teamuuid string) error {
 }
 
 // GetTeamMember returns the member list of the team
-func (d *DB) GetTeamMember(teamuuid string, limit int, offset int) (int, []TeamMember, error) {
+func (d *DB) GetTeamMember(teamuuid string, limit int, offset int, uuid string) (int, []TeamMember, error) {
 	var res []TeamMember
 	var count = 0
 
-	r := d.db.QueryRow("SELECT COUNT(*) FROM teammember WHERE teamuuid = $1", teamuuid)
+	sql := "SELECT COUNT(*) FROM teammember WHERE teamuuid = $1"
+	param := []interface{}{teamuuid}
+	if uuid != "" {
+		param = append(param, uuid)
+		sql += " AND useruuid = $2"
+	}
+
+	r := d.db.QueryRow(sql, param...)
 	err := r.Scan(&count)
 	if err != nil {
 		return 0, res, err
 	}
 
-	sql := "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1 ORDER BY permission,useruuid"
-	param := []interface{}{teamuuid}
+	sql = "SELECT useruuid, permission FROM teammember WHERE teamuuid = $1"
+	param = []interface{}{teamuuid}
+
+	if uuid != "" {
+		param = append(param, uuid)
+		sql += " AND useruuid = $2"
+	}
+	sql += " ORDER BY permission DESC, useruuid"
 	if limit > 0 {
 		param = append(param, limit)
-		sql += " LIMIT $2"
+		sql += " LIMIT $" + strconv.Itoa(len(param))
 		if offset > 0 {
 			param = append(param, offset)
-			sql += " OFFSET $3"
+			sql += " OFFSET $" + strconv.Itoa(len(param))
 		}
 	}
 
