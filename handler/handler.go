@@ -71,29 +71,6 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// GetUUIDMiddleware generates middleware to set UUID if valid JWT is available
-func (h *Handler) GetUUIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		header := c.Request.Header.Get("Authorization")
-		hs := strings.SplitN(header, " ", 2)
-		if len(hs) != 2 || hs[0] != "Bearer" {
-			return
-		}
-
-		uuid, err := h.db.VerifyToken(hs[1])
-		if err != nil {
-			return
-		}
-		c.Set("UUID", uuid)
-
-		teams, err := h.db.GetTeamsByUser(uuid)
-		if err != nil {
-			return
-		}
-		c.Set("Teams", teams)
-	}
-}
-
 func getUUID(c *gin.Context) (string, bool) {
 	dat, ok := c.Get("UUID")
 	if !ok {
