@@ -29,7 +29,7 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck.GET("regist/gen/token", h.registTokenGenerateHandler)
 	authck.POST("pass/change", h.passChangeHandler)
 	authck.GET("session", h.getSessionHandler)
-	authck.DELETE("session/:id", h.removeSessuonHandler)
+	authck.DELETE("session/:id", h.removeSessionHandler)
 }
 
 func (h *Handler) loginHandler(c *gin.Context) {
@@ -328,7 +328,7 @@ func (h *Handler) getSessionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) removeSessuonHandler(c *gin.Context) {
+func (h *Handler) removeSessionHandler(c *gin.Context) {
 	uuid, ok := getUUID(c)
 	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
