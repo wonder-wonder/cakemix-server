@@ -548,6 +548,15 @@ func TestAuthHandler(t *testing.T) {
 					code: 200,
 				},
 			},
+			{
+				name: "Root",
+				req: req{
+					body: `{"email":"root@localhost"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -628,6 +637,16 @@ func TestAuthHandler(t *testing.T) {
 				req: req{
 					email: "test@example.com",
 					body:  `{"newpass":"resetpass"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
+			{
+				name: "Root",
+				req: req{
+					email: "root@localhost",
+					body:  `{"newpass":"cakemix"}`,
 				},
 				res: res{
 					code: 200,
