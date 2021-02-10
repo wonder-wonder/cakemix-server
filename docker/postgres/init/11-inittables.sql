@@ -98,8 +98,7 @@ CREATE TABLE IF NOT EXISTS log(
   sessionid TEXT,
   targetuuid TEXT,
   targetfdid TEXT,
-  extdataid BIGINT,
-  PRIMARY KEY (uuid, date)
+  extdataid BIGINT
 );
 CREATE TABLE IF NOT EXISTS logextloginpassreset(
   id BIGSERIAL PRIMARY KEY,

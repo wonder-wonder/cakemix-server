@@ -60,6 +60,13 @@ func (h *Handler) loginHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	err = h.db.AddLogLogin(uuid, skey, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	res.JWT, err = db.GenerateJWT(uuid, skey)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -200,8 +207,23 @@ func (h *Handler) checkUserNameHandler(c *gin.Context) {
 }
 
 func (h *Handler) passChangeHandler(c *gin.Context) {
+	var claims jwt.StandardClaims
+
+	header := c.Request.Header.Get("Authorization")
+	hs := strings.SplitN(header, " ", 2)
+	if len(hs) != 2 || hs[0] != "Bearer" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
+	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	var req model.AuthPassChangeReq
-	err := c.BindJSON(&req)
+	err = c.BindJSON(&req)
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -216,6 +238,11 @@ func (h *Handler) passChangeHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = h.db.AddLogPassChange(uuid, claims.Id)
+	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -285,7 +312,7 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	err = h.db.ResetPassVerify(token, req.NewPass)
+	uuid, err := h.db.ResetPassVerify(token, req.NewPass)
 	if err == db.ErrInvalidToken {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -293,6 +320,12 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	err = h.db.AddLogPassReset(uuid, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	c.AbortWithStatus(http.StatusOK)
 }
 

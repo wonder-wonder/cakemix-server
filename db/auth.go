@@ -449,23 +449,23 @@ func (d *DB) ResetPassTokenCheck(token string) (string, error) {
 }
 
 // ResetPassVerify checks the token and changes to new pass
-func (d *DB) ResetPassVerify(token string, newpass string) error {
+func (d *DB) ResetPassVerify(token string, newpass string) (string, error) {
 	uuid, err := d.ResetPassTokenCheck(token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = d.SetPass(uuid, newpass)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	_, err = d.db.Exec(`DELETE FROM passreset WHERE token = $1`, token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return uuid, nil
 }
 
 // IsUserLocked checks the user is locked.
@@ -552,4 +552,92 @@ func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
 		return res, err
 	}
 	return res, nil
+}
+
+// AddLogLogin adds login log
+func (d *DB) AddLogLogin(uuid string, sessionID string, ipaddr string, devinfo string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	var extdataid int64
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',$5)`,
+		uuid, time.Now().Unix(), LogTypeAuthLogin, sessionID, extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}
+
+// AddLogPassReset adds pass reset log
+func (d *DB) AddLogPassReset(uuid string, ipaddr string, devinfo string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	var extdataid int64
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,'','','',$4)`,
+		uuid, time.Now().Unix(), LogTypeAuthPassReset, extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}
+
+// AddLogPassChange adds pass change log
+func (d *DB) AddLogPassChange(uuid string, sessionID string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',-1)`,
+		uuid, time.Now().Unix(), LogTypeAuthPassChange, sessionID)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
 }
