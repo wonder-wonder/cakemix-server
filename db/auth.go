@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,13 @@ import (
 const (
 	loginSessionExpHours = 24 * 14
 	verifyTokenExpHours  = 12
+)
+
+// LogTypeAuth enum
+const (
+	LogTypeAuthLogin      = "auth.login"
+	LogTypeAuthPassReset  = "auth.passreset"
+	LogTypeAuthPassChange = "auth.passchange"
 )
 
 var (
@@ -475,4 +483,73 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetLogs returns the list of logs
+// target is list of teamids
+func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype []string) ([]Log, error) {
+	if len(target) == 0 {
+		return []Log{}, nil
+	}
+	params := []interface{}{}
+	// TargetUUID in target
+	params = append(params, uuid)
+	sql := "SELECT * FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
+	for _, v := range target {
+		params = append(params, v)
+		sql += ",$" + strconv.Itoa(len(params))
+	}
+	// UUID in target
+	params = append(params, uuid)
+	sql += ") OR uuid IN ($" + strconv.Itoa(len(params)) + "))"
+	// Log type in ltype
+	if len(ltype) > 0 {
+		sql += " AND type IN ("
+		for _, v := range ltype {
+			params = append(params, v)
+			sql += "$" + strconv.Itoa(len(params)) + ","
+		}
+		sql = strings.TrimRight(sql, ",")
+		sql += ")"
+	}
+	// Limit and offset
+	if limit > 0 {
+		params = append(params, limit)
+		sql += " LIMIT $" + strconv.Itoa(len(params))
+		if offset > 0 {
+			params = append(params, offset)
+			sql += " OFFSET $" + strconv.Itoa(len(params))
+		}
+	}
+
+	var res []Log
+	rows, err := d.db.Query(sql, params...)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var l Log
+		err = rows.Scan(&l.UUID, &l.Date, &l.Type, &l.SessionID,
+			&l.TargetUUID, &l.TargetFDID, &l.ExtDataID)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, l)
+	}
+	if err = rows.Err(); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+// GetLoginPassResetLog returns log of loginpassreset
+func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
+	var res LogExtLoginPassReset
+	row := d.db.QueryRow("SELECT * FROM logextloginpassreset WHERE id = $1", logid)
+	err := row.Scan(&res.ID, &res.IPAddr, &res.DeviceData)
+	if err != nil {
+		return res, err
+	}
+	return res, nil
 }
