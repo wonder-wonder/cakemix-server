@@ -91,3 +91,18 @@ CREATE TABLE IF NOT EXISTS documentrevision(
   PRIMARY KEY (uuid, updatedat),
   FOREIGN KEY (uuid) REFERENCES document(uuid)
 );
+CREATE TABLE IF NOT EXISTS log(
+  uuid TEXT,
+  date BIGINT,
+  type TEXT,
+  sessionid TEXT,
+  targetuuid TEXT,
+  targetfdid TEXT,
+  extdataid BIGINT,
+  PRIMARY KEY (uuid, date)
+);
+CREATE TABLE IF NOT EXISTS logextloginpassreset(
+  id BIGSERIAL PRIMARY KEY,
+  ipaddr TEXT,
+  devicedata TEXT
+);
