@@ -825,6 +825,41 @@ paths:
         name: id
         in: path
         required: true
+  /auth/log:
+    get:
+      summary: Get logs
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLogResModel'
+      operationId: get-auth-log
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: targetid
+          description: target team/userUUID
+        - schema:
+            type: string
+          in: query
+          name: offset
+          description: Offset
+        - schema:
+            type: string
+          in: query
+          name: limit
+          description: Limit
+        - schema:
+            type: string
+          in: query
+          name: type
+          description: target log type
+      description: Get log list
 components:
   schemas:
     JWT:
@@ -1147,6 +1182,66 @@ components:
         iscurrent:
           type: boolean
       description: Session info
+    AuthLogModel:
+      description: ''
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/ProfileModel'
+        date:
+          type: integer
+        type:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/AuthLogLoginModel'
+            - $ref: '#/components/schemas/AuthLogPassResetModel'
+            - $ref: '#/components/schemas/AuthLogPassChangeModel'
+      required:
+        - user
+        - date
+        - type
+    AuthLogResModel:
+      description: ''
+      type: object
+      properties:
+        offset:
+          type: integer
+        len:
+          type: integer
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthLogModel'
+      required:
+        - offset
+        - len
+        - logs
+      title: ''
+    AuthLogLoginModel:
+      title: AuthLogLoginModel
+      type: object
+      properties:
+        sessionid:
+          type: string
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+    AuthLogPassResetModel:
+      title: AuthLogPassResetModel
+      type: object
+      properties:
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+    AuthLogPassChangeModel:
+      title: AuthLogPassChangeModel
+      type: object
+      properties:
+        sessionid:
+          type: string
   securitySchemes:
     JWT:
       type: http
