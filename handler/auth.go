@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/model"
@@ -79,21 +78,18 @@ func (h *Handler) checkTokenHandler(c *gin.Context) {
 }
 
 func (h *Handler) logoutHandler(c *gin.Context) {
-	var claims jwt.StandardClaims
-
-	header := c.Request.Header.Get("Authorization")
-	hs := strings.SplitN(header, " ", 2)
-	if len(hs) != 2 || hs[0] != "Bearer" {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	sessid, ok := getSessionID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
-	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	err = h.db.RemoveSession(claims.Audience, claims.Id)
+	err := h.db.RemoveSession(uuid, sessid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -207,23 +203,14 @@ func (h *Handler) checkUserNameHandler(c *gin.Context) {
 }
 
 func (h *Handler) passChangeHandler(c *gin.Context) {
-	var claims jwt.StandardClaims
-
-	header := c.Request.Header.Get("Authorization")
-	hs := strings.SplitN(header, " ", 2)
-	if len(hs) != 2 || hs[0] != "Bearer" {
+	sessid, ok := getSessionID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
-	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
 	var req model.AuthPassChangeReq
-	err = c.BindJSON(&req)
+	err := c.BindJSON(&req)
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -241,7 +228,7 @@ func (h *Handler) passChangeHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	err = h.db.AddLogPassChange(uuid, claims.Id)
+	err = h.db.AddLogPassChange(uuid, sessid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -332,20 +319,18 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 func (h *Handler) getSessionHandler(c *gin.Context) {
 	res := []model.AuthSession{}
 
-	var claims jwt.StandardClaims
-	header := c.Request.Header.Get("Authorization")
-	hs := strings.SplitN(header, " ", 2)
-	if len(hs) != 2 || hs[0] != "Bearer" {
+	uuid, ok := getUUID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
-	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
-		c.AbortWithError(http.StatusInternalServerError, err)
+	sessid, ok := getSessionID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	sess, err := h.db.GetSession(claims.Audience)
+	sess, err := h.db.GetSession(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -357,7 +342,7 @@ func (h *Handler) getSessionHandler(c *gin.Context) {
 			LastUsed:   v.LastDate,
 			IPAddr:     v.IPAddr,
 			DeviceInfo: v.DeviceData,
-			IsCurrent:  v.SessionID == claims.Id,
+			IsCurrent:  v.SessionID == sessid,
 		})
 	}
 	c.JSON(http.StatusOK, res)
