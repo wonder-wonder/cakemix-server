@@ -347,6 +347,11 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	err = h.db.UpdateDocument(did, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.AbortWithStatus(http.StatusOK)
 }
 
