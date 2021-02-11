@@ -1,4 +1,5 @@
 \c cakemix;
+BEGIN;
 CREATE TABLE IF NOT EXISTS username(uuid TEXT PRIMARY KEY, username TEXT UNIQUE);
 CREATE TABLE IF NOT EXISTS auth(
   uuid TEXT PRIMARY KEY,
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS document(
   updatedat BIGINT,
   updateruuid TEXT,
   tagid INTEGER,
+  revision INTEGER,
   FOREIGN KEY (owneruuid) REFERENCES username(uuid),
   FOREIGN KEY (updateruuid) REFERENCES username(uuid),
   FOREIGN KEY (tagid) REFERENCES tag(tagid)
@@ -88,9 +90,11 @@ CREATE TABLE IF NOT EXISTS documentrevision(
   uuid TEXT,
   text TEXT,
   updatedat BIGINT,
-  PRIMARY KEY (uuid, updatedat),
+  revision INTEGER,
+  PRIMARY KEY (uuid, revision),
   FOREIGN KEY (uuid) REFERENCES document(uuid)
 );
+ALTER TABLE document ADD FOREIGN KEY (uuid,revision) REFERENCES documentrevision(uuid,revision);
 CREATE TABLE IF NOT EXISTS log(
   uuid TEXT,
   date BIGINT,
@@ -105,3 +109,4 @@ CREATE TABLE IF NOT EXISTS logextloginpassreset(
   ipaddr TEXT,
   devicedata TEXT
 );
+COMMIT;
