@@ -94,7 +94,6 @@ CREATE TABLE IF NOT EXISTS documentrevision(
   PRIMARY KEY (uuid, revision),
   FOREIGN KEY (uuid) REFERENCES document(uuid)
 );
-ALTER TABLE document ADD FOREIGN KEY (uuid,revision) REFERENCES documentrevision(uuid,revision);
 CREATE TABLE IF NOT EXISTS log(
   uuid TEXT,
   date BIGINT,

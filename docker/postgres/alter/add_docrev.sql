@@ -36,5 +36,3 @@ WHERE
   t1.uuid = t2.uuid
 ;
 ALTER TABLE document ALTER COLUMN revision SET NOT NULL;
-
-ALTER TABLE document ADD FOREIGN KEY (uuid,revision) REFERENCES documentrevision(uuid,revision);
