@@ -64,7 +64,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
 
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
+	r := gin.Default()
 	err := db.LoadKeys()
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
