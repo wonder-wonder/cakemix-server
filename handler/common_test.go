@@ -43,8 +43,8 @@ func TestMain(m *testing.M) {
 	dbexec("INSERT INTO auth VALUES('urtsqctxpdg3ypzan','user1@example.com','4NoWTUFzUl9cllIfpxpp8MssVY8sYYfNpG3Y3dTMLewKqMTSGjiNInvKc0VEA8hUVIuPrIH1xXy3jI74vBAZ4A==','K7CNjNYcvH1XXq8R');")
 	dbexec("INSERT INTO profile VALUES('urtsqctxpdg3ypzan','user1bio','user1iconuri',1610798538,'user1attr','ja');")
 	dbexec("INSERT INTO folder VALUES('fw2ytzvb2y5qqpjfk','urtsqctxpdg3ypzan','fdahpbkboamdbgnua','user1',0,1610798538,1610798538,'urtsqctxpdg3ypzan');")
-	dbexec("INSERT INTO document VALUES('dzhkyo37b63qk3yj5','ujafzavrqkqthqe54','fwk6al7nyj4qdufaz','TestDoc2',2,1610798538,1610798538,'ujafzavrqkqthqe54',0);")
-	dbexec("INSERT INTO documentrevision VALUES('dzhkyo37b63qk3yj5','This is a test.',1610798538);")
+	dbexec("INSERT INTO document VALUES('dzhkyo37b63qk3yj5','ujafzavrqkqthqe54','fwk6al7nyj4qdufaz','TestDoc2',2,1610798538,1610798538,'ujafzavrqkqthqe54',0,1);")
+	dbexec("INSERT INTO documentrevision VALUES('dzhkyo37b63qk3yj5','This is a test.',1610798538,1);")
 
 	err = tx.Commit()
 	if err != nil {
@@ -64,7 +64,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
 
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
+	r := gin.Default()
 	err := db.LoadKeys()
 	if err != nil {
 		tb.Errorf("testInit: %v", err)

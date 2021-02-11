@@ -69,6 +69,7 @@ type Document struct {
 	CreatedAt        int64
 	UpdatedAt        int64
 	UpdaterUUID      string
+	Revision         int
 }
 
 // DocumentRevision table model
@@ -76,6 +77,7 @@ type DocumentRevision struct {
 	UUID      string
 	Text      string
 	UpdatedAt int64
+	Revision  int
 }
 
 // Session table model
