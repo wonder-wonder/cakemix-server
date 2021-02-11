@@ -136,9 +136,7 @@ func (sess *Session) SessionLoop() {
 						continue
 					}
 				}
-				showOps(sess.DocID, "req", opdat.Revision, ops)
 				optrans, err := sess.OT.Operate(opdat.Revision, ops)
-				showOps(sess.DocID, "trans", sess.OT.Revision, optrans)
 				if err != nil {
 					log.Printf("OT session error: operate error: %v\n", err)
 					cl, ok := sess.Clients[req.ClientID]

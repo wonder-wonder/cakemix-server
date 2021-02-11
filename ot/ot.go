@@ -3,8 +3,6 @@ package ot
 import (
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 	"unicode/utf16"
 )
 
@@ -142,29 +140,6 @@ func (ot *OT) Transform(rev int, ops Ops) (Ops, error) {
 		ret = tops
 	}
 	return ret, nil
-}
-
-func showOps(docid string, prefix string, rev int, ops Ops) {
-	file, err := os.OpenFile(docid, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	opstr := ""
-	for _, v := range ops.Ops {
-		if v.OpType == OpTypeInsert {
-			opstr += fmt.Sprintf(", ins(%s(%d))", v.Text, v.Len)
-		} else if v.OpType == OpTypeRetain {
-			opstr += fmt.Sprintf(", ret(%d)", v.Len)
-		} else if v.OpType == OpTypeDelete {
-			opstr += fmt.Sprintf(", del(%d)", v.Len)
-		} else {
-			panic("OpType error: unknown type")
-		}
-	}
-	opstr = strings.TrimLeft(opstr, ", ")
-	fmt.Fprintf(file, "[DEBUG] [%s] %s ops from rev %d: [%s]\n", prefix, ops.User, rev, opstr)
 }
 
 // Operate applies OT operation
