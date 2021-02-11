@@ -124,7 +124,7 @@ func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 	}
 
 	lastrev := 0
-	err = tx.QueryRow(`SELECT revision FROM document WHERE uuid = $1`, did).Scan(&lastrev)
+	err = tx.QueryRow(`SELECT revision FROM document WHERE uuid = $1 FOR UPDATE`, did).Scan(&lastrev)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
