@@ -1072,6 +1072,8 @@ components:
           type: boolean
         parentfolderid:
           type: string
+        revision:
+          type: integer
     DocumentResModel:
       title: DocumentResModel
       type: object
