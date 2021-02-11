@@ -512,6 +512,8 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 		sql = strings.TrimRight(sql, ",")
 		sql += ")"
 	}
+	// Sort
+	sql += " ORDER BY date DESC,uuid,type"
 	// Limit and offset
 	if limit > 0 {
 		params = append(params, limit)
