@@ -11,8 +11,8 @@ import (
 func (d *DB) GetDocumentInfo(fid string) (Document, error) {
 	var ret Document
 	ret.UUID = fid
-	r := d.db.QueryRow("SELECT owneruuid,parentfolderuuid,title,permission,createdat,updatedat,updateruuid FROM document WHERE uuid = $1", ret.UUID)
-	err := r.Scan(&ret.OwnerUUID, &ret.ParentFolderUUID, &ret.Title, &ret.Permission, &ret.CreatedAt, &ret.UpdatedAt, &ret.UpdaterUUID)
+	r := d.db.QueryRow("SELECT owneruuid,parentfolderuuid,title,permission,createdat,updatedat,updateruuid,revision FROM document WHERE uuid = $1", ret.UUID)
+	err := r.Scan(&ret.OwnerUUID, &ret.ParentFolderUUID, &ret.Title, &ret.Permission, &ret.CreatedAt, &ret.UpdatedAt, &ret.UpdaterUUID, &ret.Revision)
 	if err == sql.ErrNoRows {
 		return ret, ErrDocumentNotFound
 	} else if err != nil {
@@ -33,7 +33,7 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 		return "", err
 	}
 
-	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,1)`,
 		did, owneruuid, parentfid, title, permission, dateint, dateint, updateruuid, 0)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
@@ -41,7 +41,7 @@ func (d *DB) CreateDocument(title string, permission FilePerm, parentfid string,
 		}
 		return "", err
 	}
-	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3)`,
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3,1)`,
 		did, "", dateint)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
@@ -102,7 +102,7 @@ func (d *DB) MoveDocument(did string, targetfid string) error {
 // GetLatestDocument returns document data
 func (d *DB) GetLatestDocument(did string) (string, error) {
 	text := ""
-	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND updatedat = (SELECT MAX(updatedat) FROM documentrevision WHERE uuid = $1)", did)
+	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND revision = (SELECT revision FROM document WHERE uuid = $1)", did)
 	err := r.Scan(&text)
 	if err == sql.ErrNoRows {
 		return "", ErrDocumentNotFound
@@ -123,15 +123,24 @@ func (d *DB) SaveDocument(did string, updateruuid string, text string) error {
 		return err
 	}
 
-	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2, updateruuid = $3 WHERE uuid = $4`, dateint, title, updateruuid, did)
+	lastrev := 0
+	err = tx.QueryRow(`SELECT revision FROM document WHERE uuid = $1`, did).Scan(&lastrev)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
 		}
 		return err
 	}
-	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3)`,
-		did, text, dateint)
+	newrev := lastrev + 1
+	_, err = tx.Exec(`UPDATE document SET updatedat = $1, title = $2, updateruuid = $3, revision = $4 WHERE uuid = $5`, dateint, title, updateruuid, newrev, did)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3,$4)`,
+		did, text, dateint, newrev)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

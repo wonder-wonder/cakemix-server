@@ -12,6 +12,7 @@ type Document struct {
 	UpdatedAt      int64   `json:"updated_at"`
 	Editable       bool    `json:"editable"`
 	ParentFolderID string  `json:"parentfolderid"`
+	Revision       int
 }
 
 // CreateDocumentRes is structure for response of document creation
