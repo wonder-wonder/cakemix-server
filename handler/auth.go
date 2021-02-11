@@ -2,9 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/model"
@@ -30,6 +30,7 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck.POST("pass/change", h.passChangeHandler)
 	authck.GET("session", h.getSessionHandler)
 	authck.DELETE("session/:id", h.removeSessionHandler)
+	authck.GET("log", h.getLogHandler)
 }
 
 func (h *Handler) loginHandler(c *gin.Context) {
@@ -58,6 +59,13 @@ func (h *Handler) loginHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	err = h.db.AddLogLogin(uuid, skey, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	res.JWT, err = db.GenerateJWT(uuid, skey)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -70,21 +78,18 @@ func (h *Handler) checkTokenHandler(c *gin.Context) {
 }
 
 func (h *Handler) logoutHandler(c *gin.Context) {
-	var claims jwt.StandardClaims
-
-	header := c.Request.Header.Get("Authorization")
-	hs := strings.SplitN(header, " ", 2)
-	if len(hs) != 2 || hs[0] != "Bearer" {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	sessid, ok := getSessionID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
-	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	err = h.db.RemoveSession(claims.Audience, claims.Id)
+	err := h.db.RemoveSession(uuid, sessid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -198,6 +203,12 @@ func (h *Handler) checkUserNameHandler(c *gin.Context) {
 }
 
 func (h *Handler) passChangeHandler(c *gin.Context) {
+	sessid, ok := getSessionID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	var req model.AuthPassChangeReq
 	err := c.BindJSON(&req)
 	if err != nil {
@@ -214,6 +225,11 @@ func (h *Handler) passChangeHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	} else if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = h.db.AddLogPassChange(uuid, sessid)
+	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -283,7 +299,7 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	err = h.db.ResetPassVerify(token, req.NewPass)
+	uuid, err := h.db.ResetPassVerify(token, req.NewPass)
 	if err == db.ErrInvalidToken {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -291,26 +307,30 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	err = h.db.AddLogPassReset(uuid, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	c.AbortWithStatus(http.StatusOK)
 }
 
 func (h *Handler) getSessionHandler(c *gin.Context) {
 	res := []model.AuthSession{}
 
-	var claims jwt.StandardClaims
-	header := c.Request.Header.Get("Authorization")
-	hs := strings.SplitN(header, " ", 2)
-	if len(hs) != 2 || hs[0] != "Bearer" {
+	uuid, ok := getUUID(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	_, err := jwt.ParseWithClaims(hs[1], &claims, nil)
-	if (err.(*jwt.ValidationError).Errors & jwt.ValidationErrorMalformed) != 0 {
-		c.AbortWithError(http.StatusInternalServerError, err)
+	sessid, ok := getSessionID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	sess, err := h.db.GetSession(claims.Audience)
+	sess, err := h.db.GetSession(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -322,7 +342,7 @@ func (h *Handler) getSessionHandler(c *gin.Context) {
 			LastUsed:   v.LastDate,
 			IPAddr:     v.IPAddr,
 			DeviceInfo: v.DeviceData,
-			IsCurrent:  v.SessionID == claims.Id,
+			IsCurrent:  v.SessionID == sessid,
 		})
 	}
 	c.JSON(http.StatusOK, res)
@@ -341,4 +361,99 @@ func (h *Handler) removeSessionHandler(c *gin.Context) {
 		return
 	}
 	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) getLogHandler(c *gin.Context) {
+	var err error
+	useruuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	teamuuid, ok := getTeams(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	targetidraw := c.Query("targetid")
+	targetid := []string{}
+	if targetidraw != "" {
+		targetid = strings.Split(targetidraw, ",")
+		for _, tv := range targetid {
+			flag := false
+			for _, v := range teamuuid {
+				if tv == v {
+					flag = true
+					break
+				}
+			}
+			if !flag {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+		}
+	} else {
+		targetid = teamuuid
+	}
+	offset := c.Query("offset")
+	offsetint := 0
+	if offset != "" {
+		offsetint, err = strconv.Atoi(offset)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+	}
+	limit := c.Query("limit")
+	limitint := 0
+	if limit != "" {
+		limitint, err = strconv.Atoi(limit)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+	}
+	ltyperaw := c.Query("type")
+	ltype := []string{}
+	if ltyperaw != "" {
+		ltype = strings.Split(ltyperaw, ",")
+	}
+
+	logs, err := h.db.GetLogs(offsetint, limitint, useruuid, targetid, ltype)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	res := model.AuthLogRes{Offset: offsetint, Length: len(logs), Logs: []model.AuthLog{}}
+	for _, l := range logs {
+		reslog := model.AuthLog{Date: l.Date, Type: l.Type}
+		resprof, err := h.db.GetProfileByUUID(l.UUID)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		reslog.User = model.Profile{UUID: resprof.UUID, Name: resprof.Name, IconURI: resprof.IconURI,
+			Attr: resprof.Attr, IsTeam: resprof.UUID[0] == 't'}
+		switch l.Type {
+		case db.LogTypeAuthLogin:
+			loginlog, err := h.db.GetLoginPassResetLog(l.ExtDataID)
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
+			reslog.Data = model.AuthLogLogin{SessionID: l.SessionID, IPAddr: loginlog.IPAddr, DeviceInfo: loginlog.DeviceData}
+		case db.LogTypeAuthPassReset:
+			passresetlog, err := h.db.GetLoginPassResetLog(l.ExtDataID)
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
+			reslog.Data = model.AuthLogPassReset{IPAddr: passresetlog.IPAddr, DeviceInfo: passresetlog.DeviceData}
+		case db.LogTypeAuthPassChange:
+			reslog.Data = model.AuthLogPassChange{SessionID: l.SessionID}
+		}
+		res.Logs = append(res.Logs, reslog)
+	}
+
+	c.AbortWithStatusJSON(http.StatusOK, res)
 }

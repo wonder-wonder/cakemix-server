@@ -43,3 +43,36 @@ type AuthSession struct {
 	DeviceInfo string `json:"devinfo"`
 	IsCurrent  bool   `json:"iscurrent"`
 }
+
+//AuthLog model
+type AuthLog struct {
+	User Profile     `json:"user"`
+	Date int64       `json:"date"`
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
+//AuthLogRes model
+type AuthLogRes struct {
+	Offset int       `json:"offset"`
+	Length int       `json:"len"`
+	Logs   []AuthLog `json:"logs"`
+}
+
+//AuthLogLogin model
+type AuthLogLogin struct {
+	SessionID  string `json:"sessionid"`
+	IPAddr     string `json:"ipaddr"`
+	DeviceInfo string `json:"devinfo"`
+}
+
+//AuthLogPassChange model
+type AuthLogPassChange struct {
+	SessionID string `json:"sessionid"`
+}
+
+//AuthLogPassReset model
+type AuthLogPassReset struct {
+	IPAddr     string `json:"ipaddr"`
+	DeviceInfo string `json:"devinfo"`
+}

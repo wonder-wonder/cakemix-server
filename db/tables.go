@@ -88,3 +88,21 @@ type Session struct {
 	IPAddr     string
 	DeviceData string
 }
+
+// Log table model
+type Log struct {
+	UUID       string
+	Date       int64
+	Type       string
+	SessionID  string
+	TargetUUID string
+	TargetFDID string
+	ExtDataID  int64
+}
+
+// LogExtLoginPassReset table model
+type LogExtLoginPassReset struct {
+	ID         int64
+	IPAddr     string
+	DeviceData string
+}

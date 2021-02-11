@@ -548,6 +548,15 @@ func TestAuthHandler(t *testing.T) {
 					code: 200,
 				},
 			},
+			{
+				name: "Root",
+				req: req{
+					body: `{"email":"root@localhost"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -633,6 +642,16 @@ func TestAuthHandler(t *testing.T) {
 					code: 200,
 				},
 			},
+			{
+				name: "Root",
+				req: req{
+					email: "root@localhost",
+					body:  `{"newpass":"cakemix"}`,
+				},
+				res: res{
+					code: 200,
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -652,6 +671,80 @@ func TestAuthHandler(t *testing.T) {
 				r.ServeHTTP(w, req)
 				if !assert.Equal(t, tt.res.code, w.Code) {
 					t.FailNow()
+				}
+			})
+		}
+	})
+
+	t.Run("GetLog", func(t *testing.T) {
+		token = testGetToken(t, r)
+		type req struct {
+			header map[string]string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/log", nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if string(resraw) == "" {
+					t.Fatalf("should be string, got empty string")
+				}
+
+				var res map[string]interface{}
+				err := json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				attrs := []string{"offset", "len", "logs"}
+				for _, v := range attrs {
+					_, ok := res[v]
+					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+						t.FailNow()
+					}
+				}
+				reslogsraw, ok := res["logs"].([]interface{})
+				if !assert.True(t, ok, "should be array, got:\n%v", res) {
+					t.FailNow()
+				}
+				if len(reslogsraw) > 0 {
+					reslogs, ok := reslogsraw[0].(map[string]interface{})
+					if !assert.True(t, ok, "should be map[string]interface{}, got:\n%v", res) {
+						t.FailNow()
+					}
+					logsattrs := []string{"user", "date", "type"}
+					for _, v := range logsattrs {
+						_, ok := reslogs[v]
+						if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+							t.FailNow()
+						}
+					}
 				}
 			})
 		}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,13 @@ import (
 const (
 	loginSessionExpHours = 24 * 14
 	verifyTokenExpHours  = 12
+)
+
+// LogTypeAuth enum
+const (
+	LogTypeAuthLogin      = "auth.login"
+	LogTypeAuthPassReset  = "auth.passreset"
+	LogTypeAuthPassChange = "auth.passchange"
 )
 
 var (
@@ -441,23 +449,23 @@ func (d *DB) ResetPassTokenCheck(token string) (string, error) {
 }
 
 // ResetPassVerify checks the token and changes to new pass
-func (d *DB) ResetPassVerify(token string, newpass string) error {
+func (d *DB) ResetPassVerify(token string, newpass string) (string, error) {
 	uuid, err := d.ResetPassTokenCheck(token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = d.SetPass(uuid, newpass)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	_, err = d.db.Exec(`DELETE FROM passreset WHERE token = $1`, token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return uuid, nil
 }
 
 // IsUserLocked checks the user is locked.
@@ -475,4 +483,164 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetLogs returns the list of logs
+// target is list of teamids
+func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype []string) ([]Log, error) {
+	if len(target) == 0 {
+		return []Log{}, nil
+	}
+	params := []interface{}{}
+	// TargetUUID in target
+	params = append(params, uuid)
+	sql := "SELECT * FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
+	for _, v := range target {
+		params = append(params, v)
+		sql += ",$" + strconv.Itoa(len(params))
+	}
+	// UUID in target
+	params = append(params, uuid)
+	sql += ") OR uuid IN ($" + strconv.Itoa(len(params)) + "))"
+	// Log type in ltype
+	if len(ltype) > 0 {
+		sql += " AND type IN ("
+		for _, v := range ltype {
+			params = append(params, v)
+			sql += "$" + strconv.Itoa(len(params)) + ","
+		}
+		sql = strings.TrimRight(sql, ",")
+		sql += ")"
+	}
+	// Sort
+	sql += " ORDER BY date DESC,uuid,type"
+	// Limit and offset
+	if limit > 0 {
+		params = append(params, limit)
+		sql += " LIMIT $" + strconv.Itoa(len(params))
+		if offset > 0 {
+			params = append(params, offset)
+			sql += " OFFSET $" + strconv.Itoa(len(params))
+		}
+	}
+
+	var res []Log
+	rows, err := d.db.Query(sql, params...)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var l Log
+		err = rows.Scan(&l.UUID, &l.Date, &l.Type, &l.SessionID,
+			&l.TargetUUID, &l.TargetFDID, &l.ExtDataID)
+		if err != nil {
+			return res, err
+		}
+		l.Date /= 1000000000
+		res = append(res, l)
+	}
+	if err = rows.Err(); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+// GetLoginPassResetLog returns log of loginpassreset
+func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
+	var res LogExtLoginPassReset
+	row := d.db.QueryRow("SELECT * FROM logextloginpassreset WHERE id = $1", logid)
+	err := row.Scan(&res.ID, &res.IPAddr, &res.DeviceData)
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+// AddLogLogin adds login log
+func (d *DB) AddLogLogin(uuid string, sessionID string, ipaddr string, devinfo string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	var extdataid int64
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',$5)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthLogin, sessionID, extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}
+
+// AddLogPassReset adds pass reset log
+func (d *DB) AddLogPassReset(uuid string, ipaddr string, devinfo string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	var extdataid int64
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,'','','',$4)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthPassReset, extdataid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}
+
+// AddLogPassChange adds pass change log
+func (d *DB) AddLogPassChange(uuid string, sessionID string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',-1)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthPassChange, sessionID)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
 }

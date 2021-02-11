@@ -70,6 +70,7 @@ func (h *Handler) CheckAuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("UUID", uuid)
+		c.Set("SessionID", sessionid)
 		teams, err := h.db.GetTeamsByUser(uuid)
 		if err != nil {
 			return
@@ -86,6 +87,14 @@ func getUUID(c *gin.Context) (string, bool) {
 	uuid, ok := dat.(string)
 	return uuid, ok
 }
+func getSessionID(c *gin.Context) (string, bool) {
+	dat, ok := c.Get("SessionID")
+	if !ok {
+		return "", false
+	}
+	sessionID, ok := dat.(string)
+	return sessionID, ok
+}
 func getTeams(c *gin.Context) ([]string, bool) {
 	dat, ok := c.Get("Teams")
 	if !ok {
@@ -94,6 +103,7 @@ func getTeams(c *gin.Context) ([]string, bool) {
 	uuid, ok := dat.([]string)
 	return uuid, ok
 }
+
 func isRelatedUUID(c *gin.Context, uuid string) bool {
 	myuuid, ok := getUUID(c)
 	if !ok {
