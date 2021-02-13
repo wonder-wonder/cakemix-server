@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
@@ -48,6 +50,17 @@ func main() {
 			r.HandleContext(c)
 		})
 	}
+
+	// DB cleaup
+	go func() {
+		for {
+			err := db.CleanupExpired()
+			if err != nil {
+				log.Printf("DB cleanup error: %v", err)
+			}
+			time.Sleep(time.Hour)
+		}
+	}()
 
 	// Start web server
 	fmt.Println("Start server")
