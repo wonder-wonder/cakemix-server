@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq" //PostgreSQL driver
 )
@@ -125,4 +126,30 @@ func GenerateID(t IDType) (string, error) {
 		return "", err
 	}
 	return enc(rd), nil
+}
+
+func (d *DB) CleanupExpired() error {
+	dateint := time.Now().Unix()
+
+	_, err := d.db.Exec("DELETE FROM session WHERE expiredate < $1", dateint)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM invitetoken WHERE expdate < $1", dateint)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM preuser WHERE expdate < $1", dateint)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM passreset WHERE expdate < $1", dateint)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
