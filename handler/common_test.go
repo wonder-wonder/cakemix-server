@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -64,6 +63,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
 	os.Setenv("SIGNPRVKEY", "../signkey")
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
+	os.Setenv("DATADIR", "../cmdat")
 
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
@@ -80,18 +80,8 @@ func testInit(tb testing.TB) *gin.Engine {
 		tb.Errorf("testInit: %v", err)
 	}
 
-	// Init data dir
-	err = os.MkdirAll(fileconf.DataDir, 0700)
-	if err != nil {
-		panic("Directory init error:" + fileconf.DataDir)
-	}
-	err = os.MkdirAll(path.Join(fileconf.DataDir, ImageDir), 0700)
-	if err != nil {
-		panic("Directory init error:" + path.Join(fileconf.DataDir, ImageDir))
-	}
-
 	v1 := r.Group("v1")
-	h := NewHandler(db)
+	h := NewHandler(db, fileconf.DataDir)
 	h.AuthHandler(v1)
 	h.DocumentHandler(v1)
 	h.FolderHandler(v1)

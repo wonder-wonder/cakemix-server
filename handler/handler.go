@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +17,7 @@ const (
 )
 
 var (
-	dataDir = "./cmdat"
+	dataDir = ""
 )
 
 // Handler is object for handler function
@@ -24,7 +26,17 @@ type Handler struct {
 }
 
 // NewHandler generates new Handler instance
-func NewHandler(db *db.DB) *Handler {
+func NewHandler(db *db.DB, datadir string) *Handler {
+	dataDir = datadir
+	// Init data dir
+	err := os.MkdirAll(dataDir, 0700)
+	if err != nil {
+		panic("Directory init error:" + dataDir)
+	}
+	err = os.MkdirAll(path.Join(dataDir, ImageDir), 0700)
+	if err != nil {
+		panic("Directory init error:" + path.Join(dataDir, ImageDir))
+	}
 	return &Handler{db: db}
 }
 

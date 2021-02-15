@@ -1,18 +1,18 @@
 # Debug files
-signkey
-signkey.pub
-cmdat
+/signkey
+/signkey.pub
+/cmdat
 
 # Production file
-docker/postgres/data
-docker/server
+/docker/postgres/data
+/docker/server
 
 # Common files
-cakemixsv
-dist
+/cakemixsv
+/dist
 
-sendgrid.env
+/sendgrid.env
 
 # Test files
-cover.out
-cover.html
+/out/cover.out
+/out/cover.html

@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -37,17 +35,7 @@ func main() {
 	// API handler
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
-	v1Handler(v1, db)
-
-	// Init data dir
-	err = os.MkdirAll(fileconf.DataDir, 0700)
-	if err != nil {
-		panic("Directory init error:" + fileconf.DataDir)
-	}
-	err = os.MkdirAll(path.Join(fileconf.DataDir, handler.ImageDir), 0700)
-	if err != nil {
-		panic("Directory init error:" + path.Join(fileconf.DataDir, handler.ImageDir))
-	}
+	v1Handler(v1, db, fileconf.DataDir)
 
 	// Front serve
 	if fileconf.FrontDir != "" {
@@ -84,8 +72,8 @@ func main() {
 	r.Run(apiconf.Host + ":" + apiconf.Port)
 }
 
-func v1Handler(r *gin.RouterGroup, db *db.DB) {
-	h := handler.NewHandler(db)
+func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string) {
+	h := handler.NewHandler(db, datadir)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)
