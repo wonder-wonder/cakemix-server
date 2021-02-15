@@ -2,8 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"os"
-	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +10,8 @@ import (
 
 const (
 	corsFrontHost = "*" // CORS front host
-	imageDir      = "/img"
+	// ImageDir image dir path
+	ImageDir = "/img"
 )
 
 var (
@@ -26,17 +25,6 @@ type Handler struct {
 
 // NewHandler generates new Handler instance
 func NewHandler(db *db.DB) *Handler {
-	if os.Getenv("DATADIR") != "" {
-		dataDir = os.Getenv("DATADIR")
-	}
-	err := os.MkdirAll(dataDir, 0700)
-	if err != nil {
-		panic("Directory init error:" + dataDir)
-	}
-	err = os.MkdirAll(path.Join(dataDir, imageDir), 0700)
-	if err != nil {
-		panic("Directory init error:" + path.Join(dataDir, imageDir))
-	}
 	return &Handler{db: db}
 }
 

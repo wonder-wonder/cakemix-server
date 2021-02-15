@@ -6,19 +6,10 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
-	"os"
 	"strings"
 	"time"
 
 	_ "github.com/lib/pq" //PostgreSQL driver
-)
-
-var (
-	dbHost = "cakemixpg"
-	dbPort = "5432"
-	dbUser = "postgres"
-	dbPass = "postgres"
-	dbName = "cakemix"
 )
 
 // IDType is enum of types of ID
@@ -51,27 +42,9 @@ type DB struct {
 	db *sql.DB
 }
 
-func initVars() {
-	if os.Getenv("DBHOST") != "" {
-		dbHost = os.Getenv("DBHOST")
-	}
-	if os.Getenv("DBPORT") != "" {
-		dbPort = os.Getenv("DBPORT")
-	}
-	if os.Getenv("DBUSER") != "" {
-		dbUser = os.Getenv("DBUSER")
-	}
-	if os.Getenv("DBPASS") != "" {
-		dbPass = os.Getenv("DBPASS")
-	}
-	if os.Getenv("DBNAME") != "" {
-		dbName = os.Getenv("DBNAME")
-	}
-}
-
 // OpenDB connects to DB server and return DB instance
-func OpenDB() (*DB, error) {
-	initVars()
+func OpenDB(dbHost, dbPort, dbUser, dbPass, dbName string) (*DB, error) {
+	// initVars()
 	db, err := sql.Open("postgres", "host= "+dbHost+" port="+dbPort+" user="+dbUser+" dbname="+dbName+" password="+dbPass+" sslmode=disable")
 	if err != nil {
 		return nil, err

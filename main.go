@@ -4,24 +4,32 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/util"
 )
 
 func main() {
+	util.LoadConfig()
+	fileconf := util.GetFileConf()
+	dbconf := util.GetDBConf()
+	apiconf := util.GetAPIConf()
+	mailconf := util.GetMailConf()
+
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
-	err := db.LoadKeys()
+	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		panic(err)
 	}
 
-	db, err := db.OpenDB()
+	db, err := db.OpenDB(dbconf.Host, dbconf.Port, dbconf.User, dbconf.Pass, dbconf.Name)
 	if err != nil {
 		panic(err)
 	}
@@ -31,13 +39,19 @@ func main() {
 	v1 := r.Group("v1")
 	v1Handler(v1, db)
 
-	// Front serve
-	FrontDir := ""
-	if os.Getenv("FRONTDIR") != "" {
-		FrontDir = os.Getenv("FRONTDIR")
+	// Init data dir
+	err = os.MkdirAll(fileconf.DataDir, 0700)
+	if err != nil {
+		panic("Directory init error:" + fileconf.DataDir)
 	}
-	if FrontDir != "" {
-		r.Static("/dist", FrontDir)
+	err = os.MkdirAll(path.Join(fileconf.DataDir, handler.ImageDir), 0700)
+	if err != nil {
+		panic("Directory init error:" + path.Join(fileconf.DataDir, handler.ImageDir))
+	}
+
+	// Front serve
+	if fileconf.FrontDir != "" {
+		r.Static("/dist", fileconf.FrontDir)
 		r.NoRoute(func(c *gin.Context) {
 			if c.Request.URL.Path == "/dist/" {
 				return
@@ -51,6 +65,8 @@ func main() {
 		})
 	}
 
+	// Init mail
+	util.InitMail(mailconf.SendGridAPIKey, mailconf.FromAddr, mailconf.FromName)
 	// DB cleaup
 	go func() {
 		for {
@@ -65,15 +81,7 @@ func main() {
 	// Start web server
 	fmt.Println("Start server")
 
-	APIAddr := ""
-	APIPort := "8081"
-	if os.Getenv("APIADDR") != "" {
-		APIAddr = os.Getenv("APIADDR")
-	}
-	if os.Getenv("PORT") != "" {
-		APIPort = os.Getenv("PORT")
-	}
-	r.Run(APIAddr + ":" + APIPort)
+	r.Run(apiconf.Host + ":" + apiconf.Port)
 }
 
 func v1Handler(r *gin.RouterGroup, db *db.DB) {
