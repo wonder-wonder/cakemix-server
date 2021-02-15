@@ -6,13 +6,10 @@ DBNAME=cakemix
 APIADDR=localhost
 PORT=8081
 
-rundev: main.go
-	test -f signkey || make key
-	test ! -f sendgrid.env || . sendgrid.env
-	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go run -race main.go
+rundev: main.go signkey sendgrid.env
+	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go run -race main.go
 
-test: main.go
-	test -f signkey || make key
+test: main.go signkey
 	test -d out || mkdir out
 	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go test -v ./handler -count=1 -coverprofile=out/cover.out
 	go tool cover -html=out/cover.out -o out/cover.html
@@ -24,7 +21,7 @@ stopdb:
 	docker stop cakemixdbdev
 	docker rm cakemixdbdev
 
-runprod: keyprod
+runprod: docker/server/keys/signkey
 	docker-compose up --build -d
 
 down:
@@ -33,15 +30,12 @@ down:
 build: main.go
 	go build -o cakemixsv main.go
 
-key:
-	yes|ssh-keygen -t rsa -f signkey -m PEM -N ""
+signkey:
+	ssh-keygen -t rsa -f signkey -m PEM -N ""
 	ssh-keygen -f signkey.pub -e -m pkcs8 > signkey.pub2
 	mv signkey.pub2 signkey.pub
 
-keyprod:
-	@test ! -f docker/server/keys/signkey &&\
-	echo Generating signing keys &&\
-	mkdir -p docker/server/keys &&\
+docker/server/keys/signkey:
+	mkdir -p docker/server/keys
 	cd docker/server/keys &&\
-	make -f ../../../Makefile key ||\
-	echo Skipping key generation
+	make -f ../../../Makefile signkey
