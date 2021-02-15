@@ -9,7 +9,7 @@ var (
 	dbUser         = ""
 	dbPass         = ""
 	dbName         = ""
-	apiHost        = "localhost"
+	apiHost        = ""
 	apiPort        = "8081"
 	frontDir       = "./"
 	dataDir        = "./cmdat"
