@@ -7,21 +7,10 @@ services:
     container_name: cakemix
     depends_on:
       - cakemixpg
-    links:
-      - cakemixpg:5432
     restart: always
     env_file:
       - sendgrid.env
-    environment:
-      DBHOST: cakemixpg
-      DBPORT: 5432
-      DBUSER: postgres
-      DBPASS: postgres
-      DBNAME: cakemix
-      FRONTDIR: /root/dist
-      DATADIR: /root/cmdat
-      SIGNPRVKEY: /root/keys/signkey
-      SIGNPUBKEY: /root/keys/signkey.pub
+      - cakemix.env
     volumes:
       - ./dist:/root/dist
       - ./docker/server/cmdat:/root/cmdat
