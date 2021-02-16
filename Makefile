@@ -39,3 +39,10 @@ docker/server/keys/signkey:
 	mkdir -p docker/server/keys
 	cd docker/server/keys &&\
 	make -f ../../../Makefile signkey
+
+cleanall:
+	rm -rf out
+	rm -f signkey
+	rm -f signkey.pub
+	rm -rf cmdat
+	rm -rf docker/server

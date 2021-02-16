@@ -57,6 +57,8 @@ func main() {
 	util.InitMail(mailconf.SendGridAPIKey, mailconf.FromAddr, mailconf.FromName)
 	// DB cleaup
 	go func() {
+		// Wait DB startup
+		time.Sleep(time.Minute)
 		for {
 			err := db.CleanupExpired()
 			if err != nil {
