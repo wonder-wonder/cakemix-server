@@ -1,7 +1,7 @@
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
 
 # Cakemix Server
-Document management system for all creative team
+Document management system for all creative team  
 Real-time edit with multiple users
 
 ## Installation
