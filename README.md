@@ -4,8 +4,8 @@
 Document management system for all creative team
 Real-time edit with multiple users
 
-# Installation
-## Fast way (using docker)
+## Installation
+### Fast way (using docker)
 Please prepare front data directory in project root as `dist` in advance.
 
 ``` sh
@@ -16,8 +16,8 @@ make down
 ```
 Now you can access `localhost:8081` to use cakemix!
 
-# For developer
-## How To run for development
+## For developer
+### How To run for development
 ``` sh
 make startdb  # Start database server on docker
 make rundev   # Start server for development
@@ -25,7 +25,7 @@ make rundev   # Start server for development
 make stopdb   # Stop database server
 ```
 
-# Envrionment variables
+## Envrionment variables
 - Database
   - `DBHOST` is hostname for postgres database (default: `cakemixpg`)
   - `DBPORT` is port number for postgres database (default: `5432`)
@@ -45,3 +45,36 @@ make stopdb   # Stop database server
 
 - Mail
 	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, the content is showed in log. If empty, mail function is disabled. (default: )
+
+## Cakemix Release Policy
+### Branches
+- main
+  - latest stable version
+- release/vx.x.x
+  - bata version (release candidate)
+- develop
+  - alpha version (version of developing phase)
+- feat/xxx
+  - branch for implementation a feature or fixing a bug 
+- hotfix/xxx
+  - branch for fixing a bug that existing main branch and it needs to fix as soon as possible
+
+```
+feat/xxx        x     x
+              /   \ /   \
+develop   ---x-----x-----x---x-----x----- (PR required)
+                    \       /      |
+release/x            x--x--x       |
+                            \      |
+main      -------------------x-----x----- (PR required)
+                              \   /
+hotfix/x                        x
+```
+
+### Versioning (Major.Minor.Patch)
+#### Major
+- will increment when breaking changes occurred
+#### Minor
+- will increment when new features are added
+#### Patch
+- will increment when bugs are fixed
