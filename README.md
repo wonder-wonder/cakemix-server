@@ -44,7 +44,7 @@ make stopdb   # Stop database server
   - `SIGNPUBKEY` is public key for verification of token. (default: `./signkey.pub`)
 
 - Mail
-	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, the content is showed in log. If empty, mail function is disabled. (default: )
+	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, mail content will be shown in the log. If empty, the mail function will be disabled. (default: )
 
 ## Cakemix Release Policy
 ### Branches
