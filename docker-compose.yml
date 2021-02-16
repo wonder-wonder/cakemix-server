@@ -7,31 +7,30 @@ services:
     container_name: cakemix
     depends_on:
       - cakemixpg
-    restart: always
     env_file:
-      - sendgrid.env
       - cakemix.env
+      - sendgrid.env
+    networks:
+      - cakemix-network
+    ports:
+      - 8081:8081
+    restart: always
     volumes:
       - ./dist:/root/dist
       - ./docker/server/cmdat:/root/cmdat
       - ./docker/server/keys:/root/keys
-    networks:
-      - shared-network
-      - cakemix-network
 
   cakemixpg:
     image: postgres
     container_name: cakemixpg
-    volumes:
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
-      - ./docker/postgres/data:/var/lib/postgresql/data
-    restart: always
     environment:
       - POSTGRES_PASSWORD=postgres
     networks:
       - cakemix-network
+    restart: always
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
 
 networks:
-  shared-network:
-    external: true
   cakemix-network:
