@@ -3,25 +3,31 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/util"
 )
 
 func main() {
+	util.LoadConfig()
+	fileconf := util.GetFileConf()
+	dbconf := util.GetDBConf()
+	apiconf := util.GetAPIConf()
+	mailconf := util.GetMailConf()
+
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
-	err := db.LoadKeys()
+	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		panic(err)
 	}
 
-	db, err := db.OpenDB()
+	db, err := db.OpenDB(dbconf.Host, dbconf.Port, dbconf.User, dbconf.Pass, dbconf.Name)
 	if err != nil {
 		panic(err)
 	}
@@ -29,15 +35,11 @@ func main() {
 	// API handler
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
-	v1Handler(v1, db)
+	v1Handler(v1, db, fileconf.DataDir)
 
 	// Front serve
-	FrontDir := ""
-	if os.Getenv("FRONTDIR") != "" {
-		FrontDir = os.Getenv("FRONTDIR")
-	}
-	if FrontDir != "" {
-		r.Static("/dist", FrontDir)
+	if fileconf.FrontDir != "" {
+		r.Static("/dist", fileconf.FrontDir)
 		r.NoRoute(func(c *gin.Context) {
 			if c.Request.URL.Path == "/dist/" {
 				return
@@ -51,6 +53,8 @@ func main() {
 		})
 	}
 
+	// Init mail
+	util.InitMail(mailconf.SendGridAPIKey, mailconf.FromAddr, mailconf.FromName)
 	// DB cleaup
 	go func() {
 		for {
@@ -65,19 +69,11 @@ func main() {
 	// Start web server
 	fmt.Println("Start server")
 
-	APIAddr := ""
-	APIPort := "8081"
-	if os.Getenv("APIADDR") != "" {
-		APIAddr = os.Getenv("APIADDR")
-	}
-	if os.Getenv("PORT") != "" {
-		APIPort = os.Getenv("PORT")
-	}
-	r.Run(APIAddr + ":" + APIPort)
+	r.Run(apiconf.Host + ":" + apiconf.Port)
 }
 
-func v1Handler(r *gin.RouterGroup, db *db.DB) {
-	h := handler.NewHandler(db)
+func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string) {
+	h := handler.NewHandler(db, datadir)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)

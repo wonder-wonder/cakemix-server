@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/wonder-wonder/cakemix-server/db"
+	"github.com/wonder-wonder/cakemix-server/util"
 )
 
 func TestMain(m *testing.M) {
@@ -62,20 +63,25 @@ func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
 	os.Setenv("SIGNPRVKEY", "../signkey")
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
+	os.Setenv("DATADIR", "../cmdat")
+
+	util.LoadConfig()
+	fileconf := util.GetFileConf()
+	dbconf := util.GetDBConf()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	err := db.LoadKeys()
+	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
 	}
-	db, err := db.OpenDB()
+	db, err := db.OpenDB(dbconf.Host, dbconf.Port, dbconf.User, dbconf.Pass, dbconf.Name)
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
 	}
 
 	v1 := r.Group("v1")
-	h := NewHandler(db)
+	h := NewHandler(db, fileconf.DataDir)
 	h.AuthHandler(v1)
 	h.DocumentHandler(v1)
 	h.FolderHandler(v1)

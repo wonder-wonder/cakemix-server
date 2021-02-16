@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -29,22 +28,12 @@ const (
 )
 
 var (
-	signKey           *rsa.PrivateKey
-	verifyKey         *rsa.PublicKey
-	rsaPrivateKeyFile = "./signkey"
-	rsaPublicKeyFile  = "./signkey.pub"
+	signKey   *rsa.PrivateKey
+	verifyKey *rsa.PublicKey
 )
 
 // LoadKeys read public/private keys
-func LoadKeys() error {
-	// Check env
-	if os.Getenv("SIGNPRVKEY") != "" {
-		rsaPrivateKeyFile = os.Getenv("SIGNPRVKEY")
-	}
-	if os.Getenv("SIGNPUBKEY") != "" {
-		rsaPublicKeyFile = os.Getenv("SIGNPUBKEY")
-	}
-
+func LoadKeys(rsaPrivateKeyFile, rsaPublicKeyFile string) error {
 	// Signing (private) key
 	signBytes, err := ioutil.ReadFile(rsaPrivateKeyFile)
 	if err != nil {

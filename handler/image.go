@@ -20,7 +20,7 @@ func (h *Handler) ImageHandler(r *gin.RouterGroup) {
 func (h *Handler) getImageHandler(c *gin.Context) {
 	imgid := c.Param("id")
 
-	c.File(path.Join(dataDir, imageDir, imgid))
+	c.File(path.Join(dataDir, ImageDir, imgid))
 }
 
 func (h *Handler) uploadImageHandler(c *gin.Context) {
@@ -37,7 +37,7 @@ func (h *Handler) uploadImageHandler(c *gin.Context) {
 	}
 
 	// Upload the file to specific dst.
-	err = c.SaveUploadedFile(file, path.Join(dataDir, imageDir, imgid))
+	err = c.SaveUploadedFile(file, path.Join(dataDir, ImageDir, imgid))
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
