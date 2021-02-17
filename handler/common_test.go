@@ -61,11 +61,8 @@ func TestMain(m *testing.M) {
 
 func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
-	os.Setenv("SIGNPRVKEY", "../signkey")
-	os.Setenv("SIGNPUBKEY", "../signkey.pub")
-	os.Setenv("DATADIR", "../cmdat")
 
-	conffile := "../cakemix.conf"
+	conffile := "../cakemix.conf.test"
 	_, err := os.Stat(conffile)
 	if err == nil {
 		err = util.LoadConfigFile(conffile)

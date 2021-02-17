@@ -14,13 +14,13 @@ APIPort 8081
 
 # File and directory configuration
 FrontDir ./
-DataDir ./cmdat
-SignPubKey ./signkey.pub
-SignPrvKey ./signkey
+DataDir ../cmdat
+SignPubKey ../signkey.pub
+SignPrvKey ../signkey
 
 # Mail configuration
 MailSGAPIKey
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
-MailResetPWTmpl resetpw.tmpl
-MailRegistTmpl regist.tmpl
+MailResetPWTmpl ../resetpw.tmpl
+MailRegistTmpl ../regist.tmpl

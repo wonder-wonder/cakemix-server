@@ -5,9 +5,10 @@ DBPass postgres
 DBName cakemix
 FrontDir /root/dist
 DataDir /root/cmdat
+APIHost
 SignPrvKey /root/keys/signkey
 SignPubKey /root/keys/signkey.pub
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
 MailResetPWTmpl resetpw.tmpl
-MailRegistTmpl resetpw.tmpl
+MailRegistTmpl regist.tmpl

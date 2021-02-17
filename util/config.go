@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,17 +14,17 @@ var (
 	dbUser         = ""
 	dbPass         = ""
 	dbName         = ""
-	apiHost        = ""
+	apiHost        = "localhost"
 	apiPort        = "8081"
 	frontDir       = "./"
 	dataDir        = "./cmdat"
 	signPubKey     = "./signkey.pub"
 	signPrvKey     = "./signkey"
 	sendgridAPIKey = ""
-	fromAddr       = ""
+	fromAddr       = "cakemix@localhost"
 	fromName       = "Cakemix"
-	tmplResetPW    = ""
-	tmplRegist     = ""
+	tmplResetPW    = "resetpw.tmpl"
+	tmplRegist     = "regist.tmpl"
 )
 
 type DBConf struct {
@@ -71,28 +70,6 @@ func LoadConfig() {
 		dbName = os.Getenv("DBNAME")
 	}
 
-	// API config
-	if os.Getenv("APIADDR") != "" {
-		apiHost = os.Getenv("APIADDR")
-	}
-	if os.Getenv("PORT") != "" {
-		apiPort = os.Getenv("PORT")
-	}
-
-	// File config
-	if os.Getenv("FRONTDIR") != "" {
-		frontDir = os.Getenv("FRONTDIR")
-	}
-	if os.Getenv("DATADIR") != "" {
-		dataDir = os.Getenv("DATADIR")
-	}
-	if os.Getenv("SIGNPRVKEY") != "" {
-		signPrvKey = os.Getenv("SIGNPRVKEY")
-	}
-	if os.Getenv("SIGNPUBKEY") != "" {
-		signPubKey = os.Getenv("SIGNPUBKEY")
-	}
-
 	// Mail config
 	sendgridAPIKey = ""
 	if os.Getenv("SENDGRID_API_KEY") != "" {
@@ -117,7 +94,7 @@ func LoadConfigFile(path string) error {
 		}
 		confs := strings.SplitN(v, " ", 2)
 		if len(confs) != 2 {
-			return errors.New("Value is not specified")
+			confs = append(confs, "")
 		}
 		confkey := strings.Trim(confs[0], " ")
 		confvalue := strings.Trim(confs[1], " ")
