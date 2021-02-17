@@ -57,7 +57,7 @@ func main() {
 	// API handler
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
-	v1Handler(v1, db, fileconf.DataDir)
+	v1Handler(v1, db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
 
 	// Front serve
 	if fileconf.FrontDir != "" {
@@ -96,8 +96,8 @@ func main() {
 	r.Run(apiconf.Host + ":" + apiconf.Port)
 }
 
-func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string) {
-	h := handler.NewHandler(db, datadir)
+func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string, tmplregist string) {
+	h := handler.NewHandler(db, datadir, tmplresetpw, tmplregist)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)

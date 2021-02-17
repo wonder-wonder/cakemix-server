@@ -76,6 +76,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
+	mailconf := util.GetMailConf()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -89,7 +90,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	}
 
 	v1 := r.Group("v1")
-	h := NewHandler(db, fileconf.DataDir)
+	h := NewHandler(db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
 	h.AuthHandler(v1)
 	h.DocumentHandler(v1)
 	h.FolderHandler(v1)

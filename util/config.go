@@ -24,6 +24,8 @@ var (
 	sendgridAPIKey = ""
 	fromAddr       = "cakemix@wonder-wonder.xyz"
 	fromName       = "Cakemix"
+	tmplResetPW    = ""
+	tmplRegist     = ""
 )
 
 type DBConf struct {
@@ -47,6 +49,8 @@ type MailConf struct {
 	SendGridAPIKey string
 	FromAddr       string
 	FromName       string
+	TmplResetPW    string
+	TmplRegist     string
 }
 
 func LoadConfig() {
@@ -148,6 +152,10 @@ func LoadConfigFile(path string) error {
 			fromAddr = confvalue
 		case "mailfromname":
 			fromName = confvalue
+		case "mailresetpwtmpl":
+			tmplResetPW = confvalue
+		case "mailregisttmpl":
+			tmplRegist = confvalue
 		default:
 			return fmt.Errorf("Unknown option: %v", confkey)
 		}
@@ -183,5 +191,7 @@ func GetMailConf() MailConf {
 		SendGridAPIKey: sendgridAPIKey,
 		FromAddr:       fromAddr,
 		FromName:       fromName,
+		TmplResetPW:    tmplResetPW,
+		TmplRegist:     tmplRegist,
 	}
 }
