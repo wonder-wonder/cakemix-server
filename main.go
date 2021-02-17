@@ -23,6 +23,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Option %s requires an argument\n", os.Args[i-1])
 					os.Exit(1)
 				}
+				log.Printf("Loading config %s", os.Args[i])
 				err := util.LoadConfigFile(os.Args[i])
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error occured while loading config: %v\n", err)

@@ -8,4 +8,4 @@ COPY . .
 
 RUN make build
 
-CMD ["./cakemixsv"]
+CMD ["./cakemixsv","-c","cakemix.conf.prod"]
