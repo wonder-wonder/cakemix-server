@@ -65,13 +65,21 @@ func testInit(tb testing.TB) *gin.Engine {
 	os.Setenv("SIGNPUBKEY", "../signkey.pub")
 	os.Setenv("DATADIR", "../cmdat")
 
+	conffile := "../cakemix.conf"
+	_, err := os.Stat(conffile)
+	if err == nil {
+		err = util.LoadConfigFile(conffile)
+		if err != nil {
+			panic(err)
+		}
+	}
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+	err = db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +14,27 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		for i := 1; i < len(os.Args); i++ {
+			switch strings.ToLower(os.Args[i]) {
+			case "-c", "-conf":
+				i++
+				if i >= len(os.Args) {
+					fmt.Fprintf(os.Stderr, "Option %s requires an argument\n", os.Args[i-1])
+					os.Exit(1)
+				}
+				err := util.LoadConfigFile(os.Args[i])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error occured while loading config: %v\n", err)
+					os.Exit(1)
+				}
+			default:
+				fmt.Fprintf(os.Stderr, "Unknown option: %s\n", os.Args[i])
+				os.Exit(1)
+			}
+		}
+	}
+
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()

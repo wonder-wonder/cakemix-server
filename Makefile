@@ -7,7 +7,7 @@ APIADDR=localhost
 PORT=8081
 
 rundev: main.go signkey sendgrid.env
-	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go run -race main.go
+	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go run -race main.go -c cakemix.conf
 
 test: main.go signkey
 	test -d out || mkdir out

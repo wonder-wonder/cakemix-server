@@ -1,0 +1,9 @@
+DBHost cakemixpg
+DBPort 5432
+DBUser postgres
+DBPass postgres
+DBName cakemix
+FrontDir /root/dist
+DataDir /root/cmdat
+SignPrvKey /root/keys/signkey
+SignPubKey /root/keys/signkey.pub
