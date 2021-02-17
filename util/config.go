@@ -1,6 +1,12 @@
 package util
 
-import "os"
+import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+)
 
 // Default
 var (
@@ -90,6 +96,63 @@ func LoadConfig() {
 	}
 	fromAddr = "cakemix@wonder-wonder.xyz"
 	fromName = "Cakemix"
+}
+
+func LoadConfigFile(path string) error {
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(raw), "\n")
+	for _, v := range lines {
+		// Remove comment
+		line := strings.SplitN(v, "#", 2)[0]
+		// Remove leading and trailing extra spaces
+		line = strings.Trim(line, " ")
+		// Ignore empty line
+		if len(line) == 0 {
+			continue
+		}
+		confs := strings.SplitN(v, " ", 2)
+		if len(confs) != 2 {
+			return errors.New("Value is not specified")
+		}
+		confkey := strings.Trim(confs[0], " ")
+		confvalue := strings.Trim(confs[1], " ")
+		switch strings.ToLower(confkey) {
+		case "dbhost":
+			dbHost = confvalue
+		case "dbport":
+			dbPort = confvalue
+		case "dbuser":
+			dbUser = confvalue
+		case "dbpass":
+			dbPass = confvalue
+		case "dbname":
+			dbName = confvalue
+		case "apihost":
+			apiHost = confvalue
+		case "apiport":
+			apiPort = confvalue
+		case "frontdir":
+			frontDir = confvalue
+		case "datadir":
+			dataDir = confvalue
+		case "signpubkey":
+			signPubKey = confvalue
+		case "signprvkey":
+			signPrvKey = confvalue
+		case "mailsgapikey":
+			sendgridAPIKey = confvalue
+		case "mailfromaddr":
+			fromAddr = confvalue
+		case "mailfromname":
+			fromName = confvalue
+		default:
+			return fmt.Errorf("Unknown option: %v", confkey)
+		}
+	}
+	return nil
 }
 
 func GetDBConf() DBConf {
