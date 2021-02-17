@@ -1,13 +1,25 @@
+# Cakemix configuration file
+# Starting with # is comment line
+
+# Database configuration
 DBHost cakemixpg
 DBPort 5432
 DBUser postgres
 DBPass postgres
 DBName cakemix
+
+# API socket configuration
+APIHost
+APIPort 8081
+
+# File and directory configuration
 FrontDir /root/dist
 DataDir /root/cmdat
 APIHost
 SignPrvKey /root/keys/signkey
 SignPubKey /root/keys/signkey.pub
+
+# Mail configuration
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
 MailResetPWTmpl resetpw.tmpl
