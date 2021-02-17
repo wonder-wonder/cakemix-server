@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	mailFromAddr = "cakemix@wonder-wonder.xyz"
-	mailFromName = "Cakemix"
+	mailFromAddr = ""
+	mailFromName = ""
 	sgAPIKey     = ""
 )
 

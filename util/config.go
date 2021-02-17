@@ -22,7 +22,7 @@ var (
 	signPubKey     = "./signkey.pub"
 	signPrvKey     = "./signkey"
 	sendgridAPIKey = ""
-	fromAddr       = "cakemix@wonder-wonder.xyz"
+	fromAddr       = ""
 	fromName       = "Cakemix"
 	tmplResetPW    = ""
 	tmplRegist     = ""
@@ -98,8 +98,6 @@ func LoadConfig() {
 	if os.Getenv("SENDGRID_API_KEY") != "" {
 		sendgridAPIKey = os.Getenv("SENDGRID_API_KEY")
 	}
-	fromAddr = "cakemix@wonder-wonder.xyz"
-	fromName = "Cakemix"
 }
 
 func LoadConfigFile(path string) error {

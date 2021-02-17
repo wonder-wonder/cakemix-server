@@ -7,5 +7,7 @@ FrontDir /root/dist
 DataDir /root/cmdat
 SignPrvKey /root/keys/signkey
 SignPubKey /root/keys/signkey.pub
+MailFromAddr cakemix@localhost
+MailFromName Cakemix
 MailResetPWTmpl resetpw.tmpl
 MailRegistTmpl resetpw.tmpl
