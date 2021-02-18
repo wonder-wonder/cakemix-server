@@ -17,7 +17,9 @@ const (
 )
 
 var (
-	dataDir = ""
+	dataDir         = ""
+	mailTmplResetPW = ""
+	mailTmplRegist  = ""
 )
 
 // Handler is object for handler function
@@ -26,7 +28,7 @@ type Handler struct {
 }
 
 // NewHandler generates new Handler instance
-func NewHandler(db *db.DB, datadir string) *Handler {
+func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string) *Handler {
 	dataDir = datadir
 	// Init data dir
 	err := os.MkdirAll(dataDir, 0700)
@@ -37,6 +39,14 @@ func NewHandler(db *db.DB, datadir string) *Handler {
 	if err != nil {
 		panic("Directory init error:" + path.Join(dataDir, ImageDir))
 	}
+	if tmplresetpw == "" {
+		panic("Mail template is not specified")
+	}
+	mailTmplResetPW = tmplresetpw
+	if tmplregist == "" {
+		panic("Mail template is not specified")
+	}
+	mailTmplRegist = tmplregist
 	return &Handler{db: db}
 }
 

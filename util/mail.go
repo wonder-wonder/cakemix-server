@@ -3,14 +3,16 @@ package util
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"strings"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 var (
-	mailFromAddr = "cakemix@wonder-wonder.xyz"
-	mailFromName = "Cakemix"
+	mailFromAddr = ""
+	mailFromName = ""
 	sgAPIKey     = ""
 )
 
@@ -40,4 +42,17 @@ func SendMail(ToAddr, ToName, subject, text, textHTML string) error {
 		return errors.New(res.Body)
 	}
 	return err
+}
+
+// SendMailWithTemplate sends email using template file. The mail is sent as plain text if textHTML is empty.
+func SendMailWithTemplate(ToAddr, ToName, subject, tmplfile string, dat map[string]string) error {
+	raw, err := ioutil.ReadFile(tmplfile)
+	if err != nil {
+		return err
+	}
+	mailtext := string(raw)
+	for k, v := range dat {
+		mailtext = strings.ReplaceAll(mailtext, "{{"+k+"}}", v)
+	}
+	return SendMail(ToAddr, ToName, subject, mailtext, "")
 }

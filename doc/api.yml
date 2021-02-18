@@ -10,8 +10,6 @@ info:
 servers:
   - url: 'http://localhost:8081/v1'
     description: Server URL for localhost development
-  - url: 'https://api.cakemix.wonder-wonder.xyz/v1'
-    description: Server URL for production
 paths:
   /auth/login:
     post:

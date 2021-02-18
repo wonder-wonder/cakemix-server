@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +14,28 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		for i := 1; i < len(os.Args); i++ {
+			switch strings.ToLower(os.Args[i]) {
+			case "-c", "-conf":
+				i++
+				if i >= len(os.Args) {
+					fmt.Fprintf(os.Stderr, "Option %s requires an argument\n", os.Args[i-1])
+					os.Exit(1)
+				}
+				log.Printf("Loading config %s", os.Args[i])
+				err := util.LoadConfigFile(os.Args[i])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error occured while loading config: %v\n", err)
+					os.Exit(1)
+				}
+			default:
+				fmt.Fprintf(os.Stderr, "Unknown option: %s\n", os.Args[i])
+				os.Exit(1)
+			}
+		}
+	}
+
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
@@ -35,7 +58,7 @@ func main() {
 	// API handler
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
-	v1Handler(v1, db, fileconf.DataDir)
+	v1Handler(v1, db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
 
 	// Front serve
 	if fileconf.FrontDir != "" {
@@ -74,8 +97,8 @@ func main() {
 	r.Run(apiconf.Host + ":" + apiconf.Port)
 }
 
-func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string) {
-	h := handler.NewHandler(db, datadir)
+func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string, tmplregist string) {
+	h := handler.NewHandler(db, datadir, tmplresetpw, tmplregist)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)

@@ -3,15 +3,13 @@ DBPORT=5432
 DBUSER=postgres
 DBPASS=postgres
 DBNAME=cakemix
-APIADDR=localhost
-PORT=8081
 
 rundev: main.go signkey sendgrid.env
-	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go run -race main.go
+	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -race main.go -c cakemix.conf
 
 test: main.go signkey
 	test -d out || mkdir out
-	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" APIADDR="$(APIADDR)" PORT="$(PORT)" go test -v ./handler -count=1 -coverprofile=out/cover.out
+	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go test -v ./handler -count=1 -coverprofile=out/cover.out
 	go tool cover -html=out/cover.out -o out/cover.html
 
 startdb:

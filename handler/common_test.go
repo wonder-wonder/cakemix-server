@@ -61,17 +61,23 @@ func TestMain(m *testing.M) {
 
 func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
-	os.Setenv("SIGNPRVKEY", "../signkey")
-	os.Setenv("SIGNPUBKEY", "../signkey.pub")
-	os.Setenv("DATADIR", "../cmdat")
 
+	conffile := "../cakemix.conf.test"
+	_, err := os.Stat(conffile)
+	if err == nil {
+		err = util.LoadConfigFile(conffile)
+		if err != nil {
+			panic(err)
+		}
+	}
 	util.LoadConfig()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
+	mailconf := util.GetMailConf()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+	err = db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
 	}
@@ -81,7 +87,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	}
 
 	v1 := r.Group("v1")
-	h := NewHandler(db, fileconf.DataDir)
+	h := NewHandler(db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
 	h.AuthHandler(v1)
 	h.DocumentHandler(v1)
 	h.FolderHandler(v1)
