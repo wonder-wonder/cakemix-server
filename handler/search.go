@@ -23,14 +23,14 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 	offset := -1
 	if c.Query("limit") != "" {
 		lim, err = strconv.Atoi(c.Query("limit"))
-		if err != nil {
+		if err != nil || lim <= 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 	}
 	if c.Query("offset") != "" {
 		offset, err = strconv.Atoi(c.Query("offset"))
-		if err != nil {
+		if err != nil || offset < 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
@@ -92,14 +92,14 @@ func (h *Handler) searchTeamHandler(c *gin.Context) {
 	offset := -1
 	if c.Query("limit") != "" {
 		lim, err = strconv.Atoi(c.Query("limit"))
-		if err != nil {
+		if err != nil || lim <= 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 	}
 	if c.Query("offset") != "" {
 		offset, err = strconv.Atoi(c.Query("offset"))
-		if err != nil {
+		if err != nil || offset < 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}

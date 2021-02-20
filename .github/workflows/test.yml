@@ -29,4 +29,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: cover.html
-        path: cover.html
+        path: out/cover.html
