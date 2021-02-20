@@ -89,14 +89,14 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 	var err error
 	if c.Query("limit") != "" {
 		limit, err = strconv.Atoi(c.Query("limit"))
-		if err != nil {
+		if err != nil || limit <= 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 	}
 	if c.Query("offset") != "" {
 		offset, err = strconv.Atoi(c.Query("offset"))
-		if err != nil {
+		if err != nil || offset < 0 {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
