@@ -8,7 +8,7 @@ import (
 )
 
 // NewOTClient generates OT client data
-func NewOTClient(conn *websocket.Conn, uuid string, name string, readOnly bool) *Client {
+func NewOTClient(conn *websocket.Conn, uuid string, name string, iconuri string, readOnly bool) *Client {
 	otc := Client{}
 	otc.conn = conn
 	otc.readOnly = readOnly
@@ -16,6 +16,7 @@ func NewOTClient(conn *websocket.Conn, uuid string, name string, readOnly bool) 
 	otc.response = make(chan Response)
 	otc.UserInfo.UUID = uuid
 	otc.UserInfo.Name = name
+	otc.UserInfo.IconURI = iconuri
 	otc.Selection = []SelData{}
 	return &otc
 }

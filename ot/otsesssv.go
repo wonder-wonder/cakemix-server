@@ -103,7 +103,11 @@ func (sess *Session) SessionLoop() {
 					if cl.ClientID == req.ClientID {
 						continue
 					}
-					rescl := ClientData{Name: cl.UserInfo.Name}
+					rescl := ClientData{
+						Name:    cl.UserInfo.Name,
+						UUID:    cl.UserInfo.UUID,
+						IconURI: cl.UserInfo.IconURI,
+					}
 					rescl.Selection.Ranges = []SelData{}
 					for _, sel := range cl.Selection {
 						rescl.Selection.Ranges = append(rescl.Selection.Ranges, sel)

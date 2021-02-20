@@ -407,14 +407,13 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		log.Printf("OT handler error: %v", err)
 		return
 	}
-	name := p.Name
 
 	sess, err := ot.OpenSession(h.db, docID)
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
 		return
 	}
-	otc := ot.NewOTClient(conn, uuid, name, !editable)
+	otc := ot.NewOTClient(conn, uuid, p.Name, p.IconURI, !editable)
 	defer otc.Close()
 	sess.AddClient(otc)
 	sess.Request(ot.WSMsgTypeDoc, otc.ClientID, nil)

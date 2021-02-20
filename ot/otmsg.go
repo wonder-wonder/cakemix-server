@@ -138,6 +138,8 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 // ClientData is structure for client information
 type ClientData struct {
 	Name      string `json:"name"`
+	UUID      string `json:"uuid"`
+	IconURI   string `json:"icon_uri"`
 	Selection Ranges `json:"selection"`
 }
 

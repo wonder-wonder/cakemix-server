@@ -32,8 +32,9 @@ type Client struct {
 	response chan Response
 	ClientID string
 	UserInfo struct {
-		UUID string
-		Name string
+		UUID    string
+		Name    string
+		IconURI string
 	}
 	Selection []SelData
 }
