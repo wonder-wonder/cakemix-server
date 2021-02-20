@@ -89,13 +89,22 @@ func (sess *Session) SessionLoop() {
 	for {
 		select {
 		case req := <-sess.request:
-			if req.Type == OTReqResTypeJoin {
-				if v, ok := req.Data.(*Client); ok {
-					v.sess = sess
+			if req.Type == WSMsgTypeJoin {
+				if nc, ok := req.Data.(*Client); ok {
+					nc.sess = sess
 					sess.incnum++
-					v.ClientID = strconv.Itoa(sess.incnum)
-					sess.Clients[v.ClientID] = v
-					v.Response(WSMsgTypeOK, nil)
+					nc.ClientID = strconv.Itoa(sess.incnum)
+					for _, v := range sess.Clients {
+						go v.Response(WSMsgTypeJoin, ClientJoinData{
+							ID:      nc.ClientID,
+							Name:    nc.UserInfo.Name,
+							UUID:    nc.UserInfo.UUID,
+							IconURI: nc.UserInfo.IconURI,
+						})
+					}
+					sess.Clients[nc.ClientID] = nc
+					// Ready ack
+					nc.Response(WSMsgTypeOK, nil)
 				}
 			} else if req.Type == WSMsgTypeDoc {
 				res := DocData{Clients: map[string]ClientData{}, Document: sess.OT.Text, Revision: sess.OT.Revision}
@@ -272,6 +281,7 @@ func (sess *Session) Request(t WSMsgType, cid string, dat interface{}) {
 
 // AddClient requests to server to add new client
 func (sess *Session) AddClient(cl *Client) {
-	sess.Request(OTReqResTypeJoin, "", cl)
+	sess.Request(WSMsgTypeJoin, "", cl)
+	// Wait and discard ready ack
 	<-cl.response
 }

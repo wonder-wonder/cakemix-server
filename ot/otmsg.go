@@ -16,7 +16,7 @@ const (
 	WSMsgTypeOK
 	WSMsgTypeSel
 	WSMsgTypeQuit
-	OTReqResTypeJoin
+	WSMsgTypeJoin
 	OTReqResTypePing
 )
 
@@ -127,6 +127,8 @@ func convertToMsg(t WSMsgType, dat interface{}) ([]byte, error) {
 		msg.Event = "sel"
 	} else if t == WSMsgTypeQuit {
 		msg.Event = "quit"
+	} else if t == WSMsgTypeJoin {
+		msg.Event = "join"
 	}
 	msgraw, err := json.Marshal(msg)
 	if err != nil {
@@ -151,4 +153,12 @@ type DocData struct {
 	Owner      string                `json:"owner"`
 	Permission int                   `json:"permission"`
 	Editable   bool                  `json:"editable"`
+}
+
+// ClientJoinData is structure for client information
+type ClientJoinData struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	UUID    string `json:"uuid"`
+	IconURI string `json:"icon_uri"`
 }
