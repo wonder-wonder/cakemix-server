@@ -13,7 +13,7 @@ APIHost localhost
 APIPort 8081
 
 # File and directory configuration
-FrontDir ./
+FrontDir ../dist
 DataDir ../cmdat
 SignPubKey ../signkey.pub
 SignPrvKey ../signkey
