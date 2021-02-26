@@ -266,7 +266,7 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		return
 	}
 
-	err = util.SendMailWithTemplate(req.Email, prof.Name, "Reset password", mailTmplRegist, map[string]string{"NAME": prof.Name, "TOKEN": token})
+	err = util.SendMailWithTemplate(req.Email, prof.Name, "Reset password", mailTmplResetPW, map[string]string{"NAME": prof.Name, "TOKEN": token})
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
