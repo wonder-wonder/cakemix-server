@@ -78,6 +78,7 @@ func LoadConfig() {
 }
 
 func LoadConfigFile(path string) error {
+	// #nosec G304
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err

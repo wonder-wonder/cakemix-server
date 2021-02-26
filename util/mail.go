@@ -46,6 +46,7 @@ func SendMail(ToAddr, ToName, subject, text, textHTML string) error {
 
 // SendMailWithTemplate sends email using template file. The mail is sent as plain text if textHTML is empty.
 func SendMailWithTemplate(ToAddr, ToName, subject, tmplfile string, dat map[string]string) error {
+	// #nosec G304
 	raw, err := ioutil.ReadFile(tmplfile)
 	if err != nil {
 		return err
