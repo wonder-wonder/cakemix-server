@@ -94,7 +94,10 @@ func main() {
 	// Start web server
 	fmt.Println("Start server")
 
-	r.Run(apiconf.Host + ":" + apiconf.Port)
+	err = r.Run(apiconf.Host + ":" + apiconf.Port)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string, tmplregist string) {

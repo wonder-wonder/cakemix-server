@@ -93,7 +93,12 @@ func (cl *Client) ClientLoop() {
 				return
 			}
 			if resdat.Type == OTReqResTypePing {
-				cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+				if err != nil {
+					log.Printf("OT client error: websocket error: %v\n", err)
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
+				}
 			} else {
 				resraw, err := convertToMsg(resdat.Type, resdat.Data)
 				if err != nil {
@@ -101,7 +106,12 @@ func (cl *Client) ClientLoop() {
 					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
 					return
 				}
-				cl.conn.WriteMessage(websocket.TextMessage, resraw)
+				err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
+				if err != nil {
+					log.Printf("OT client error: websocket error: %v\n", err)
+					cl.sess.Request(WSMsgTypeQuit, cl.ClientID, nil)
+					return
+				}
 			}
 		}
 	}
