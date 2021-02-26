@@ -21,6 +21,10 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v2
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: ./...
     - name: test
       run: |
         cat ./docker/postgres/init/* | PGPASSWORD=postgres psql -h localhost -U postgres

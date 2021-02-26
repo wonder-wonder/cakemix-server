@@ -20,6 +20,7 @@ const (
 	verifyTokenExpHours  = 12
 )
 
+// #nosec G101
 // LogTypeAuth enum
 const (
 	LogTypeAuthLogin      = "auth.login"
@@ -34,6 +35,7 @@ var (
 
 // LoadKeys read public/private keys
 func LoadKeys(rsaPrivateKeyFile, rsaPublicKeyFile string) error {
+	// #nosec G304
 	// Signing (private) key
 	signBytes, err := ioutil.ReadFile(rsaPrivateKeyFile)
 	if err != nil {
@@ -44,6 +46,7 @@ func LoadKeys(rsaPrivateKeyFile, rsaPublicKeyFile string) error {
 		return err
 	}
 
+	// #nosec G304
 	// Verification (public) key
 	verifyBytes, err := ioutil.ReadFile(rsaPublicKeyFile)
 	if err != nil {
