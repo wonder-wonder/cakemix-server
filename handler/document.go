@@ -408,7 +408,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		return
 	}
 
-	cl, err := ot.NewSessionClient(conn, ot.SessionClientProfile{
+	cl, err := ot.NewOTClient(conn, ot.OTClientProfile{
 		UUID:    uuid,
 		Name:    p.Name,
 		IconURI: p.IconURI,

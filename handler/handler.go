@@ -26,7 +26,7 @@ var (
 // Handler is object for handler function
 type Handler struct {
 	db    *db.DB
-	otmgr *ot.SessionManager
+	otmgr *ot.OTManager
 }
 
 // NewHandler generates new Handler instance
@@ -49,7 +49,7 @@ func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string
 		panic("Mail template is not specified")
 	}
 	mailTmplRegist = tmplregist
-	otmgr, err := ot.NewSessionManager(db)
+	otmgr, err := ot.NewOTManager(db)
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,7 @@ const (
 	otClientPingInterval = 30  //Sec
 )
 
-type SessionServer struct {
+type OTServer struct {
 	// DB conn
 	db *db.DB
 	// DocInfo
@@ -28,56 +28,56 @@ type SessionServer struct {
 	needSave        bool
 
 	// Clients
-	clients map[string]*SessionClient
+	clients map[string]*OTClient
 
 	// Management info
 	accumulationClients int // for serial number
 
 	// Channel
-	sv2mgr chan SessionServerRequest
-	mgr2sv chan SessionManagerRequest
-	cl2sv  chan SessionC2SMessage
+	sv2mgr chan OTServerRequest
+	mgr2sv chan OTManagerRequest
+	cl2sv  chan OTC2SMessage
 }
 
-type SessionS2CMessageType int
+type OTS2CMessageType int
 
 const (
-	SessionS2CMessageTypePing SessionS2CMessageType = iota
-	SessionS2CMessageTypeWSMsg
+	OTS2CMessageTypePing OTS2CMessageType = iota
+	OTS2CMessageTypeWSMsg
 )
 
-type SessionC2SMessageType int
+type OTC2SMessageType int
 
 const (
-	SessionC2SMessageTypeClose SessionC2SMessageType = iota
-	SessionC2SMessageTypeWSMsg
+	OTC2SMessageTypeClose OTC2SMessageType = iota
+	OTC2SMessageTypeWSMsg
 )
 
-type SessionS2CMessage struct {
-	msgType SessionS2CMessageType
+type OTS2CMessage struct {
+	msgType OTS2CMessageType
 	message interface{}
 }
-type SessionC2SMessage struct {
+type OTC2SMessage struct {
 	clientID string
-	msgType  SessionC2SMessageType
+	msgType  OTC2SMessageType
 	message  interface{}
 }
-type SessionWSMessage struct {
+type OTWSMessage struct {
 	Event WSMsgType
 	Data  interface{}
 }
 
-func NewSessionServer(docID string, sv2mgr chan SessionServerRequest, db *db.DB) (*SessionServer, error) {
-	sv := &SessionServer{
+func NewOTServer(docID string, sv2mgr chan OTServerRequest, db *db.DB) (*OTServer, error) {
+	sv := &OTServer{
 		db:                  db,
 		docID:               docID,
 		countFromLastGC:     0,
 		needSave:            false,
-		clients:             map[string]*SessionClient{},
+		clients:             map[string]*OTClient{},
 		accumulationClients: 0,
 		sv2mgr:              sv2mgr,
-		mgr2sv:              make(chan SessionManagerRequest),
-		cl2sv:               make(chan SessionC2SMessage),
+		mgr2sv:              make(chan OTManagerRequest),
+		cl2sv:               make(chan OTC2SMessage),
 	}
 
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -94,18 +94,18 @@ func NewSessionServer(docID string, sv2mgr chan SessionServerRequest, db *db.DB)
 	return sv, nil
 }
 
-func (sv *SessionServer) AddClient(clreq *SessionClientRequest) {
+func (sv *OTServer) AddClient(clreq *OTClientRequest) {
 	go func() {
-		sv.mgr2sv <- SessionManagerRequest{
-			reqType: SessionManagerRequestTypeAddClient,
+		sv.mgr2sv <- OTManagerRequest{
+			reqType: OTManagerRequestTypeAddClient,
 			request: clreq,
 		}
 	}()
 }
 
-func (sv *SessionServer) SendS2M(reqType SessionServerRequestType, request interface{}) {
+func (sv *OTServer) SendS2M(reqType OTServerRequestType, request interface{}) {
 	go func() {
-		sv.sv2mgr <- SessionServerRequest{
+		sv.sv2mgr <- OTServerRequest{
 			docID:   sv.docID,
 			reqType: reqType,
 			request: request,
@@ -113,10 +113,10 @@ func (sv *SessionServer) SendS2M(reqType SessionServerRequestType, request inter
 	}()
 }
 
-func (sv *SessionServer) Loop() {
+func (sv *OTServer) Loop() {
 	autoSaveTicker := time.NewTicker(time.Second * autoSaveInterval)
 	defer autoSaveTicker.Stop()
-	sv.SendS2M(SessionServerRequestTypeStarted, nil)
+	sv.SendS2M(OTServerRequestTypeStarted, nil)
 	for {
 		select {
 		case mgrreq, ok := <-sv.mgr2sv:
@@ -128,9 +128,9 @@ func (sv *SessionServer) Loop() {
 				return
 			}
 			switch mgrreq.reqType {
-			case SessionManagerRequestTypeAddClient:
+			case OTManagerRequestTypeAddClient:
 				// Add to client list
-				clreq, _ := mgrreq.request.(*SessionClientRequest)
+				clreq, _ := mgrreq.request.(*OTClientRequest)
 				clientID := strconv.Itoa(sv.accumulationClients)
 				sv.accumulationClients++
 				sv.clients[clientID] = clreq.client
@@ -141,7 +141,7 @@ func (sv *SessionServer) Loop() {
 				clreq.client.lastRev = sv.ot.Revision
 
 				// Broadcast new client info
-				sv.Broadcast(clientID, SessionWSMessage{
+				sv.Broadcast(clientID, OTWSMessage{
 					Event: WSMsgTypeJoin,
 					Data: ClientJoinData{
 						ID:      clreq.client.clientID,
@@ -178,14 +178,14 @@ func (sv *SessionServer) Loop() {
 					}
 					res.Clients[tclientID] = rescl
 				}
-				clreq.client.SendS2C(SessionS2CMessageTypeWSMsg, SessionWSMessage{
+				clreq.client.SendS2C(OTS2CMessageTypeWSMsg, OTWSMessage{
 					Event: WSMsgTypeDoc,
 					Data:  res,
 				})
 			}
 		case clreq, _ := <-sv.cl2sv:
 			switch clreq.msgType {
-			case SessionC2SMessageTypeClose:
+			case OTC2SMessageTypeClose:
 				// Closed by client
 				sv.CloseClient(clreq.clientID)
 				saved, err := sv.SaveDoc()
@@ -200,8 +200,8 @@ func (sv *SessionServer) Loop() {
 				if saved {
 					log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
 				}
-			case SessionC2SMessageTypeWSMsg:
-				wsmsg := clreq.message.(SessionWSMessage)
+			case OTC2SMessageTypeWSMsg:
+				wsmsg := clreq.message.(OTWSMessage)
 				switch wsmsg.Event {
 				case WSMsgTypeOp:
 					opdat, ok := wsmsg.Data.(OpData)
@@ -247,11 +247,11 @@ func (sv *SessionServer) Loop() {
 					cl.lastRev = sv.ot.Revision
 
 					opres := []interface{}{clreq.clientID, opdat.Operation, opdat.Selection}
-					sv.Broadcast(clreq.clientID, SessionWSMessage{
+					sv.Broadcast(clreq.clientID, OTWSMessage{
 						Event: WSMsgTypeOp,
 						Data:  opres,
 					})
-					cl.SendS2C(SessionS2CMessageTypeWSMsg, SessionWSMessage{
+					cl.SendS2C(OTS2CMessageTypeWSMsg, OTWSMessage{
 						Event: WSMsgTypeOK,
 						Data:  nil,
 					})
@@ -280,7 +280,7 @@ func (sv *SessionServer) Loop() {
 					}
 					selresdat := Ranges{}
 					selresdat.Ranges = seldat.Ranges
-					sv.Broadcast(clreq.clientID, SessionWSMessage{
+					sv.Broadcast(clreq.clientID, OTWSMessage{
 						Event: WSMsgTypeSel,
 						Data:  []interface{}{clreq.clientID, selresdat},
 					})
@@ -303,27 +303,27 @@ func (sv *SessionServer) Loop() {
 	}
 }
 
-func (sv *SessionServer) Broadcast(from string, message SessionWSMessage) {
+func (sv *OTServer) Broadcast(from string, message OTWSMessage) {
 	for i, v := range sv.clients {
 		if i == from {
 			continue
 		}
-		v.SendS2C(SessionS2CMessageTypeWSMsg, message)
+		v.SendS2C(OTS2CMessageTypeWSMsg, message)
 	}
 }
 
-func (sv *SessionServer) CloseClient(clientID string) {
-	sv.Broadcast(clientID, SessionWSMessage{
+func (sv *OTServer) CloseClient(clientID string) {
+	sv.Broadcast(clientID, OTWSMessage{
 		Event: WSMsgTypeQuit,
 		Data:  clientID,
 	})
 	cl := sv.clients[clientID]
 	close(cl.sv2cl)
 	delete(sv.clients, clientID)
-	sv.SendS2M(SessionServerRequestTypeClientClosed, nil)
+	sv.SendS2M(OTServerRequestTypeClientClosed, nil)
 }
 
-func (sv *SessionServer) SaveDoc() (bool, error) {
+func (sv *OTServer) SaveDoc() (bool, error) {
 	if !sv.needSave {
 		return false, nil
 	}
@@ -342,7 +342,7 @@ func (sv *SessionServer) SaveDoc() (bool, error) {
 	return true, nil
 }
 
-func (sv *SessionServer) Stop() error {
+func (sv *OTServer) Stop() error {
 	for i := range sv.clients {
 		sv.CloseClient(i)
 	}
@@ -351,6 +351,6 @@ func (sv *SessionServer) Stop() error {
 		return err
 	}
 	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
-	sv.SendS2M(SessionServerRequestTypeStopped, nil)
+	sv.SendS2M(OTServerRequestTypeStopped, nil)
 	return nil
 }

@@ -9,72 +9,72 @@ import (
 
 const serverStopDelay = 30
 
-type SessionStatus int
+type OTStatus int
 
 const (
-	SessionStatusStarting SessionStatus = iota
-	SessionStatusRunning
-	SessionStatusStopping
+	OTStatusStarting OTStatus = iota
+	OTStatusRunning
+	OTStatusStopping
 )
 
-type SessionServerRequestType int
+type OTServerRequestType int
 
 const (
-	SessionServerRequestTypeStarted SessionServerRequestType = iota
-	SessionServerRequestTypeClientClosed
-	SessionServerRequestTypeStopped
+	OTServerRequestTypeStarted OTServerRequestType = iota
+	OTServerRequestTypeClientClosed
+	OTServerRequestTypeStopped
 )
 
-type SessionManagerRequestType int
+type OTManagerRequestType int
 
 const (
-	SessionManagerRequestTypeAddClient SessionManagerRequestType = iota
+	OTManagerRequestTypeAddClient OTManagerRequestType = iota
 )
 
-type SessionManager struct {
+type OTManager struct {
 	db        *db.DB
-	sesslist  map[string]*SessionInfo
-	clientReq chan SessionClientRequest
-	serverReq chan SessionServerRequest
+	sesslist  map[string]*OTInfo
+	clientReq chan OTClientRequest
+	serverReq chan OTServerRequest
 	timeout   chan string
 	stop      chan struct{}
 }
 
-type SessionInfo struct {
-	Server    *SessionServer
+type OTInfo struct {
+	Server    *OTServer
 	ClientNum int
-	Status    SessionStatus
+	Status    OTStatus
 	StopTimer *time.Timer
 	StopWhen  time.Time
 }
-type SessionClientRequest struct {
+type OTClientRequest struct {
 	ready  chan struct{}
 	docID  string
-	client *SessionClient
+	client *OTClient
 }
-type SessionServerRequest struct {
+type OTServerRequest struct {
 	docID   string
-	reqType SessionServerRequestType
+	reqType OTServerRequestType
 	request interface{}
 }
-type SessionManagerRequest struct {
-	reqType SessionManagerRequestType
+type OTManagerRequest struct {
+	reqType OTManagerRequestType
 	request interface{}
 }
 
-func NewSessionManager(db *db.DB) (*SessionManager, error) {
-	mgr := &SessionManager{
+func NewOTManager(db *db.DB) (*OTManager, error) {
+	mgr := &OTManager{
 		db:        db,
-		sesslist:  map[string]*SessionInfo{},
-		clientReq: make(chan SessionClientRequest),
-		serverReq: make(chan SessionServerRequest),
+		sesslist:  map[string]*OTInfo{},
+		clientReq: make(chan OTClientRequest),
+		serverReq: make(chan OTServerRequest),
 		timeout:   make(chan string),
 		stop:      make(chan struct{}),
 	}
 	return mgr, nil
 }
 
-func (mgr *SessionManager) Loop() {
+func (mgr *OTManager) Loop() {
 	for {
 		select {
 		case clreq, _ := <-mgr.clientReq:
@@ -87,7 +87,7 @@ func (mgr *SessionManager) Loop() {
 					}
 				}()
 			}
-			if !ok || svinfo.Status != SessionStatusRunning {
+			if !ok || svinfo.Status != OTStatusRunning {
 				// Reenqueue
 				go func() {
 					time.Sleep(time.Millisecond * 10)
@@ -99,14 +99,14 @@ func (mgr *SessionManager) Loop() {
 			svinfo.ClientNum++
 		case svreq, _ := <-mgr.serverReq:
 			switch svreq.reqType {
-			case SessionServerRequestTypeStarted:
+			case OTServerRequestTypeStarted:
 				svinfo := mgr.sesslist[svreq.docID]
-				svinfo.Status = SessionStatusRunning
-			case SessionServerRequestTypeClientClosed:
+				svinfo.Status = OTStatusRunning
+			case OTServerRequestTypeClientClosed:
 				svinfo := mgr.sesslist[svreq.docID]
 				svinfo.ClientNum--
 				if svinfo.ClientNum == 0 {
-					if svinfo.Status == SessionStatusStopping {
+					if svinfo.Status == OTStatusStopping {
 						continue
 					}
 					// Set timeout
@@ -119,7 +119,7 @@ func (mgr *SessionManager) Loop() {
 						mgr.timeout <- svinfo.Server.docID
 					})
 				}
-			case SessionServerRequestTypeStopped:
+			case OTServerRequestTypeStopped:
 				delete(mgr.sesslist, svreq.docID)
 			}
 		case docID := <-mgr.timeout:
@@ -131,15 +131,15 @@ func (mgr *SessionManager) Loop() {
 				continue
 			}
 			close(svinfo.Server.mgr2sv)
-			svinfo.Status = SessionStatusStopping
+			svinfo.Status = OTStatusStopping
 		case <-mgr.stop:
 			for _, v := range mgr.sesslist {
 				close(v.Server.mgr2sv)
-				v.Status = SessionStatusStopping
+				v.Status = OTStatusStopping
 			}
 			for len(mgr.sesslist) > 0 {
 				svreq := <-mgr.serverReq
-				if svreq.reqType == SessionServerRequestTypeStopped {
+				if svreq.reqType == OTServerRequestTypeStopped {
 					delete(mgr.sesslist, svreq.docID)
 				}
 			}
@@ -148,33 +148,33 @@ func (mgr *SessionManager) Loop() {
 	}
 }
 
-func (mgr *SessionManager) StartServer(docID string) error {
+func (mgr *OTManager) StartServer(docID string) error {
 	if _, ok := mgr.sesslist[docID]; ok {
 		return errors.New("Server already exist: " + docID)
 	}
-	sv, err := NewSessionServer(docID, mgr.serverReq, mgr.db)
+	sv, err := NewOTServer(docID, mgr.serverReq, mgr.db)
 	if err != nil {
 		return err
 	}
-	mgr.sesslist[docID] = &SessionInfo{
+	mgr.sesslist[docID] = &OTInfo{
 		Server:    sv,
 		ClientNum: 0,
-		Status:    SessionStatusStarting,
+		Status:    OTStatusStarting,
 		StopTimer: nil,
 	}
 	go sv.Loop()
 	return nil
 }
 
-func (mgr *SessionManager) ClientConnect(cl *SessionClient, docid string) {
+func (mgr *OTManager) ClientConnect(cl *OTClient, docid string) {
 	ready := make(chan struct{})
-	mgr.clientReq <- SessionClientRequest{
+	mgr.clientReq <- OTClientRequest{
 		ready:  ready,
 		docID:  docid,
 		client: cl,
 	}
 	<-ready
 }
-func (mgr *SessionManager) StopOTManager() {
+func (mgr *OTManager) StopOTManager() {
 	mgr.stop <- struct{}{}
 }

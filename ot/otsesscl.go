@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type SessionClient struct {
+type OTClient struct {
 	// Connection
 	conn *websocket.Conn
 	// OT status
@@ -17,21 +17,21 @@ type SessionClient struct {
 	lastRev   int
 	selection []SelData
 	// User info
-	profile  SessionClientProfile
+	profile  OTClientProfile
 	readOnly bool
 	// Server
-	cl2sv chan SessionC2SMessage
-	sv2cl chan SessionS2CMessage
+	cl2sv chan OTC2SMessage
+	sv2cl chan OTS2CMessage
 }
 
-type SessionClientProfile struct {
+type OTClientProfile struct {
 	UUID    string
 	Name    string
 	IconURI string
 }
 
-func NewSessionClient(conn *websocket.Conn, profile SessionClientProfile, readOnly bool) (*SessionClient, error) {
-	cl := &SessionClient{
+func NewOTClient(conn *websocket.Conn, profile OTClientProfile, readOnly bool) (*OTClient, error) {
+	cl := &OTClient{
 		conn:      conn,
 		clientID:  "",
 		lastRev:   0,
@@ -39,22 +39,22 @@ func NewSessionClient(conn *websocket.Conn, profile SessionClientProfile, readOn
 		profile:   profile,
 		readOnly:  readOnly,
 		cl2sv:     nil,
-		sv2cl:     make(chan SessionS2CMessage),
+		sv2cl:     make(chan OTS2CMessage),
 	}
 	return cl, nil
 }
 
-func (cl *SessionClient) SendS2C(msgType SessionS2CMessageType, message interface{}) {
+func (cl *OTClient) SendS2C(msgType OTS2CMessageType, message interface{}) {
 	go func() {
-		cl.sv2cl <- SessionS2CMessage{
+		cl.sv2cl <- OTS2CMessage{
 			msgType: msgType,
 			message: message,
 		}
 	}()
 }
-func (cl *SessionClient) SendC2S(msgType SessionC2SMessageType, message interface{}) {
+func (cl *OTClient) SendC2S(msgType OTC2SMessageType, message interface{}) {
 	go func() {
-		cl.cl2sv <- SessionC2SMessage{
+		cl.cl2sv <- OTC2SMessage{
 			clientID: cl.clientID,
 			msgType:  msgType,
 			message:  message,
@@ -62,7 +62,7 @@ func (cl *SessionClient) SendC2S(msgType SessionC2SMessageType, message interfac
 	}()
 }
 
-func (cl *SessionClient) Loop() {
+func (cl *OTClient) Loop() {
 	request := make(chan []byte)
 	// Reader routine
 	ctx := context.Background()
@@ -111,7 +111,7 @@ func (cl *SessionClient) Loop() {
 			case <-childCtx.Done():
 				return
 			default:
-				cl.SendS2C(SessionS2CMessageTypePing, nil)
+				cl.SendS2C(OTS2CMessageTypePing, nil)
 				time.Sleep(time.Second * otClientPingInterval)
 			}
 		}
@@ -124,15 +124,15 @@ func (cl *SessionClient) Loop() {
 				return
 			}
 			switch s2cmsg.msgType {
-			case SessionS2CMessageTypePing:
+			case OTS2CMessageTypePing:
 				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 				if err != nil {
 					log.Printf("OT client error: websocket error: %v\n", err)
 					cl.Stop()
 					return
 				}
-			case SessionS2CMessageTypeWSMsg:
-				wsmsg := s2cmsg.message.(SessionWSMessage)
+			case OTS2CMessageTypeWSMsg:
+				wsmsg := s2cmsg.message.(OTWSMessage)
 				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)
 				if err != nil {
 					log.Printf("OT client error: response error: %v\n", err)
@@ -169,7 +169,7 @@ func (cl *SessionClient) Loop() {
 					cl.Stop()
 					return
 				}
-				cl.SendC2S(SessionC2SMessageTypeWSMsg, SessionWSMessage{Event: WSMsgTypeOp, Data: opdat})
+				cl.SendC2S(OTC2SMessageTypeWSMsg, OTWSMessage{Event: WSMsgTypeOp, Data: opdat})
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
@@ -177,15 +177,15 @@ func (cl *SessionClient) Loop() {
 					cl.Stop()
 					return
 				}
-				cl.SendC2S(SessionC2SMessageTypeWSMsg, SessionWSMessage{Event: WSMsgTypeSel, Data: opdat})
+				cl.SendC2S(OTC2SMessageTypeWSMsg, OTWSMessage{Event: WSMsgTypeSel, Data: opdat})
 			}
 		}
 	}
 
 }
-func (cl *SessionClient) Stop() {
+func (cl *OTClient) Stop() {
 	// Closed by client
-	cl.SendC2S(SessionC2SMessageTypeClose, nil)
+	cl.SendC2S(OTC2SMessageTypeClose, nil)
 	// Wait server close
 	_, ok := <-cl.sv2cl
 	for ok {
