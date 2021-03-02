@@ -37,6 +37,7 @@ type SessionManager struct {
 	clientReq chan SessionClientRequest
 	serverReq chan SessionServerRequest
 	timeout   chan string
+	stop      chan struct{}
 }
 
 type SessionInfo struct {
@@ -68,6 +69,7 @@ func NewSessionManager(db *db.DB) (*SessionManager, error) {
 		clientReq: make(chan SessionClientRequest),
 		serverReq: make(chan SessionServerRequest),
 		timeout:   make(chan string),
+		stop:      make(chan struct{}),
 	}
 	return mgr, nil
 }
@@ -130,6 +132,18 @@ func (mgr *SessionManager) Loop() {
 			}
 			close(svinfo.Server.mgr2sv)
 			svinfo.Status = SessionStatusStopping
+		case <-mgr.stop:
+			for _, v := range mgr.sesslist {
+				close(v.Server.mgr2sv)
+				v.Status = SessionStatusStopping
+			}
+			for len(mgr.sesslist) > 0 {
+				svreq := <-mgr.serverReq
+				if svreq.reqType == SessionServerRequestTypeStopped {
+					delete(mgr.sesslist, svreq.docID)
+				}
+			}
+			return
 		}
 	}
 }
@@ -160,4 +174,7 @@ func (mgr *SessionManager) ClientConnect(cl *SessionClient, docid string) {
 		client: cl,
 	}
 	<-ready
+}
+func (mgr *SessionManager) StopOTManager() {
+	mgr.stop <- struct{}{}
 }

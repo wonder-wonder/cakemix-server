@@ -215,7 +215,6 @@ func (cl *SessionClient) Loop() {
 					err := cl.conn.Close()
 					if err != nil {
 						log.Printf("OT client error: ws close error: %v\n", err)
-						close(request)
 					}
 					return
 				}

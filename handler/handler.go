@@ -56,6 +56,9 @@ func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string
 	go otmgr.Loop()
 	return &Handler{db: db, otmgr: otmgr}
 }
+func (h *Handler) StopOTManager() {
+	h.otmgr.StopOTManager()
+}
 
 func (h *Handler) notimplHandler(c *gin.Context) {
 	c.String(http.StatusNotImplemented, "Not implemented: "+c.FullPath())
