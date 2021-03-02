@@ -408,15 +408,26 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		return
 	}
 
-	sess, err := ot.OpenSession(h.db, docID)
+	cl, err := ot.NewSessionClient(conn, ot.SessionClientProfile{
+		UUID:    uuid,
+		Name:    p.Name,
+		IconURI: p.IconURI,
+	}, !editable)
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
 		return
 	}
-	otc := ot.NewOTClient(conn, uuid, p.Name, p.IconURI, !editable)
-	defer otc.Close()
-	sess.AddClient(otc)
-	sess.Request(ot.WSMsgTypeDoc, otc.ClientID, nil)
+	h.otmgr.ClientConnect(cl, docID)
+	cl.Loop()
+	// sess, err := ot.OpenSession(h.db, docID)
+	// if err != nil {
+	// 	log.Printf("OT handler error: %v", err)
+	// 	return
+	// }
+	// otc := ot.NewOTClient(conn, uuid, p.Name, p.IconURI, !editable)
+	// defer otc.Close()
+	// sess.AddClient(otc)
+	// sess.Request(ot.WSMsgTypeDoc, otc.ClientID, nil)
 
-	otc.ClientLoop()
+	// otc.ClientLoop()
 }
