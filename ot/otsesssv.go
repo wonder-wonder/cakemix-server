@@ -15,7 +15,8 @@ const (
 	otClientPingInterval = 30  //Sec
 )
 
-type OTServer struct {
+// Server is structure for server
+type Server struct {
 	// DB conn
 	db *db.DB
 	// DocInfo
@@ -28,56 +29,57 @@ type OTServer struct {
 	needSave        bool
 
 	// Clients
-	clients map[string]*OTClient
+	clients map[string]*Client
 
 	// Management info
 	accumulationClients int // for serial number
 
 	// Channel
-	sv2mgr chan OTServerRequest
-	mgr2sv chan OTManagerRequest
-	cl2sv  chan OTC2SMessage
+	sv2mgr chan otServerRequest
+	mgr2sv chan otManagerRequest
+	cl2sv  chan otC2SMessage
 }
 
-type OTS2CMessageType int
+type otS2CMessageType int
 
 const (
-	OTS2CMessageTypePing OTS2CMessageType = iota
-	OTS2CMessageTypeWSMsg
+	otS2CMessageTypePing otS2CMessageType = iota
+	otS2CMessageTypeWSMsg
 )
 
-type OTC2SMessageType int
+type otC2SMessageType int
 
 const (
-	OTC2SMessageTypeClose OTC2SMessageType = iota
-	OTC2SMessageTypeWSMsg
+	otC2SMessageTypeClose otC2SMessageType = iota
+	otC2SMessageTypeWSMsg
 )
 
-type OTS2CMessage struct {
-	msgType OTS2CMessageType
+type otS2CMessage struct {
+	msgType otS2CMessageType
 	message interface{}
 }
-type OTC2SMessage struct {
+type otC2SMessage struct {
 	clientID string
-	msgType  OTC2SMessageType
+	msgType  otC2SMessageType
 	message  interface{}
 }
-type OTWSMessage struct {
+type otWSMessage struct {
 	Event WSMsgType
 	Data  interface{}
 }
 
-func NewOTServer(docID string, sv2mgr chan OTServerRequest, db *db.DB) (*OTServer, error) {
-	sv := &OTServer{
+// NewServer creates new server
+func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, error) {
+	sv := &Server{
 		db:                  db,
 		docID:               docID,
 		countFromLastGC:     0,
 		needSave:            false,
-		clients:             map[string]*OTClient{},
+		clients:             map[string]*Client{},
 		accumulationClients: 0,
 		sv2mgr:              sv2mgr,
-		mgr2sv:              make(chan OTManagerRequest),
-		cl2sv:               make(chan OTC2SMessage),
+		mgr2sv:              make(chan otManagerRequest),
+		cl2sv:               make(chan otC2SMessage),
 	}
 
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -94,18 +96,18 @@ func NewOTServer(docID string, sv2mgr chan OTServerRequest, db *db.DB) (*OTServe
 	return sv, nil
 }
 
-func (sv *OTServer) AddClient(clreq *OTClientRequest) {
+func (sv *Server) addClient(clreq *otClientRequest) {
 	go func() {
-		sv.mgr2sv <- OTManagerRequest{
-			reqType: OTManagerRequestTypeAddClient,
+		sv.mgr2sv <- otManagerRequest{
+			reqType: otManagerRequestTypeAddClient,
 			request: clreq,
 		}
 	}()
 }
 
-func (sv *OTServer) SendS2M(reqType OTServerRequestType, request interface{}) {
+func (sv *Server) sendS2M(reqType otServerRequestType, request interface{}) {
 	go func() {
-		sv.sv2mgr <- OTServerRequest{
+		sv.sv2mgr <- otServerRequest{
 			docID:   sv.docID,
 			reqType: reqType,
 			request: request,
@@ -113,24 +115,25 @@ func (sv *OTServer) SendS2M(reqType OTServerRequestType, request interface{}) {
 	}()
 }
 
-func (sv *OTServer) Loop() {
+// Loop is main loop for server
+func (sv *Server) Loop() {
 	autoSaveTicker := time.NewTicker(time.Second * autoSaveInterval)
 	defer autoSaveTicker.Stop()
-	sv.SendS2M(OTServerRequestTypeStarted, nil)
+	sv.sendS2M(otServerRequestTypeStarted, nil)
 	for {
 		select {
 		case mgrreq, ok := <-sv.mgr2sv:
 			if !ok {
-				err := sv.Stop()
+				err := sv.stop()
 				if err != nil {
 					log.Printf("OT session close error: %v\n", err)
 				}
 				return
 			}
 			switch mgrreq.reqType {
-			case OTManagerRequestTypeAddClient:
+			case otManagerRequestTypeAddClient:
 				// Add to client list
-				clreq, _ := mgrreq.request.(*OTClientRequest)
+				clreq, _ := mgrreq.request.(*otClientRequest)
 				clientID := strconv.Itoa(sv.accumulationClients)
 				sv.accumulationClients++
 				sv.clients[clientID] = clreq.client
@@ -141,7 +144,7 @@ func (sv *OTServer) Loop() {
 				clreq.client.lastRev = sv.ot.Revision
 
 				// Broadcast new client info
-				sv.Broadcast(clientID, OTWSMessage{
+				sv.broadcast(clientID, otWSMessage{
 					Event: WSMsgTypeJoin,
 					Data: ClientJoinData{
 						ID:      clreq.client.clientID,
@@ -178,20 +181,20 @@ func (sv *OTServer) Loop() {
 					}
 					res.Clients[tclientID] = rescl
 				}
-				clreq.client.SendS2C(OTS2CMessageTypeWSMsg, OTWSMessage{
+				clreq.client.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
 					Event: WSMsgTypeDoc,
 					Data:  res,
 				})
 			}
 		case clreq, _ := <-sv.cl2sv:
 			switch clreq.msgType {
-			case OTC2SMessageTypeClose:
+			case otC2SMessageTypeClose:
 				// Closed by client
-				sv.CloseClient(clreq.clientID)
-				saved, err := sv.SaveDoc()
+				sv.closeClient(clreq.clientID)
+				saved, err := sv.saveDoc()
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
-					err = sv.Stop()
+					err = sv.stop()
 					if err != nil {
 						log.Printf("OT session error: close error: %v\n", err)
 					}
@@ -200,8 +203,8 @@ func (sv *OTServer) Loop() {
 				if saved {
 					log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
 				}
-			case OTC2SMessageTypeWSMsg:
-				wsmsg := clreq.message.(OTWSMessage)
+			case otC2SMessageTypeWSMsg:
+				wsmsg := clreq.message.(otWSMessage)
 				switch wsmsg.Event {
 				case WSMsgTypeOp:
 					opdat, ok := wsmsg.Data.(OpData)
@@ -227,7 +230,7 @@ func (sv *OTServer) Loop() {
 					optrans, err := sv.ot.Operate(opdat.Revision, ops)
 					if err != nil {
 						log.Printf("OT session error: operate error: %v\n", err)
-						sv.CloseClient(clreq.clientID)
+						sv.closeClient(clreq.clientID)
 						continue
 					}
 					opraw := []interface{}{}
@@ -247,11 +250,11 @@ func (sv *OTServer) Loop() {
 					cl.lastRev = sv.ot.Revision
 
 					opres := []interface{}{clreq.clientID, opdat.Operation, opdat.Selection}
-					sv.Broadcast(clreq.clientID, OTWSMessage{
+					sv.broadcast(clreq.clientID, otWSMessage{
 						Event: WSMsgTypeOp,
 						Data:  opres,
 					})
-					cl.SendS2C(OTS2CMessageTypeWSMsg, OTWSMessage{
+					cl.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
 						Event: WSMsgTypeOK,
 						Data:  nil,
 					})
@@ -280,17 +283,17 @@ func (sv *OTServer) Loop() {
 					}
 					selresdat := Ranges{}
 					selresdat.Ranges = seldat.Ranges
-					sv.Broadcast(clreq.clientID, OTWSMessage{
+					sv.broadcast(clreq.clientID, otWSMessage{
 						Event: WSMsgTypeSel,
 						Data:  []interface{}{clreq.clientID, selresdat},
 					})
 				}
 			}
 		case <-autoSaveTicker.C:
-			saved, err := sv.SaveDoc()
+			saved, err := sv.saveDoc()
 			if err != nil {
 				log.Printf("OT session error: save error: %v\n", err)
-				err = sv.Stop()
+				err = sv.stop()
 				if err != nil {
 					log.Printf("OT session error: close error: %v\n", err)
 				}
@@ -303,27 +306,27 @@ func (sv *OTServer) Loop() {
 	}
 }
 
-func (sv *OTServer) Broadcast(from string, message OTWSMessage) {
+func (sv *Server) broadcast(from string, message otWSMessage) {
 	for i, v := range sv.clients {
 		if i == from {
 			continue
 		}
-		v.SendS2C(OTS2CMessageTypeWSMsg, message)
+		v.sendS2C(otS2CMessageTypeWSMsg, message)
 	}
 }
 
-func (sv *OTServer) CloseClient(clientID string) {
-	sv.Broadcast(clientID, OTWSMessage{
+func (sv *Server) closeClient(clientID string) {
+	sv.broadcast(clientID, otWSMessage{
 		Event: WSMsgTypeQuit,
 		Data:  clientID,
 	})
 	cl := sv.clients[clientID]
 	close(cl.sv2cl)
 	delete(sv.clients, clientID)
-	sv.SendS2M(OTServerRequestTypeClientClosed, nil)
+	sv.sendS2M(otServerRequestTypeClientClosed, nil)
 }
 
-func (sv *OTServer) SaveDoc() (bool, error) {
+func (sv *Server) saveDoc() (bool, error) {
 	if !sv.needSave {
 		return false, nil
 	}
@@ -342,15 +345,15 @@ func (sv *OTServer) SaveDoc() (bool, error) {
 	return true, nil
 }
 
-func (sv *OTServer) Stop() error {
+func (sv *Server) stop() error {
 	for i := range sv.clients {
-		sv.CloseClient(i)
+		sv.closeClient(i)
 	}
-	_, err := sv.SaveDoc()
+	_, err := sv.saveDoc()
 	if err != nil {
 		return err
 	}
 	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
-	sv.SendS2M(OTServerRequestTypeStopped, nil)
+	sv.sendS2M(otServerRequestTypeStopped, nil)
 	return nil
 }

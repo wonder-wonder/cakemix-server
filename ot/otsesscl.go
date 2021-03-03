@@ -9,7 +9,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type OTClient struct {
+// Client is structure for client connection
+type Client struct {
 	// Connection
 	conn *websocket.Conn
 	// OT status
@@ -17,21 +18,23 @@ type OTClient struct {
 	lastRev   int
 	selection []SelData
 	// User info
-	profile  OTClientProfile
+	profile  ClientProfile
 	readOnly bool
 	// Server
-	cl2sv chan OTC2SMessage
-	sv2cl chan OTS2CMessage
+	cl2sv chan otC2SMessage
+	sv2cl chan otS2CMessage
 }
 
-type OTClientProfile struct {
+// ClientProfile is structure for client profile
+type ClientProfile struct {
 	UUID    string
 	Name    string
 	IconURI string
 }
 
-func NewOTClient(conn *websocket.Conn, profile OTClientProfile, readOnly bool) (*OTClient, error) {
-	cl := &OTClient{
+// NewClient generates OTClient
+func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Client, error) {
+	cl := &Client{
 		conn:      conn,
 		clientID:  "",
 		lastRev:   0,
@@ -39,22 +42,22 @@ func NewOTClient(conn *websocket.Conn, profile OTClientProfile, readOnly bool) (
 		profile:   profile,
 		readOnly:  readOnly,
 		cl2sv:     nil,
-		sv2cl:     make(chan OTS2CMessage),
+		sv2cl:     make(chan otS2CMessage),
 	}
 	return cl, nil
 }
 
-func (cl *OTClient) SendS2C(msgType OTS2CMessageType, message interface{}) {
+func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
 	go func() {
-		cl.sv2cl <- OTS2CMessage{
+		cl.sv2cl <- otS2CMessage{
 			msgType: msgType,
 			message: message,
 		}
 	}()
 }
-func (cl *OTClient) SendC2S(msgType OTC2SMessageType, message interface{}) {
+func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
 	go func() {
-		cl.cl2sv <- OTC2SMessage{
+		cl.cl2sv <- otC2SMessage{
 			clientID: cl.clientID,
 			msgType:  msgType,
 			message:  message,
@@ -62,7 +65,8 @@ func (cl *OTClient) SendC2S(msgType OTC2SMessageType, message interface{}) {
 	}()
 }
 
-func (cl *OTClient) Loop() {
+// Loop is main loop for client
+func (cl *Client) Loop() {
 	request := make(chan []byte)
 	// Reader routine
 	ctx := context.Background()
@@ -111,7 +115,7 @@ func (cl *OTClient) Loop() {
 			case <-childCtx.Done():
 				return
 			default:
-				cl.SendS2C(OTS2CMessageTypePing, nil)
+				cl.sendS2C(otS2CMessageTypePing, nil)
 				time.Sleep(time.Second * otClientPingInterval)
 			}
 		}
@@ -124,68 +128,68 @@ func (cl *OTClient) Loop() {
 				return
 			}
 			switch s2cmsg.msgType {
-			case OTS2CMessageTypePing:
+			case otS2CMessageTypePing:
 				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 				if err != nil {
 					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.Stop()
+					cl.stop()
 					return
 				}
-			case OTS2CMessageTypeWSMsg:
-				wsmsg := s2cmsg.message.(OTWSMessage)
+			case otS2CMessageTypeWSMsg:
+				wsmsg := s2cmsg.message.(otWSMessage)
 				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)
 				if err != nil {
 					log.Printf("OT client error: response error: %v\n", err)
-					cl.Stop()
+					cl.stop()
 					return
 				}
 				err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
 				if err != nil {
 					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.Stop()
+					cl.stop()
 					return
 				}
 			}
 		case req, ok := <-request:
 			if !ok {
-				cl.Stop()
+				cl.stop()
 				return
 			}
 			if cl.readOnly {
 				log.Printf("OT client error: permission denied\n")
-				cl.Stop()
+				cl.stop()
 				return
 			}
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				log.Printf("OT client error: %v\n", err)
-				cl.Stop()
+				cl.stop()
 				return
 			}
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.Stop()
+					cl.stop()
 					return
 				}
-				cl.SendC2S(OTC2SMessageTypeWSMsg, OTWSMessage{Event: WSMsgTypeOp, Data: opdat})
+				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeOp, Data: opdat})
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.Stop()
+					cl.stop()
 					return
 				}
-				cl.SendC2S(OTC2SMessageTypeWSMsg, OTWSMessage{Event: WSMsgTypeSel, Data: opdat})
+				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeSel, Data: opdat})
 			}
 		}
 	}
 
 }
-func (cl *OTClient) Stop() {
+func (cl *Client) stop() {
 	// Closed by client
-	cl.SendC2S(OTC2SMessageTypeClose, nil)
+	cl.sendC2S(otC2SMessageTypeClose, nil)
 	// Wait server close
 	_, ok := <-cl.sv2cl
 	for ok {
