@@ -1,7 +1,6 @@
 package ot
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -16,272 +15,345 @@ const (
 	otClientPingInterval = 30  //Sec
 )
 
-// OT session management
+// Server is structure for server
+type Server struct {
+	// DB conn
+	db *db.DB
+	// DocInfo
+	docID   string
+	docInfo db.Document
+	// OT
+	ot              *OT
+	lastUpdater     string
+	countFromLastGC int
+	needSave        bool
 
-var (
-	otSessions     = map[string]*Session{}
-	otSessionsLock = make(chan bool, 1)
+	// Clients
+	clients map[string]*Client
+
+	// Management info
+	accumulationClients int // for serial number
+
+	// Channel
+	sv2mgr chan otServerRequest
+	mgr2sv chan otManagerRequest
+	cl2sv  chan otC2SMessage
+}
+
+type otS2CMessageType int
+
+const (
+	otS2CMessageTypePing otS2CMessageType = iota
+	otS2CMessageTypeWSMsg
 )
 
-// OpenSession returns OT session. If unavailable, generates new session.
-func OpenSession(db *db.DB, docID string) (*Session, error) {
-	otSessionsLock <- true
-	defer func() { <-otSessionsLock }()
-	if v, ok := otSessions[docID]; ok {
-		return v, nil
-	}
-	ots := &Session{}
-	otSessions[docID] = ots
-	ots.db = db
-	ots.incnum = 0
-	ots.saveRequest = make(chan bool)
-	ots.lastGCRev = 0
-	ots.panicStop = make(chan bool)
+type otC2SMessageType int
 
-	ots.DocID = docID
+const (
+	otC2SMessageTypeClose otC2SMessageType = iota
+	otC2SMessageTypeWSMsg
+)
+
+type otS2CMessage struct {
+	msgType otS2CMessageType
+	message interface{}
+}
+type otC2SMessage struct {
+	clientID string
+	msgType  otC2SMessageType
+	message  interface{}
+}
+type otWSMessage struct {
+	Event WSMsgType
+	Data  interface{}
+}
+
+// NewServer creates new server
+func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, error) {
+	sv := &Server{
+		db:                  db,
+		docID:               docID,
+		countFromLastGC:     0,
+		needSave:            false,
+		clients:             map[string]*Client{},
+		accumulationClients: 0,
+		sv2mgr:              sv2mgr,
+		mgr2sv:              make(chan otManagerRequest),
+		cl2sv:               make(chan otC2SMessage),
+	}
+
 	docInfo, err := db.GetDocumentInfo(docID)
 	if err != nil {
 		return nil, err
 	}
-	ots.DocInfo = docInfo
-	ots.Clients = map[string]*Client{}
-	ots.request = make(chan Request)
-
+	sv.docInfo = docInfo
 	text, err := db.GetLatestDocument(docID)
 	if err != nil {
 		return nil, err
 	}
-	ots.OT = NewOT(text)
+	sv.ot = NewOT(text)
 
-	go ots.SessionLoop()
-
-	return ots, nil
+	return sv, nil
 }
 
-// Close finishes OT session
-func (sess *Session) Close() {
-	sess.isSaveTimerRunning = false
-	close(sess.saveRequest)
-	otSessionsLock <- true
-	defer func() { <-otSessionsLock }()
-	delete(otSessions, sess.DocID)
-	if len(sess.OT.History) > 0 {
-		updateruuid := sess.lastUpdater
-		err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
-		if err != nil {
-			log.Printf("OT session close error: %v\n", err)
+func (sv *Server) addClient(clreq *otClientRequest) {
+	go func() {
+		sv.mgr2sv <- otManagerRequest{
+			reqType: otManagerRequestTypeAddClient,
+			request: clreq,
 		}
-		err = sess.db.UpdateDocument(sess.DocID, updateruuid)
-		if err != nil {
-			log.Printf("OT session close error: %v\n", err)
-		}
-		fmt.Printf("Session(%s) closed (total %d ops): ", sess.DocID, sess.OT.Revision)
-		if len(sess.OT.Text) <= 10 {
-			fmt.Printf("%s\n", sess.OT.Text)
-		} else {
-			fmt.Printf("%s...\n", sess.OT.Text[:9])
-		}
-	}
+	}()
 }
 
-// SessionLoop is main loop for OT session
-func (sess *Session) SessionLoop() {
+func (sv *Server) sendS2M(reqType otServerRequestType, request interface{}) {
+	go func() {
+		sv.sv2mgr <- otServerRequest{
+			docID:   sv.docID,
+			reqType: reqType,
+			request: request,
+		}
+	}()
+}
+
+// Loop is main loop for server
+func (sv *Server) Loop() {
+	autoSaveTicker := time.NewTicker(time.Second * autoSaveInterval)
+	defer autoSaveTicker.Stop()
+	sv.sendS2M(otServerRequestTypeStarted, nil)
 	for {
 		select {
-		case req := <-sess.request:
-			if req.Type == WSMsgTypeJoin {
-				if nc, ok := req.Data.(*Client); ok {
-					nc.sess = sess
-					sess.incnum++
-					nc.ClientID = strconv.Itoa(sess.incnum)
-					for _, v := range sess.Clients {
-						go v.Response(WSMsgTypeJoin, ClientJoinData{
-							ID:      nc.ClientID,
-							Name:    nc.UserInfo.Name,
-							UUID:    nc.UserInfo.UUID,
-							IconURI: nc.UserInfo.IconURI,
-						})
-					}
-					sess.Clients[nc.ClientID] = nc
-					// Ready ack
-					nc.Response(WSMsgTypeOK, nil)
+		case mgrreq, ok := <-sv.mgr2sv:
+			if !ok {
+				err := sv.stop()
+				if err != nil {
+					log.Printf("OT session close error: %v\n", err)
 				}
-			} else if req.Type == WSMsgTypeDoc {
-				res := DocData{Clients: map[string]ClientData{}, Document: sess.OT.Text, Revision: sess.OT.Revision}
-				for _, cl := range sess.Clients {
-					if cl.ClientID == req.ClientID {
+				return
+			}
+			switch mgrreq.reqType {
+			case otManagerRequestTypeAddClient:
+				// Add to client list
+				clreq, _ := mgrreq.request.(*otClientRequest)
+				clientID := strconv.Itoa(sv.accumulationClients)
+				sv.accumulationClients++
+				sv.clients[clientID] = clreq.client
+
+				// Setup client
+				clreq.client.clientID = clientID
+				clreq.client.cl2sv = sv.cl2sv
+				clreq.client.lastRev = sv.ot.Revision
+
+				// Broadcast new client info
+				sv.broadcast(clientID, otWSMessage{
+					Event: WSMsgTypeJoin,
+					Data: ClientJoinData{
+						ID:      clreq.client.clientID,
+						Name:    clreq.client.profile.Name,
+						UUID:    clreq.client.profile.UUID,
+						IconURI: clreq.client.profile.IconURI,
+					},
+				})
+
+				// Finish init and ready
+				go func() { clreq.ready <- struct{}{} }()
+
+				// Send doc event to client
+				res := DocData{
+					Clients:    map[string]ClientData{},
+					Document:   sv.ot.Text,
+					Revision:   clreq.client.lastRev,
+					Owner:      sv.docInfo.OwnerUUID,
+					Permission: int(sv.docInfo.Permission),
+					Editable:   clreq.client.readOnly,
+				}
+				for tclientID, cl := range sv.clients {
+					if tclientID == clientID {
 						continue
 					}
 					rescl := ClientData{
-						Name:    cl.UserInfo.Name,
-						UUID:    cl.UserInfo.UUID,
-						IconURI: cl.UserInfo.IconURI,
+						Name:    cl.profile.Name,
+						UUID:    cl.profile.UUID,
+						IconURI: cl.profile.IconURI,
 					}
 					rescl.Selection.Ranges = []SelData{}
-					for _, sel := range cl.Selection {
+					for _, sel := range cl.selection {
 						rescl.Selection.Ranges = append(rescl.Selection.Ranges, sel)
 					}
-					res.Clients[cl.ClientID] = rescl
+					res.Clients[tclientID] = rescl
 				}
-				sess.Clients[req.ClientID].lastRev = res.Revision
-				res.Owner = sess.DocInfo.OwnerUUID
-				res.Permission = int(sess.DocInfo.Permission)
-				res.Editable = !sess.Clients[req.ClientID].readOnly
-				go sess.Clients[req.ClientID].Response(WSMsgTypeDoc, res)
-			} else if req.Type == WSMsgTypeOp {
-				opdat, ok := req.Data.(OpData)
-				if !ok {
-					continue
-				}
-				ops := Ops{User: req.ClientID, Ops: []Op{}}
-				for _, op := range opdat.Operation {
-					switch opt := op.(type) {
-					case float64:
-						opi := int(opt)
-						if opi < 0 {
-							ops.Ops = append(ops.Ops, Op{OpType: OpTypeDelete, Len: -opi})
-						} else {
-							ops.Ops = append(ops.Ops, Op{OpType: OpTypeRetain, Len: opi})
-						}
-					case string:
-						ops.Ops = append(ops.Ops, Op{OpType: OpTypeInsert, Len: len(utf16.Encode([]rune(opt))), Text: opt})
-					default:
-						continue
-					}
-				}
-				optrans, err := sess.OT.Operate(opdat.Revision, ops)
+				clreq.client.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+					Event: WSMsgTypeDoc,
+					Data:  res,
+				})
+			}
+		case clreq, _ := <-sv.cl2sv:
+			switch clreq.msgType {
+			case otC2SMessageTypeClose:
+				// Closed by client
+				sv.closeClient(clreq.clientID)
+				saved, err := sv.saveDoc()
 				if err != nil {
-					log.Printf("OT session error: operate error: %v\n", err)
-					cl, ok := sess.Clients[req.ClientID]
-					if ok {
-						cl.Close()
+					log.Printf("OT session error: save error: %v\n", err)
+					err = sv.stop()
+					if err != nil {
+						log.Printf("OT session error: close error: %v\n", err)
 					}
-					continue
-				}
-				opraw := []interface{}{}
-				for _, v := range optrans.Ops {
-					if v.OpType == OpTypeRetain {
-						opraw = append(opraw, v.Len)
-					} else if v.OpType == OpTypeInsert {
-						opraw = append(opraw, v.Text)
-					} else if v.OpType == OpTypeDelete {
-						opraw = append(opraw, -v.Len)
-					}
-				}
-				opdat.Operation = opraw
-
-				sess.Clients[req.ClientID].Selection = opdat.Selection.Ranges
-				sess.Clients[req.ClientID].lastRev = sess.OT.Revision
-
-				opres := []interface{}{req.ClientID, opdat.Operation, opdat.Selection}
-				for cid, v := range sess.Clients {
-					if cid == req.ClientID {
-						go v.Response(WSMsgTypeOK, nil)
-						continue
-					}
-					go v.Response(WSMsgTypeOp, opres)
-				}
-
-				sess.lastUpdater = sess.Clients[req.ClientID].UserInfo.UUID
-				sess.lastGCRev++
-
-				// Start autosave timer
-				go func() {
-					defer func() {
-						if r := recover(); r != nil {
-							return
-						}
-					}()
-
-					if sess.isSaveTimerRunning {
-						return
-					}
-					sess.isSaveTimerRunning = true
-					time.Sleep(time.Second * autoSaveInterval)
-					if !sess.isSaveTimerRunning {
-						return
-					}
-					sess.isSaveTimerRunning = false
-					sess.saveRequest <- true
-				}()
-				if sess.lastGCRev >= otHistGCThreshold {
-					min := sess.OT.Revision
-					for _, c := range sess.Clients {
-						if c.lastRev < min {
-							min = c.lastRev
-						}
-					}
-					for i := sess.OT.Revision - len(sess.OT.History); i < min-1; i++ {
-						delete(sess.OT.History, i)
-					}
-					sess.lastGCRev = 0
-					fmt.Printf("Session(%s) OT GC: rev is %d, hist len is %d\n", sess.DocID, sess.OT.Revision, len(sess.OT.History))
-				}
-			} else if req.Type == WSMsgTypeSel {
-				seldat, ok := req.Data.(Ranges)
-				if !ok {
-					continue
-				}
-				selresdat := Ranges{}
-				selresdat.Ranges = seldat.Ranges
-				for cid, v := range sess.Clients {
-					if cid == req.ClientID {
-						continue
-					}
-					go v.Response(WSMsgTypeSel, []interface{}{req.ClientID, selresdat})
-				}
-			} else if req.Type == WSMsgTypeQuit {
-				for cid, v := range sess.Clients {
-					if cid == req.ClientID {
-						delete(sess.Clients, cid)
-						continue
-					}
-					go v.Response(WSMsgTypeQuit, req.ClientID)
-				}
-				if len(sess.Clients) == 0 {
-					sess.Close()
 					return
 				}
+				if saved {
+					log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
+				}
+			case otC2SMessageTypeWSMsg:
+				wsmsg := clreq.message.(otWSMessage)
+				switch wsmsg.Event {
+				case WSMsgTypeOp:
+					opdat, ok := wsmsg.Data.(OpData)
+					if !ok {
+						continue
+					}
+					ops := Ops{User: clreq.clientID, Ops: []Op{}}
+					for _, op := range opdat.Operation {
+						switch opt := op.(type) {
+						case float64:
+							opi := int(opt)
+							if opi < 0 {
+								ops.Ops = append(ops.Ops, Op{OpType: OpTypeDelete, Len: -opi})
+							} else {
+								ops.Ops = append(ops.Ops, Op{OpType: OpTypeRetain, Len: opi})
+							}
+						case string:
+							ops.Ops = append(ops.Ops, Op{OpType: OpTypeInsert, Len: len(utf16.Encode([]rune(opt))), Text: opt})
+						default:
+							continue
+						}
+					}
+					optrans, err := sv.ot.Operate(opdat.Revision, ops)
+					if err != nil {
+						log.Printf("OT session error: operate error: %v\n", err)
+						sv.closeClient(clreq.clientID)
+						continue
+					}
+					opraw := []interface{}{}
+					for _, v := range optrans.Ops {
+						if v.OpType == OpTypeRetain {
+							opraw = append(opraw, v.Len)
+						} else if v.OpType == OpTypeInsert {
+							opraw = append(opraw, v.Text)
+						} else if v.OpType == OpTypeDelete {
+							opraw = append(opraw, -v.Len)
+						}
+					}
+					opdat.Operation = opraw
+					cl := sv.clients[clreq.clientID]
+
+					cl.selection = opdat.Selection.Ranges
+					cl.lastRev = sv.ot.Revision
+
+					opres := []interface{}{clreq.clientID, opdat.Operation, opdat.Selection}
+					sv.broadcast(clreq.clientID, otWSMessage{
+						Event: WSMsgTypeOp,
+						Data:  opres,
+					})
+					cl.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+						Event: WSMsgTypeOK,
+						Data:  nil,
+					})
+
+					sv.lastUpdater = cl.profile.UUID
+					sv.countFromLastGC++
+					sv.needSave = true
+
+					if sv.countFromLastGC >= otHistGCThreshold {
+						sv.countFromLastGC = 0
+						min := sv.ot.Revision
+						for _, c := range sv.clients {
+							if c.lastRev < min {
+								min = c.lastRev
+							}
+						}
+						for i := sv.ot.Revision - len(sv.ot.History); i < min-1; i++ {
+							delete(sv.ot.History, i)
+						}
+						log.Printf("Session(%s) OT GC: rev is %d, hist len is %d", sv.docID, sv.ot.Revision, len(sv.ot.History))
+					}
+				case WSMsgTypeSel:
+					seldat, ok := wsmsg.Data.(Ranges)
+					if !ok {
+						continue
+					}
+					selresdat := Ranges{}
+					selresdat.Ranges = seldat.Ranges
+					sv.broadcast(clreq.clientID, otWSMessage{
+						Event: WSMsgTypeSel,
+						Data:  []interface{}{clreq.clientID, selresdat},
+					})
+				}
 			}
-		case <-sess.saveRequest:
-			if len(sess.OT.History) > 0 {
-				updateruuid := sess.lastUpdater
-				err := sess.db.SaveDocument(sess.DocID, updateruuid, sess.OT.Text)
+		case <-autoSaveTicker.C:
+			saved, err := sv.saveDoc()
+			if err != nil {
+				log.Printf("OT session error: save error: %v\n", err)
+				err = sv.stop()
 				if err != nil {
-					log.Printf("OT session error: save error: %v\n", err)
-					go func() { sess.panicStop <- true }()
-					continue
+					log.Printf("OT session error: close error: %v\n", err)
 				}
-				err = sess.db.UpdateDocument(sess.DocID, updateruuid)
-				if err != nil {
-					log.Printf("OT session error: save error: %v\n", err)
-					go func() { sess.panicStop <- true }()
-					continue
-				}
-				fmt.Printf("Session(%s) auto saved (total %d ops): ", sess.DocID, sess.OT.Revision)
-				if len(sess.OT.Text) <= 10 {
-					fmt.Printf("%s\n", sess.OT.Text)
-				} else {
-					fmt.Printf("%s...\n", sess.OT.Text[:9])
-				}
+				return
 			}
-		case <-sess.panicStop:
-			for _, v := range sess.Clients {
-				v.Close()
+			if saved {
+				log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
 			}
-			sess.Close()
 		}
 	}
 }
 
-// Request requests to session
-func (sess *Session) Request(t WSMsgType, cid string, dat interface{}) {
-	sess.request <- Request{Type: t, ClientID: cid, Data: dat}
+func (sv *Server) broadcast(from string, message otWSMessage) {
+	for i, v := range sv.clients {
+		if i == from {
+			continue
+		}
+		v.sendS2C(otS2CMessageTypeWSMsg, message)
+	}
 }
 
-// AddClient requests to server to add new client
-func (sess *Session) AddClient(cl *Client) {
-	sess.Request(WSMsgTypeJoin, "", cl)
-	// Wait and discard ready ack
-	<-cl.response
+func (sv *Server) closeClient(clientID string) {
+	sv.broadcast(clientID, otWSMessage{
+		Event: WSMsgTypeQuit,
+		Data:  clientID,
+	})
+	cl := sv.clients[clientID]
+	close(cl.sv2cl)
+	delete(sv.clients, clientID)
+	sv.sendS2M(otServerRequestTypeClientClosed, nil)
+}
+
+func (sv *Server) saveDoc() (bool, error) {
+	if !sv.needSave {
+		return false, nil
+	}
+	sv.needSave = false
+	if len(sv.ot.History) > 0 {
+		updateruuid := sv.lastUpdater
+		err := sv.db.SaveDocument(sv.docID, updateruuid, sv.ot.Text)
+		if err != nil {
+			return false, err
+		}
+		err = sv.db.UpdateDocument(sv.docID, updateruuid)
+		if err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (sv *Server) stop() error {
+	for i := range sv.clients {
+		sv.closeClient(i)
+	}
+	_, err := sv.saveDoc()
+	if err != nil {
+		return err
+	}
+	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
+	sv.sendS2M(otServerRequestTypeStopped, nil)
+	return nil
 }

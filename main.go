@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +38,7 @@ func main() {
 		}
 	}
 
-	util.LoadConfig()
+	util.LoadConfigEnv()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
 	apiconf := util.GetAPIConf()
@@ -101,6 +103,10 @@ func main() {
 }
 
 func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string, tmplregist string) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	signal.Notify(sig, syscall.SIGQUIT)
+	signal.Notify(sig, syscall.SIGTERM)
 	h := handler.NewHandler(db, datadir, tmplresetpw, tmplregist)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
@@ -109,4 +115,9 @@ func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string
 	h.TeamHandler(r)
 	h.SearchHandler(r)
 	h.ImageHandler(r)
+	go func() {
+		<-sig
+		h.StopOTManager()
+		os.Exit(0)
+	}()
 }

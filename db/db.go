@@ -101,6 +101,7 @@ func GenerateID(t IDType) (string, error) {
 	return enc(rd), nil
 }
 
+// CleanupExpired removes expired record
 func (d *DB) CleanupExpired() error {
 	dateint := time.Now().Unix()
 

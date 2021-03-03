@@ -16,6 +16,7 @@ var (
 	sgAPIKey     = ""
 )
 
+// InitMail setup mail configuration
 func InitMail(sendgridAPIKey, fromAddr, fromName string) {
 	sgAPIKey = sendgridAPIKey
 	mailFromAddr = fromAddr

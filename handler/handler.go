@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
+	"github.com/wonder-wonder/cakemix-server/ot"
 )
 
 const (
@@ -24,7 +25,8 @@ var (
 
 // Handler is object for handler function
 type Handler struct {
-	db *db.DB
+	db    *db.DB
+	otmgr *ot.Manager
 }
 
 // NewHandler generates new Handler instance
@@ -47,7 +49,17 @@ func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string
 		panic("Mail template is not specified")
 	}
 	mailTmplRegist = tmplregist
-	return &Handler{db: db}
+	otmgr, err := ot.NewManager(db)
+	if err != nil {
+		panic(err)
+	}
+	go otmgr.Loop()
+	return &Handler{db: db, otmgr: otmgr}
+}
+
+// StopOTManager send stop request to OT manager
+func (h *Handler) StopOTManager() {
+	h.otmgr.StopOTManager()
 }
 
 func (h *Handler) notimplHandler(c *gin.Context) {
