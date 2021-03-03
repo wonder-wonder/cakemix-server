@@ -27,6 +27,7 @@ var (
 	tmplRegist     = "regist.tmpl"
 )
 
+// DBConf is structure for database configuration
 type DBConf struct {
 	Host string
 	Port string
@@ -34,16 +35,22 @@ type DBConf struct {
 	Pass string
 	Name string
 }
+
+// APIConf is structure for API configuration
 type APIConf struct {
 	Host string
 	Port string
 }
+
+// FileConf is structure for file configuration
 type FileConf struct {
 	FrontDir   string
 	DataDir    string
 	SignPubKey string
 	SignPrvKey string
 }
+
+// MailConf is structure for mail configuration
 type MailConf struct {
 	SendGridAPIKey string
 	FromAddr       string
@@ -52,7 +59,8 @@ type MailConf struct {
 	TmplRegist     string
 }
 
-func LoadConfig() {
+// LoadConfigEnv reads config from environment variable
+func LoadConfigEnv() {
 	// DB config
 	if os.Getenv("DBHOST") != "" {
 		dbHost = os.Getenv("DBHOST")
@@ -77,6 +85,7 @@ func LoadConfig() {
 	}
 }
 
+// LoadConfigFile reads config from file
 func LoadConfigFile(path string) error {
 	// #nosec G304
 	raw, err := ioutil.ReadFile(path)
@@ -139,6 +148,7 @@ func LoadConfigFile(path string) error {
 	return nil
 }
 
+// GetDBConf returns database config
 func GetDBConf() DBConf {
 	return DBConf{
 		Host: dbHost,
@@ -148,12 +158,16 @@ func GetDBConf() DBConf {
 		Name: dbName,
 	}
 }
+
+// GetAPIConf returns API config
 func GetAPIConf() APIConf {
 	return APIConf{
 		Host: apiHost,
 		Port: apiPort,
 	}
 }
+
+// GetFileConf returns file config
 func GetFileConf() FileConf {
 	return FileConf{
 		FrontDir:   frontDir,
@@ -162,6 +176,8 @@ func GetFileConf() FileConf {
 		SignPrvKey: signPrvKey,
 	}
 }
+
+// GetMailConf returns mail config
 func GetMailConf() MailConf {
 	return MailConf{
 		SendGridAPIKey: sendgridAPIKey,

@@ -70,7 +70,7 @@ func testInit(tb testing.TB) *gin.Engine {
 			panic(err)
 		}
 	}
-	util.LoadConfig()
+	util.LoadConfigEnv()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
 	mailconf := util.GetMailConf()

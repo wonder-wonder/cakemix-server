@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	util.LoadConfig()
+	util.LoadConfigEnv()
 	fileconf := util.GetFileConf()
 	dbconf := util.GetDBConf()
 	apiconf := util.GetAPIConf()
