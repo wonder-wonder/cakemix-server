@@ -11,6 +11,8 @@ import (
 	"github.com/wonder-wonder/cakemix-server/util"
 )
 
+const LogLimitMax = 100
+
 // AuthHandler is handlers of auth
 func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	auth := r.Group("auth")
@@ -399,10 +401,15 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 		}
 	}
 	limit := c.Query("limit")
-	limitint := 0
+	limitint := LogLimitMax
 	if limit != "" {
 		limitint, err = strconv.Atoi(limit)
-		limitint++
+		if limitint > LogLimitMax {
+			limitint = LogLimitMax
+		}
+		if limitint < 1 {
+			limitint = 1
+		}
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -414,7 +421,7 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 		ltype = strings.Split(ltyperaw, ",")
 	}
 
-	logs, err := h.db.GetLogs(offsetint, limitint, useruuid, targetid, ltype)
+	logs, err := h.db.GetLogs(offsetint, limitint+1, useruuid, targetid, ltype)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -423,10 +430,10 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 		Offset:  offsetint,
 		Length:  len(logs),
 		Logs:    []model.AuthLog{},
-		HasNext: (limitint > 0 && len(logs) == limitint), // has limit and found limit+1
+		HasNext: len(logs) == limitint+1,
 	}
 	for i, l := range logs {
-		if i == limitint-1 && limitint > 0 { // last item and has limit
+		if i == limitint {
 			continue
 		}
 		reslog := model.AuthLog{Date: l.Date, Type: l.Type}

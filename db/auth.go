@@ -507,13 +507,12 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 	// Sort
 	sql += " ORDER BY date DESC,uuid,type"
 	// Limit and offset
-	if limit > 0 {
-		params = append(params, limit)
-		sql += " LIMIT $" + strconv.Itoa(len(params))
-		if offset > 0 {
-			params = append(params, offset)
-			sql += " OFFSET $" + strconv.Itoa(len(params))
-		}
+
+	params = append(params, limit)
+	sql += " LIMIT $" + strconv.Itoa(len(params))
+	if offset > 0 {
+		params = append(params, offset)
+		sql += " OFFSET $" + strconv.Itoa(len(params))
 	}
 
 	var res []Log
