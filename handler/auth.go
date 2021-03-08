@@ -460,7 +460,7 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 			}
 			reslog.Data = model.AuthLogPassReset{IPAddr: l.IPAddr, DeviceInfo: passresetlog.DeviceData}
 		case db.LogTypeAuthPassChange:
-			reslog.Data = model.AuthLogPassChange{SessionID: l.SessionID}
+			reslog.Data = model.AuthLogPassChange{SessionID: l.SessionID, IPAddr: l.IPAddr}
 		}
 		res.Logs = append(res.Logs, reslog)
 	}
