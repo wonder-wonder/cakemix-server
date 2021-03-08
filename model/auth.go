@@ -54,9 +54,10 @@ type AuthLog struct {
 
 //AuthLogRes model
 type AuthLogRes struct {
-	Offset int       `json:"offset"`
-	Length int       `json:"len"`
-	Logs   []AuthLog `json:"logs"`
+	Offset  int       `json:"offset"`
+	Length  int       `json:"len"`
+	Logs    []AuthLog `json:"logs"`
+	HasNext bool      `json:"has_next"`
 }
 
 //AuthLogLogin model

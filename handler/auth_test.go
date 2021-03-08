@@ -722,7 +722,7 @@ func TestAuthHandler(t *testing.T) {
 					t.FailNow()
 				}
 
-				attrs := []string{"offset", "len", "logs"}
+				attrs := []string{"offset", "len", "logs", "has_next"}
 				for _, v := range attrs {
 					_, ok := res[v]
 					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {

@@ -402,6 +402,7 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 	limitint := 0
 	if limit != "" {
 		limitint, err = strconv.Atoi(limit)
+		limitint++
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -418,8 +419,16 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	res := model.AuthLogRes{Offset: offsetint, Length: len(logs), Logs: []model.AuthLog{}}
-	for _, l := range logs {
+	res := model.AuthLogRes{
+		Offset:  offsetint,
+		Length:  len(logs),
+		Logs:    []model.AuthLog{},
+		HasNext: (limitint > 0 && len(logs) == limitint), // has limit and found limit+1
+	}
+	for i, l := range logs {
+		if i == limitint-1 && limitint > 0 { // last item and has limit
+			continue
+		}
 		reslog := model.AuthLog{Date: l.Date, Type: l.Type}
 		resprof, err := h.db.GetProfileByUUID(l.UUID)
 		if err != nil {
