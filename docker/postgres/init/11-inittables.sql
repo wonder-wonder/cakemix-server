@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS log(
   uuid TEXT,
   date BIGINT,
   type TEXT,
+  ipaddr TEXT,
   sessionid TEXT,
   targetuuid TEXT,
   targetfdid TEXT,
@@ -105,7 +106,6 @@ CREATE TABLE IF NOT EXISTS log(
 );
 CREATE TABLE IF NOT EXISTS logextloginpassreset(
   id BIGSERIAL PRIMARY KEY,
-  ipaddr TEXT,
   devicedata TEXT
 );
 COMMIT;

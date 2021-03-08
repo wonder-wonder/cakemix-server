@@ -843,12 +843,12 @@ paths:
           name: targetid
           description: target team/userUUID
         - schema:
-            type: string
+            type: integer
           in: query
           name: offset
           description: Offset
         - schema:
-            type: string
+            type: integer
           in: query
           name: limit
           description: Limit
@@ -1204,6 +1204,7 @@ components:
     AuthLogResModel:
       description: ''
       type: object
+      title: ''
       properties:
         offset:
           type: integer
@@ -1213,11 +1214,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthLogModel'
+        has_next:
+          type: boolean
       required:
         - offset
         - len
         - logs
-      title: ''
+        - has_next
     AuthLogLoginModel:
       title: AuthLogLoginModel
       type: object
@@ -1241,6 +1244,8 @@ components:
       type: object
       properties:
         sessionid:
+          type: string
+        ipaddr:
           type: string
   securitySchemes:
     JWT:
