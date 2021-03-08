@@ -96,6 +96,7 @@ type Log struct {
 	UUID       string
 	Date       int64
 	Type       string
+	IPAddr     string
 	SessionID  string
 	TargetUUID string
 	TargetFDID string
@@ -105,6 +106,5 @@ type Log struct {
 // LogExtLoginPassReset table model
 type LogExtLoginPassReset struct {
 	ID         int64
-	IPAddr     string
 	DeviceData string
 }

@@ -524,7 +524,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 	defer rows.Close()
 	for rows.Next() {
 		var l Log
-		err = rows.Scan(&l.UUID, &l.Date, &l.Type, &l.SessionID,
+		err = rows.Scan(&l.UUID, &l.Date, &l.Type, &l.IPAddr, &l.SessionID,
 			&l.TargetUUID, &l.TargetFDID, &l.ExtDataID)
 		if err != nil {
 			return res, err
@@ -542,7 +542,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
 	var res LogExtLoginPassReset
 	row := d.db.QueryRow("SELECT * FROM logextloginpassreset WHERE id = $1", logid)
-	err := row.Scan(&res.ID, &res.IPAddr, &res.DeviceData)
+	err := row.Scan(&res.ID, &res.DeviceData)
 	if err != nil {
 		return res, err
 	}
@@ -556,15 +556,15 @@ func (d *DB) AddLogLogin(uuid string, sessionID string, ipaddr string, devinfo s
 		return err
 	}
 	var extdataid int64
-	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (devicedata) VALUES ($1) RETURNING id`, devinfo).Scan(&extdataid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
 		}
 		return err
 	}
-	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',$5)`,
-		uuid, time.Now().UnixNano(), LogTypeAuthLogin, sessionID, extdataid)
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,$5,'','',$6)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthLogin, ipaddr, sessionID, extdataid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
@@ -588,15 +588,15 @@ func (d *DB) AddLogPassReset(uuid string, ipaddr string, devinfo string) error {
 		return err
 	}
 	var extdataid int64
-	err = tx.QueryRow(`INSERT INTO logextloginpassreset (ipaddr,devicedata) VALUES ($1,$2) RETURNING id`, ipaddr, devinfo).Scan(&extdataid)
+	err = tx.QueryRow(`INSERT INTO logextloginpassreset (devicedata) VALUES ($1) RETURNING id`, devinfo).Scan(&extdataid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
 		}
 		return err
 	}
-	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,'','','',$4)`,
-		uuid, time.Now().UnixNano(), LogTypeAuthPassReset, extdataid)
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','','',$5)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthPassReset, ipaddr, extdataid)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
@@ -614,13 +614,13 @@ func (d *DB) AddLogPassReset(uuid string, ipaddr string, devinfo string) error {
 }
 
 // AddLogPassChange adds pass change log
-func (d *DB) AddLogPassChange(uuid string, sessionID string) error {
+func (d *DB) AddLogPassChange(uuid string, ipaddr string, sessionID string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,'','',-1)`,
-		uuid, time.Now().UnixNano(), LogTypeAuthPassChange, sessionID)
+	_, err = tx.Exec(`INSERT INTO log VALUES ($1,$2,$3,$4,$5,'','',-1)`,
+		uuid, time.Now().UnixNano(), LogTypeAuthPassChange, ipaddr, sessionID)
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)

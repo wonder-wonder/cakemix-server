@@ -225,7 +225,7 @@ func (h *Handler) passChangeHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	err = h.db.AddLogPassChange(uuid, sessid)
+	err = h.db.AddLogPassChange(uuid, c.ClientIP(), sessid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -444,14 +444,14 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
-			reslog.Data = model.AuthLogLogin{SessionID: l.SessionID, IPAddr: loginlog.IPAddr, DeviceInfo: loginlog.DeviceData}
+			reslog.Data = model.AuthLogLogin{SessionID: l.SessionID, IPAddr: l.IPAddr, DeviceInfo: loginlog.DeviceData}
 		case db.LogTypeAuthPassReset:
 			passresetlog, err := h.db.GetLoginPassResetLog(l.ExtDataID)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
-			reslog.Data = model.AuthLogPassReset{IPAddr: passresetlog.IPAddr, DeviceInfo: passresetlog.DeviceData}
+			reslog.Data = model.AuthLogPassReset{IPAddr: l.IPAddr, DeviceInfo: passresetlog.DeviceData}
 		case db.LogTypeAuthPassChange:
 			reslog.Data = model.AuthLogPassChange{SessionID: l.SessionID}
 		}

@@ -1245,6 +1245,8 @@ components:
       properties:
         sessionid:
           type: string
+        ipaddr:
+          type: string
   securitySchemes:
     JWT:
       type: http

@@ -70,6 +70,7 @@ type AuthLogLogin struct {
 //AuthLogPassChange model
 type AuthLogPassChange struct {
 	SessionID string `json:"sessionid"`
+	IPAddr    string `json:"ipaddr"`
 }
 
 //AuthLogPassReset model
