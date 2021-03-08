@@ -1214,10 +1214,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthLogModel'
+        has_next:
+          type: boolean
       required:
         - offset
         - len
         - logs
+        - has_next
     AuthLogLoginModel:
       title: AuthLogLoginModel
       type: object
