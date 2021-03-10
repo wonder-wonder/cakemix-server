@@ -47,6 +47,7 @@ func main() {
 	apiconf := util.GetAPIConf()
 	mailconf := util.GetMailConf()
 
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
@@ -97,7 +98,7 @@ func main() {
 	}()
 
 	// Start web server
-	fmt.Println("Start server")
+	log.Println("Start server")
 
 	err = r.Run(apiconf.Host + ":" + apiconf.Port)
 	if err != nil {
