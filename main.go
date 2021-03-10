@@ -15,7 +15,10 @@ import (
 	"github.com/wonder-wonder/cakemix-server/util"
 )
 
+var version string = "unknown version"
+
 func main() {
+	fmt.Printf("\nCakemix %s\n\n", version)
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
 			switch strings.ToLower(os.Args[i]) {
@@ -44,6 +47,7 @@ func main() {
 	apiconf := util.GetAPIConf()
 	mailconf := util.GetMailConf()
 
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
@@ -94,7 +98,7 @@ func main() {
 	}()
 
 	// Start web server
-	fmt.Println("Start server")
+	log.Println("Start server")
 
 	err = r.Run(apiconf.Host + ":" + apiconf.Port)
 	if err != nil {

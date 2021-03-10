@@ -1,3 +1,5 @@
+![Cakemix](docs/banner.png)
+
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
 
 # Cakemix Server
@@ -62,13 +64,13 @@ make stopdb   # Stop database server
 ```
 feat/xxx        x     x
               /   \ /   \
-develop   ---x-----x-----x---x-----x----- (PR required)
-                    \       /      |
-release/x            x--x--x       |
-                            \      |
-main      -------------------x-----x----- (PR required)
-                              \   /
-hotfix/x                        x
+develop   ---x-----x-----x-------x---x----- (PR required)
+                    \           /    |
+release/x            x--x--x   /     |
+                            \ /      |
+main      -------------------x-------x----- (PR required)
+                              \     /
+hotfix/x                         x
 ```
 
 ### Versioning (Major.Minor.Patch)
