@@ -15,7 +15,10 @@ import (
 	"github.com/wonder-wonder/cakemix-server/util"
 )
 
+var version string = "unknown version"
+
 func main() {
+	fmt.Printf("\nCakemix %s\n\n", version)
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
 			switch strings.ToLower(os.Args[i]) {

@@ -3,13 +3,14 @@ DBPORT=5432
 DBUSER=postgres
 DBPASS=postgres
 DBNAME=cakemix
+VERSION=$(shell git describe --tags)
 
 rundev: main.go signkey sendgrid.env
-	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -race main.go -c cakemix.conf
+	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -ldflags "-X main.version=$(VERSION)" -race main.go -c cakemix.conf
 
 test: main.go signkey
 	test -d out || mkdir out
-	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go test -v ./handler -count=1 -coverprofile=out/cover.out
+	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go test -ldflags "-X main.version=$(VERSION)" -v ./handler -count=1 -coverprofile=out/cover.out
 	go tool cover -html=out/cover.out -o out/cover.html
 
 startdb:
@@ -26,7 +27,7 @@ down:
 	docker-compose down
 
 build: main.go
-	go build -o cakemixsv main.go
+	go build -o cakemixsv -ldflags "-X main.version=$(VERSION)" main.go
 
 signkey:
 	ssh-keygen -t rsa -f signkey -m PEM -N ""
