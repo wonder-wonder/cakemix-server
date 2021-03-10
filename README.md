@@ -1,3 +1,5 @@
+![Cakemix](docs/banner.png)
+
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
 
 # Cakemix Server
