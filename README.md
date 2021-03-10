@@ -62,13 +62,13 @@ make stopdb   # Stop database server
 ```
 feat/xxx        x     x
               /   \ /   \
-develop   ---x-----x-----x---x-----x----- (PR required)
-                    \       /      |
-release/x            x--x--x       |
-                            \      |
-main      -------------------x-----x----- (PR required)
-                              \   /
-hotfix/x                        x
+develop   ---x-----x-----x-------x---x----- (PR required)
+                    \           /    |
+release/x            x--x--x   /     |
+                            \ /      |
+main      -------------------x-------x----- (PR required)
+                              \     /
+hotfix/x                         x
 ```
 
 ### Versioning (Major.Minor.Patch)
