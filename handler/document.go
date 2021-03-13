@@ -149,10 +149,6 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
 	pfinfo, err := h.db.GetFolderInfo(dinfo.ParentFolderUUID)
 	if err != nil {
@@ -164,6 +160,13 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 		return
 	}
 
+	// Check document owner or parent folder owner
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && !isRelatedUUID(c, pfinfo.OwnerUUID) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check parent folder permission
 	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
@@ -201,7 +204,6 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 		return
 	}
 
-	// Check document permission
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
@@ -211,31 +213,34 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
 	sourcefid := dinfo.ParentFolderUUID
 
-	// Check original parent folder permission
-	finfo, err := h.db.GetFolderInfo(sourcefid)
+	pfinfo, err := h.db.GetFolderInfo(sourcefid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+
+	// Check document owner or parent folder owner
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && !isRelatedUUID(c, pfinfo.OwnerUUID) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check original parent folder permission
+	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
 	// Check target folder permission
-	finfo, err = h.db.GetFolderInfo(targetfid)
+	tfinfo, err := h.db.GetFolderInfo(targetfid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, tfinfo.OwnerUUID) && tfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
@@ -289,7 +294,12 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 		return
 	}
 
-	// Check document permission
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
@@ -300,35 +310,11 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 		return
 	}
 	// Check owner
-	uuid, ok := getUUID(c)
-	if !ok {
+	if !isRelatedUUID(c, dinfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
-	if dinfo.OwnerUUID != uuid {
-		teams, ok := getTeams(c)
-		if !ok {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-		ng := true
-		for _, v := range teams {
-			if dinfo.OwnerUUID == v {
-				perm, err := h.db.GetTeamMemberPerm(v, uuid)
-				if err != nil {
-					c.AbortWithError(http.StatusInternalServerError, err)
-				}
-				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
-					ng = false
-				}
-				break
-			}
-		}
-		if ng {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-	}
+
 	req := model.DocumentModifyReqModel{
 		OwnerUUID:  dinfo.OwnerUUID,
 		Permission: int(dinfo.Permission),

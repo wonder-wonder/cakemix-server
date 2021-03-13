@@ -55,6 +55,8 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 		return
 	}
 
+	isOwner := isRelatedUUID(c, finfo.OwnerUUID)
+
 	if listtype == "" || listtype == "folder" {
 		folidlist, err := h.db.GetFolderList(fid)
 		if err != nil {
@@ -68,7 +70,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
+			if !isOwner && !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, folinfo.OwnerUUID) || folinfo.Permission == db.FilePermReadWrite
@@ -122,7 +124,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
+			if !isOwner && !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, docinfo.OwnerUUID) || docinfo.Permission == db.FilePermReadWrite
@@ -245,25 +247,6 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
-
-	docidlist, err := h.db.GetDocList(fid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	folidlist, err := h.db.GetFolderList(fid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if len(folidlist) > 0 || len(docidlist) > 0 {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
 	pfinfo, err := h.db.GetFolderInfo(finfo.ParentFolderUUID)
 	if err != nil {
@@ -275,8 +258,31 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		return
 	}
 
+	// Check folder owner or parent folder owner
+	if !isRelatedUUID(c, finfo.OwnerUUID) && !isRelatedUUID(c, pfinfo.OwnerUUID) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check parent folder permission
 	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check folder is empty
+	docidlist, err := h.db.GetDocList(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	folidlist, err := h.db.GetFolderList(fid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if len(folidlist) > 0 || len(docidlist) > 0 {
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
@@ -317,7 +323,6 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		return
 	}
 
-	// Check folder permission
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
@@ -327,31 +332,33 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
 	sourcefid := finfo.ParentFolderUUID
-
-	// Check original parent folder permission
-	finfo, err = h.db.GetFolderInfo(sourcefid)
+	pfinfo, err := h.db.GetFolderInfo(sourcefid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+
+	// Check folder owner or parent folder owner
+	if !isRelatedUUID(c, finfo.OwnerUUID) && !isRelatedUUID(c, pfinfo.OwnerUUID) {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Check original parent folder permission
+	if !isRelatedUUID(c, pfinfo.OwnerUUID) && pfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
 	// Check target folder permission
-	finfo, err = h.db.GetFolderInfo(targetfid)
+	tfinfo, err := h.db.GetFolderInfo(targetfid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, tfinfo.OwnerUUID) && tfinfo.Permission != db.FilePermReadWrite {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
@@ -394,7 +401,12 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		return
 	}
 
-	// Check folder permission
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
@@ -405,34 +417,9 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		return
 	}
 	// Check owner
-	uuid, ok := getUUID(c)
-	if !ok {
+	if !isRelatedUUID(c, finfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
-	}
-	if finfo.OwnerUUID != uuid {
-		teams, ok := getTeams(c)
-		if !ok {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-		ng := true
-		for _, v := range teams {
-			if finfo.OwnerUUID == v {
-				perm, err := h.db.GetTeamMemberPerm(v, uuid)
-				if err != nil {
-					c.AbortWithError(http.StatusInternalServerError, err)
-				}
-				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
-					ng = false
-				}
-				break
-			}
-		}
-		if ng {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
 	}
 
 	req := model.FolderModifyReqModel{
@@ -451,6 +438,11 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 	finfo.Permission = db.FilePerm(req.Permission)
 
 	err = h.db.UpdateFolderInfo(finfo)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = h.db.UpdateFolder(fid, uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
