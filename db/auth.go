@@ -124,7 +124,7 @@ func (d *DB) AddSession(uuid string, sessionID string, IPAddr string, DeviceData
 // GetSession deletes the session
 func (d *DB) GetSession(uuid string) ([]Session, error) {
 	res := []Session{}
-	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1 ORDER BY lastdate DESC", uuid)
+	rows, err := d.db.Query("SELECT uuid,sessionid,logindate,lastdate,expiredate,ipaddr,devicedata FROM session WHERE uuid = $1 ORDER BY lastdate DESC", uuid)
 	if err != nil {
 		return res, err
 	}
@@ -486,7 +486,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 	params := []interface{}{}
 	// TargetUUID in target
 	params = append(params, uuid)
-	sql := "SELECT * FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
+	sql := "SELECT uuid,date,type,ipaddr,sessionid,targetuuid,targetfdid,extdataid FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
 	for _, v := range target {
 		params = append(params, v)
 		sql += ",$" + strconv.Itoa(len(params))
@@ -540,7 +540,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 // GetLoginPassResetLog returns log of loginpassreset
 func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
 	var res LogExtLoginPassReset
-	row := d.db.QueryRow("SELECT * FROM logextloginpassreset WHERE id = $1", logid)
+	row := d.db.QueryRow("SELECT id,devicedata FROM logextloginpassreset WHERE id = $1", logid)
 	err := row.Scan(&res.ID, &res.DeviceData)
 	if err != nil {
 		return res, err
