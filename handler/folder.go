@@ -401,7 +401,12 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		return
 	}
 
-	// Check folder permission
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	finfo, err := h.db.GetFolderInfo(fid)
 	if err != nil {
 		if err == db.ErrFolderNotFound {
@@ -412,34 +417,9 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		return
 	}
 	// Check owner
-	uuid, ok := getUUID(c)
-	if !ok {
+	if !isRelatedUUID(c, finfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
-	}
-	if finfo.OwnerUUID != uuid {
-		teams, ok := getTeams(c)
-		if !ok {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-		ng := true
-		for _, v := range teams {
-			if finfo.OwnerUUID == v {
-				perm, err := h.db.GetTeamMemberPerm(v, uuid)
-				if err != nil {
-					c.AbortWithError(http.StatusInternalServerError, err)
-				}
-				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
-					ng = false
-				}
-				break
-			}
-		}
-		if ng {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
 	}
 
 	req := model.FolderModifyReqModel{

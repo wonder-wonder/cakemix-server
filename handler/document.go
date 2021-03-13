@@ -294,7 +294,12 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 		return
 	}
 
-	// Check document permission
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	dinfo, err := h.db.GetDocumentInfo(did)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
@@ -305,35 +310,11 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 		return
 	}
 	// Check owner
-	uuid, ok := getUUID(c)
-	if !ok {
+	if !isRelatedUUID(c, dinfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
-	if dinfo.OwnerUUID != uuid {
-		teams, ok := getTeams(c)
-		if !ok {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-		ng := true
-		for _, v := range teams {
-			if dinfo.OwnerUUID == v {
-				perm, err := h.db.GetTeamMemberPerm(v, uuid)
-				if err != nil {
-					c.AbortWithError(http.StatusInternalServerError, err)
-				}
-				if perm == db.TeamPermAdmin || perm == db.TeamPermOwner {
-					ng = false
-				}
-				break
-			}
-		}
-		if ng {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-	}
+
 	req := model.DocumentModifyReqModel{
 		OwnerUUID:  dinfo.OwnerUUID,
 		Permission: int(dinfo.Permission),
