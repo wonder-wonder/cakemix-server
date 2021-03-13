@@ -55,6 +55,8 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 		return
 	}
 
+	isowner := isRelatedUUID(c, finfo.OwnerUUID)
+
 	if listtype == "" || listtype == "folder" {
 		folidlist, err := h.db.GetFolderList(fid)
 		if err != nil {
@@ -68,7 +70,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
+			if !isowner && !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, folinfo.OwnerUUID) || folinfo.Permission == db.FilePermReadWrite
@@ -122,7 +124,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
+			if !isowner && !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, docinfo.OwnerUUID) || docinfo.Permission == db.FilePermReadWrite
@@ -245,7 +247,7 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, finfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
@@ -327,7 +329,7 @@ func (h *Handler) moveFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, finfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}

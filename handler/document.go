@@ -149,7 +149,7 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, dinfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
@@ -211,7 +211,7 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission != db.FilePermReadWrite {
+	if !isRelatedUUID(c, dinfo.OwnerUUID) {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
