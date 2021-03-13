@@ -124,7 +124,7 @@ func (d *DB) AddSession(uuid string, sessionID string, IPAddr string, DeviceData
 // GetSession deletes the session
 func (d *DB) GetSession(uuid string) ([]Session, error) {
 	res := []Session{}
-	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1", uuid)
+	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1 ORDER BY lastdate DESC", uuid)
 	if err != nil {
 		return res, err
 	}
