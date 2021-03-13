@@ -12,20 +12,20 @@ func (d *DB) SearchUser(query string, limit int, offset int) (int, []string, err
 	var err error
 	var count = 0
 	if query != "" {
-		r := d.db.QueryRow("SELECT COUNT(*) FROM auth as a, username as u WHERE a.uuid = u.uuid AND username ilike $1", query+"%")
+		r := d.db.QueryRow("SELECT COUNT(*) FROM auth INNER JOIN username ON auth.uuid = username.uuid WHERE username ilike $1", query+"%")
 		err = r.Scan(&count)
 		if err != nil {
 			return 0, res, err
 		}
 	} else {
-		r := d.db.QueryRow("SELECT COUNT(*) FROM auth as a, username as u WHERE a.uuid = u.uuid")
+		r := d.db.QueryRow("SELECT COUNT(*) FROM auth INNER JOIN username ON auth.uuid = username.uuid")
 		err = r.Scan(&count)
 		if err != nil {
 			return 0, res, err
 		}
 	}
 
-	sql := "SELECT a.uuid FROM auth as a, username as u WHERE a.uuid = u.uuid"
+	sql := "SELECT auth.uuid FROM auth INNER JOIN username ON auth.uuid = username.uuid"
 	param := []interface{}{}
 	if query != "" {
 		param = append(param, query+"%")

@@ -64,7 +64,7 @@ func LoadKeys(rsaPrivateKeyFile, rsaPublicKeyFile string) error {
 func (d *DB) PasswordCheck(userid string, pass string) (string, error) {
 	var auth Auth
 	var r *sql.Row
-	var sqlq = "SELECT a.uuid,a.email,a.password,a.salt FROM auth AS a,username AS u WHERE a.uuid = u.uuid AND u.username = $1" // userid is username
+	var sqlq = "SELECT auth.uuid,email,password,salt FROM auth INNER JOIN username ON auth.uuid = username.uuid WHERE username = $1" // userid is username
 	if strings.Contains(userid, "@") {
 		// userid is email addr
 		sqlq = "SELECT uuid,email,password,salt FROM auth WHERE email = $1"
@@ -268,7 +268,7 @@ func (d *DB) PreRegistUser(username string, email string, password string) (stri
 		return "", err
 	}
 
-	r = d.db.QueryRow("select uuid from preuser where uuid = $1 and expdate > $2 union select uuid from auth where uuid=$1", newuuid, dateint)
+	r = d.db.QueryRow("SELECT uuid FROM preuser WHERE uuid = $1 AND expdate > $2 UNION SELECT uuid FROM auth WHERE uuid=$1", newuuid, dateint)
 	err = r.Scan(&uuid)
 	if err == nil {
 		return "", errors.New("Duplicate UUID is detected. You're so unlucky")

@@ -28,7 +28,7 @@ func (d *DB) CreateTeam(teamname string, useruuid string) (string, error) {
 		return "", err
 	}
 	//Check ID duplication
-	r = d.db.QueryRow("select uuid from username where uuid=$1", teamuuid)
+	r = d.db.QueryRow("SELECT uuid FROM username WHERE uuid=$1", teamuuid)
 	err = r.Scan(&uuid)
 	if err == nil {
 		return "", errors.New("Duplicate UUID is detected. You're so unlucky")
@@ -326,7 +326,7 @@ func (d *DB) GetTeamsByUser(useruuid string) ([]string, error) {
 // IsAdmin checks user is admin or not
 func (d *DB) IsAdmin(uuid string) (bool, error) {
 	cnt := 0
-	r := d.db.QueryRow("SELECT COUNT(*) FROM teammember, username WHERE teamuuid = uuid AND useruuid = $1 AND username = $2", uuid, teamNameAdmin)
+	r := d.db.QueryRow("SELECT COUNT(*) FROM teammember INNER JOIN username ON teamuuid = uuid WHERE useruuid = $1 AND username = $2", uuid, teamNameAdmin)
 	err := r.Scan(&cnt)
 	if err != nil {
 		return false, err

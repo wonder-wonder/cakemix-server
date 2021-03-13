@@ -598,7 +598,7 @@ func TestAuthHandler(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				veritoken := ""
 				dateint := time.Now().Unix()
-				row := db.QueryRow("SELECT token FROM passreset,auth WHERE email = $1 AND expdate > $2 AND passreset.uuid = auth.uuid", tt.req.email, dateint)
+				row := db.QueryRow("SELECT token FROM passreset INNER JOIN auth ON passreset.uuid = auth.uuid WHERE email = $1 AND expdate > $2", tt.req.email, dateint)
 				err := row.Scan(&veritoken)
 				if !assert.NoError(t, err) {
 					t.FailNow()
@@ -657,7 +657,7 @@ func TestAuthHandler(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				veritoken := ""
 				dateint := time.Now().Unix()
-				row := db.QueryRow("SELECT token FROM passreset,auth WHERE email = $1 AND expdate > $2 AND passreset.uuid = auth.uuid", tt.req.email, dateint)
+				row := db.QueryRow("SELECT token FROM passreset INNER JOIN auth ON passreset.uuid = auth.uuid WHERE email = $1 AND expdate > $2", tt.req.email, dateint)
 				err := row.Scan(&veritoken)
 				if !assert.NoError(t, err) {
 					t.FailNow()
