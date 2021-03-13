@@ -442,6 +442,11 @@ func (h *Handler) modifyFolderHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	err = h.db.UpdateFolder(fid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.AbortWithStatus(http.StatusOK)
 }
 
