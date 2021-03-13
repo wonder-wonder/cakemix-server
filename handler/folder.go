@@ -55,7 +55,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 		return
 	}
 
-	isowner := isRelatedUUID(c, finfo.OwnerUUID)
+	isOwner := isRelatedUUID(c, finfo.OwnerUUID)
 
 	if listtype == "" || listtype == "folder" {
 		folidlist, err := h.db.GetFolderList(fid)
@@ -70,7 +70,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isowner && !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
+			if !isOwner && !isRelatedUUID(c, folinfo.OwnerUUID) && folinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, folinfo.OwnerUUID) || folinfo.Permission == db.FilePermReadWrite
@@ -124,7 +124,7 @@ func (h *Handler) getFolderHandler(c *gin.Context) {
 				return
 			}
 
-			if !isowner && !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
+			if !isOwner && !isRelatedUUID(c, docinfo.OwnerUUID) && docinfo.Permission == db.FilePermPrivate {
 				continue
 			}
 			editable := isRelatedUUID(c, docinfo.OwnerUUID) || docinfo.Permission == db.FilePermReadWrite
