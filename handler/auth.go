@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -152,11 +153,13 @@ func (h *Handler) registHandler(c *gin.Context) {
 		return
 	}
 
-	err = util.SendMailWithTemplate(req.Email, req.UserName, "Verify Email address", mailTmplRegist, map[string]string{"NAME": req.UserName, "TOKEN": token})
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
+	go func() {
+		err = util.SendMailWithTemplate(req.Email, req.UserName, "Verify Email address", mailTmplRegist, map[string]string{"NAME": req.UserName, "TOKEN": token})
+		if err != nil {
+			log.Printf("SendMailError: %v", err)
+		}
+	}()
+
 	err = h.db.DeleteInviteToken(invtoken)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -268,11 +271,13 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		return
 	}
 
-	err = util.SendMailWithTemplate(req.Email, prof.Name, "Reset password", mailTmplResetPW, map[string]string{"NAME": prof.Name, "TOKEN": token})
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
+	go func() {
+		err = util.SendMailWithTemplate(req.Email, prof.Name, "Reset password", mailTmplResetPW, map[string]string{"NAME": prof.Name, "TOKEN": token})
+		if err != nil {
+			log.Printf("SendMailError: %v", err)
+		}
+	}()
+
 	c.AbortWithStatus(http.StatusOK)
 }
 func (h *Handler) passResetTokenCheckHandler(c *gin.Context) {

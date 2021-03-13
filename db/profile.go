@@ -7,7 +7,7 @@ import (
 // GetProfileByUsername returns the profile info
 func (d *DB) GetProfileByUsername(name string) (Profile, error) {
 	var p Profile
-	r := d.db.QueryRow("SELECT p.uuid,u.username,p.bio,p.iconuri,p.createat,p.attr,p.lang FROM profile as p, username as u WHERE u.username = $1 AND p.uuid=u.uuid", name)
+	r := d.db.QueryRow("SELECT profile.uuid,username,bio,iconuri,createat,attr,lang FROM profile INNER JOIN username ON profile.uuid = username.uuid WHERE username = $1", name)
 	err := r.Scan(&p.UUID, &p.Name, &p.Bio, &p.IconURI, &p.CreateAt, &p.Attr, &p.Lang)
 	if err == sql.ErrNoRows {
 		return p, ErrUserTeamNotFound
@@ -32,7 +32,7 @@ func (d *DB) SetProfile(profile Profile) error {
 func (d *DB) GetProfileByUUID(uuid string) (Profile, error) {
 	var p Profile
 	p.UUID = uuid
-	r := d.db.QueryRow("SELECT username,bio,iconuri,createat,attr,lang FROM profile as p, username as u WHERE p.uuid = u.uuid AND p.uuid = $1", uuid)
+	r := d.db.QueryRow("SELECT username,bio,iconuri,createat,attr,lang FROM profile INNER JOIN username ON profile.uuid = username.uuid WHERE profile.uuid = $1", uuid)
 	err := r.Scan(&p.Name, &p.Bio, &p.IconURI, &p.CreateAt, &p.Attr, &p.Lang)
 	if err == sql.ErrNoRows {
 		return p, ErrUserTeamNotFound

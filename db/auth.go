@@ -64,7 +64,7 @@ func LoadKeys(rsaPrivateKeyFile, rsaPublicKeyFile string) error {
 func (d *DB) PasswordCheck(userid string, pass string) (string, error) {
 	var auth Auth
 	var r *sql.Row
-	var sqlq = "SELECT a.uuid,a.email,a.password,a.salt FROM auth AS a,username AS u WHERE a.uuid = u.uuid AND u.username = $1" // userid is username
+	var sqlq = "SELECT auth.uuid,email,password,salt FROM auth INNER JOIN username ON auth.uuid = username.uuid WHERE username = $1" // userid is username
 	if strings.Contains(userid, "@") {
 		// userid is email addr
 		sqlq = "SELECT uuid,email,password,salt FROM auth WHERE email = $1"
@@ -124,7 +124,7 @@ func (d *DB) AddSession(uuid string, sessionID string, IPAddr string, DeviceData
 // GetSession deletes the session
 func (d *DB) GetSession(uuid string) ([]Session, error) {
 	res := []Session{}
-	rows, err := d.db.Query("SELECT * FROM session WHERE uuid = $1 ORDER BY lastdate DESC", uuid)
+	rows, err := d.db.Query("SELECT uuid,sessionid,logindate,lastdate,expiredate,ipaddr,devicedata FROM session WHERE uuid = $1 ORDER BY lastdate DESC", uuid)
 	if err != nil {
 		return res, err
 	}
@@ -268,7 +268,7 @@ func (d *DB) PreRegistUser(username string, email string, password string) (stri
 		return "", err
 	}
 
-	r = d.db.QueryRow("select uuid from preuser where uuid = $1 and expdate > $2 union select uuid from auth where uuid=$1", newuuid, dateint)
+	r = d.db.QueryRow("SELECT uuid FROM preuser WHERE uuid = $1 AND expdate > $2 UNION SELECT uuid FROM auth WHERE uuid=$1", newuuid, dateint)
 	err = r.Scan(&uuid)
 	if err == nil {
 		return "", errors.New("Duplicate UUID is detected. You're so unlucky")
@@ -486,7 +486,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 	params := []interface{}{}
 	// TargetUUID in target
 	params = append(params, uuid)
-	sql := "SELECT * FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
+	sql := "SELECT uuid,date,type,ipaddr,sessionid,targetuuid,targetfdid,extdataid FROM log WHERE (targetuuid IN ($" + strconv.Itoa(len(params))
 	for _, v := range target {
 		params = append(params, v)
 		sql += ",$" + strconv.Itoa(len(params))
@@ -540,7 +540,7 @@ func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype 
 // GetLoginPassResetLog returns log of loginpassreset
 func (d *DB) GetLoginPassResetLog(logid int64) (LogExtLoginPassReset, error) {
 	var res LogExtLoginPassReset
-	row := d.db.QueryRow("SELECT * FROM logextloginpassreset WHERE id = $1", logid)
+	row := d.db.QueryRow("SELECT id,devicedata FROM logextloginpassreset WHERE id = $1", logid)
 	err := row.Scan(&res.ID, &res.DeviceData)
 	if err != nil {
 		return res, err
