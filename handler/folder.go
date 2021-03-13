@@ -282,7 +282,7 @@ func (h *Handler) deleteFolderHandler(c *gin.Context) {
 		return
 	}
 	if len(folidlist) > 0 || len(docidlist) > 0 {
-		c.AbortWithStatus(http.StatusForbidden)
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
