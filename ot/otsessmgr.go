@@ -103,10 +103,16 @@ func (mgr *Manager) Loop() {
 		case svreq, _ := <-mgr.serverReq:
 			switch svreq.reqType {
 			case otServerRequestTypeStarted:
-				svinfo := mgr.sesslist[svreq.docID]
+				svinfo, ok := mgr.sesslist[svreq.docID]
+				if !ok {
+					continue
+				}
 				svinfo.Status = otStatusRunning
 			case otServerRequestTypeClientClosed:
-				svinfo := mgr.sesslist[svreq.docID]
+				svinfo, ok := mgr.sesslist[svreq.docID]
+				if !ok {
+					continue
+				}
 				svinfo.ClientNum--
 				if svinfo.ClientNum == 0 {
 					if svinfo.Status == otStatusStopping {
@@ -126,7 +132,10 @@ func (mgr *Manager) Loop() {
 				delete(mgr.sesslist, svreq.docID)
 			}
 		case docID := <-mgr.timeout:
-			svinfo := mgr.sesslist[docID]
+			svinfo, ok := mgr.sesslist[docID]
+			if !ok {
+				continue
+			}
 			if time.Now().Before(svinfo.StopWhen) {
 				continue
 			}
