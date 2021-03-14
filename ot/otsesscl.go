@@ -92,7 +92,7 @@ func (cl *Client) Loop() {
 						continue
 					}
 					// Closed
-					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseAbnormalClosure) {
+					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
 						close(request)
 						return
 					}
