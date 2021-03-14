@@ -172,6 +172,9 @@ func (h *Handler) deleteDocumentHandler(c *gin.Context) {
 		return
 	}
 
+	// TODO: check session is opened
+	h.otmgr.StopOTSession(did)
+
 	err = h.db.DeleteDocument(did)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

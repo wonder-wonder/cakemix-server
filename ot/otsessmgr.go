@@ -38,7 +38,7 @@ type Manager struct {
 	clientReq chan otClientRequest
 	serverReq chan otServerRequest
 	timeout   chan string
-	stop      chan struct{}
+	stop      chan string
 }
 
 type otInfo struct {
@@ -71,7 +71,7 @@ func NewManager(db *db.DB) (*Manager, error) {
 		clientReq: make(chan otClientRequest),
 		serverReq: make(chan otServerRequest),
 		timeout:   make(chan string),
-		stop:      make(chan struct{}),
+		stop:      make(chan string),
 	}
 	return mgr, nil
 }
@@ -144,7 +144,16 @@ func (mgr *Manager) Loop() {
 			}
 			close(svinfo.Server.mgr2sv)
 			svinfo.Status = otStatusStopping
-		case <-mgr.stop:
+		case docID := <-mgr.stop:
+			if docID != "" {
+				svinfo, ok := mgr.sesslist[docID]
+				if !ok {
+					continue
+				}
+				close(svinfo.Server.mgr2sv)
+				svinfo.Status = otStatusStopping
+				continue
+			}
 			for _, v := range mgr.sesslist {
 				close(v.Server.mgr2sv)
 				v.Status = otStatusStopping
@@ -192,5 +201,10 @@ func (mgr *Manager) ClientConnect(cl *Client, docid string) {
 
 // StopOTManager stops manager
 func (mgr *Manager) StopOTManager() {
-	mgr.stop <- struct{}{}
+	mgr.stop <- ""
+}
+
+// StopOTSession stops session
+func (mgr *Manager) StopOTSession(docID string) {
+	go func() { mgr.stop <- docID }()
 }
