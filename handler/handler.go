@@ -29,9 +29,15 @@ type Handler struct {
 	otmgr *ot.Manager
 }
 
+type HandlerConf struct {
+	DataDir             string
+	MailTemplateResetPW string
+	MailTemplateRegist  string
+}
+
 // NewHandler generates new Handler instance
-func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string) *Handler {
-	dataDir = datadir
+func NewHandler(db *db.DB, conf HandlerConf) *Handler {
+	dataDir = conf.DataDir
 	// Init data dir
 	err := os.MkdirAll(dataDir, 0700)
 	if err != nil {
@@ -41,14 +47,14 @@ func NewHandler(db *db.DB, datadir string, tmplresetpw string, tmplregist string
 	if err != nil {
 		panic("Directory init error:" + path.Join(dataDir, ImageDir))
 	}
-	if tmplresetpw == "" {
+	if conf.MailTemplateResetPW == "" {
 		panic("Mail template is not specified")
 	}
-	mailTmplResetPW = tmplresetpw
-	if tmplregist == "" {
+	mailTmplResetPW = conf.MailTemplateResetPW
+	if conf.MailTemplateRegist == "" {
 		panic("Mail template is not specified")
 	}
-	mailTmplRegist = tmplregist
+	mailTmplRegist = conf.MailTemplateRegist
 	otmgr, err := ot.NewManager(db)
 	if err != nil {
 		panic(err)

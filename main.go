@@ -111,7 +111,7 @@ func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string
 	signal.Notify(sig, os.Interrupt)
 	signal.Notify(sig, syscall.SIGQUIT)
 	signal.Notify(sig, syscall.SIGTERM)
-	h := handler.NewHandler(db, datadir, tmplresetpw, tmplregist)
+	h := handler.NewHandler(db, handler.HandlerConf{DataDir: datadir, MailTemplateResetPW: tmplresetpw, MailTemplateRegist: tmplregist})
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)

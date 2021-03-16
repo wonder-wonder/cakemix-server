@@ -87,7 +87,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	}
 
 	v1 := r.Group("v1")
-	h := NewHandler(db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
+	h := NewHandler(db, HandlerConf{DataDir: fileconf.DataDir, MailTemplateResetPW: mailconf.TmplResetPW, MailTemplateRegist: mailconf.TmplRegist})
 	h.AuthHandler(v1)
 	h.DocumentHandler(v1)
 	h.FolderHandler(v1)
