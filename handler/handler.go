@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	corsFrontHost = "*" // CORS front host
 	// ImageDir image dir path
 	ImageDir = "/img"
 )
@@ -21,6 +20,7 @@ var (
 	dataDir         = ""
 	mailTmplResetPW = ""
 	mailTmplRegist  = ""
+	corsFrontHost   = "*" // CORS front host
 )
 
 // Handler is object for handler function
@@ -33,6 +33,7 @@ type HandlerConf struct {
 	DataDir             string
 	MailTemplateResetPW string
 	MailTemplateRegist  string
+	CORSHost            string
 }
 
 // NewHandler generates new Handler instance
@@ -55,6 +56,9 @@ func NewHandler(db *db.DB, conf HandlerConf) *Handler {
 		panic("Mail template is not specified")
 	}
 	mailTmplRegist = conf.MailTemplateRegist
+	if conf.CORSHost != "" {
+		corsFrontHost = conf.CORSHost
+	}
 	otmgr, err := ot.NewManager(db)
 	if err != nil {
 		panic(err)

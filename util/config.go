@@ -16,6 +16,7 @@ var (
 	dbName         = ""
 	apiHost        = "localhost"
 	apiPort        = "8081"
+	apiCORS        = ""
 	frontDir       = "./"
 	dataDir        = "./cmdat"
 	signPubKey     = "./signkey.pub"
@@ -40,6 +41,7 @@ type DBConf struct {
 type APIConf struct {
 	Host string
 	Port string
+	CORS string
 }
 
 // FileConf is structure for file configuration
@@ -123,6 +125,8 @@ func LoadConfigFile(path string) error {
 			apiHost = confvalue
 		case "apiport":
 			apiPort = confvalue
+		case "apicors":
+			apiCORS = confvalue
 		case "frontdir":
 			frontDir = confvalue
 		case "datadir":
@@ -164,6 +168,7 @@ func GetAPIConf() APIConf {
 	return APIConf{
 		Host: apiHost,
 		Port: apiPort,
+		CORS: apiCORS,
 	}
 }
 
