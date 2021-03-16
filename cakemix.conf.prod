@@ -11,6 +11,7 @@ DBName cakemix
 # API socket configuration
 APIHost
 APIPort 8081
+APICORS example.com
 
 # File and directory configuration
 FrontDir /root/dist

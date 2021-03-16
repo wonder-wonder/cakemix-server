@@ -15,9 +15,12 @@ import (
 	"github.com/wonder-wonder/cakemix-server/util"
 )
 
-var version string = "unknown version"
+var version string = ""
 
 func main() {
+	if version == "" {
+		version = "unknown version"
+	}
 	fmt.Printf("\nCakemix %s\n\n", version)
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
@@ -64,7 +67,13 @@ func main() {
 	// API handler
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
-	v1Handler(v1, db, fileconf.DataDir, mailconf.TmplResetPW, mailconf.TmplRegist)
+	hconf := handler.HandlerConf{
+		DataDir:             fileconf.DataDir,
+		MailTemplateResetPW: mailconf.TmplResetPW,
+		MailTemplateRegist:  mailconf.TmplRegist,
+		CORSHost:            apiconf.CORS,
+	}
+	v1Handler(v1, db, hconf)
 
 	// Front serve
 	if fileconf.FrontDir != "" {
@@ -106,12 +115,12 @@ func main() {
 	}
 }
 
-func v1Handler(r *gin.RouterGroup, db *db.DB, datadir string, tmplresetpw string, tmplregist string) {
+func v1Handler(r *gin.RouterGroup, db *db.DB, hconf handler.HandlerConf) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	signal.Notify(sig, syscall.SIGQUIT)
 	signal.Notify(sig, syscall.SIGTERM)
-	h := handler.NewHandler(db, datadir, tmplresetpw, tmplregist)
+	h := handler.NewHandler(db, hconf)
 	h.AuthHandler(r)
 	h.DocumentHandler(r)
 	h.FolderHandler(r)
