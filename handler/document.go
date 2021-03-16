@@ -362,7 +362,7 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	docInfo, err := h.db.GetDocumentInfo(docID)
 	if err != nil {
 		if err == db.ErrDocumentNotFound {
-			c.AbortWithError(http.StatusNotFound, err)
+			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
 		c.AbortWithError(http.StatusInternalServerError, err)
