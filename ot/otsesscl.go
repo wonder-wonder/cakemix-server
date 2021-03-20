@@ -51,7 +51,7 @@ func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Recover: %v")
+				log.Printf("Recover: %v", err)
 			}
 		}()
 		cl.sv2cl <- otS2CMessage{
