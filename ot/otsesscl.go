@@ -42,7 +42,7 @@ func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Cli
 		profile:   profile,
 		readOnly:  readOnly,
 		cl2sv:     nil,
-		sv2cl:     make(chan otS2CMessage),
+		sv2cl:     make(chan otS2CMessage, 100),
 	}
 	return cl, nil
 }
