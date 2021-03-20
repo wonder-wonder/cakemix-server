@@ -49,6 +49,11 @@ func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Cli
 
 func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Recover: %v")
+			}
+		}()
 		cl.sv2cl <- otS2CMessage{
 			msgType: msgType,
 			message: message,
