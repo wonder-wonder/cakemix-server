@@ -5,6 +5,10 @@
 # Cakemix Server
 Document management system for all creative team  
 Real-time edit with multiple users
+Open Source
+
+## License
+Cakemix Server is under [MIT license](LICENSE)
 
 ## Installation
 ### Fast way (using docker)
