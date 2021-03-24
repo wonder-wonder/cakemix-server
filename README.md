@@ -1,6 +1,8 @@
 ![Cakemix](docs/banner.png)
 
+![Version](https://img.shields.io/github/v/release/wonder-wonder/cakemix-server)
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
+![License](https://img.shields.io/github/license/wonder-wonder/cakemix-server)
 
 # Cakemix Server
 Document management system for all creative team  
