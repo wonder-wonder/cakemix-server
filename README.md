@@ -41,16 +41,6 @@ make stopdb   # Stop database server
   - `DBPASS` is password for postgres database (default: `postgres`)
   - `DBNAME` is database name for postgres database (default: `cakemix`)
 
-- API
-  - `APIADDR` is API server socket address (default: )
-  - `PORT` is API server port (default: `8081`)
-
-- Files and directories
-  - `FRONTDIR` is directory for front files. If empty, the server only serve API. (default: )
-  - `DATADIR` is directory for cakemix server variable data like uploaded pictures. (default: `./cmdat`)
-  - `SIGNPRVKEY` is private key for signing token. (default: `./signkey`)
-  - `SIGNPUBKEY` is public key for verification of token. (default: `./signkey.pub`)
-
 - Mail
 	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, mail content will be shown in the log. If empty, the mail function will be disabled. (default: )
 
