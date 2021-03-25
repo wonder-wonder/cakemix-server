@@ -1,4 +1,4 @@
-name: Test Cakemix
+name: Test
 
 on:
   - push
