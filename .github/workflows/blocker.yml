@@ -1,0 +1,14 @@
+name: Block merge
+
+on:
+  pull_request:
+    types: [opened,edited]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main' && !(startsWith(github.head_ref,'release/')　|| startsWith(github.head_ref,'hotfix/'))
+    steps:
+    - name: Fail when base branch is main and branch is not release or hotfix.
+      run: |
+        exit 1
