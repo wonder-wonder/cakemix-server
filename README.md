@@ -1,10 +1,28 @@
+# Cakemix
+
 ![Cakemix](docs/banner.png)
 
+![Version](https://img.shields.io/github/v/tag/wonder-wonder/cakemix-server)
+[![License](https://img.shields.io/github/license/wonder-wonder/cakemix-server)](LICENSE)
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
 
-# Cakemix Server
-Document management system for all creative team  
-Real-time edit with multiple users
+Cakemix is opensource document management system for all creative team.  
+You can make a small team, folder and document on the Cakemix, also write a document with markdown, and edit with multiple users in realtime.  
+
+# Features
+
+- [x] Opensource(MIT)
+- [x] Write document with markdown
+- [x] Edit document with multiple users in realtime
+- [x] Make document folder
+- [x] Make small team
+- [x] Security
+- [x] Support PWA
+- [x] Support Mobile-Friendly Design
+
+# How to use
+
+This repository is server side of Cakemix, you need front side ([here](https://github.com/wonder-wonder/cakemix-front)) to use Cakemix.
 
 ## Installation
 ### Fast way (using docker)
@@ -29,21 +47,11 @@ make stopdb   # Stop database server
 
 ## Envrionment variables
 - Database
-  - `DBHOST` is hostname for postgres database (default: `cakemixpg`)
-  - `DBPORT` is port number for postgres database (default: `5432`)
-  - `DBUSER` is user for postgres database (default: `postgres`)
-  - `DBPASS` is password for postgres database (default: `postgres`)
-  - `DBNAME` is database name for postgres database (default: `cakemix`)
-
-- API
-  - `APIADDR` is API server socket address (default: )
-  - `PORT` is API server port (default: `8081`)
-
-- Files and directories
-  - `FRONTDIR` is directory for front files. If empty, the server only serve API. (default: )
-  - `DATADIR` is directory for cakemix server variable data like uploaded pictures. (default: `./cmdat`)
-  - `SIGNPRVKEY` is private key for signing token. (default: `./signkey`)
-  - `SIGNPUBKEY` is public key for verification of token. (default: `./signkey.pub`)
+  - `DBHOST` is hostname for postgres database (default: )
+  - `DBPORT` is port number for postgres database (default: )
+  - `DBUSER` is user for postgres database (default: )
+  - `DBPASS` is password for postgres database (default: )
+  - `DBNAME` is database name for postgres database (default: )
 
 - Mail
 	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, mail content will be shown in the log. If empty, the mail function will be disabled. (default: )
@@ -80,3 +88,7 @@ hotfix/x                         x
 - will increment when new features are added
 #### Patch
 - will increment when bugs are fixed
+
+# License
+
+**Released under the [MIT license](LICENSE)**
