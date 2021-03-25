@@ -47,11 +47,11 @@ make stopdb   # Stop database server
 
 ## Envrionment variables
 - Database
-  - `DBHOST` is hostname for postgres database (default: `cakemixpg`)
-  - `DBPORT` is port number for postgres database (default: `5432`)
-  - `DBUSER` is user for postgres database (default: `postgres`)
-  - `DBPASS` is password for postgres database (default: `postgres`)
-  - `DBNAME` is database name for postgres database (default: `cakemix`)
+  - `DBHOST` is hostname for postgres database (default: )
+  - `DBPORT` is port number for postgres database (default: )
+  - `DBUSER` is user for postgres database (default: )
+  - `DBPASS` is password for postgres database (default: )
+  - `DBNAME` is database name for postgres database (default: )
 
 - Mail
 	- `SENDGRID_API_KEY` is SendGrid API Key. If `DEBUG` is specified, mail content will be shown in the log. If empty, the mail function will be disabled. (default: )
