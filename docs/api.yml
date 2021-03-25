@@ -1,0 +1,1270 @@
+openapi: 3.0.0
+info:
+  title: Cakemix Server API
+  description: Definition of Cakemix Server API
+  version: 1.0.0
+  contact:
+    name: Wonder Wonder
+    url: 'https://wonder-wonder.xyz'
+    email: contact@wonder-wonder.xyz
+servers:
+  - url: 'http://localhost:8081/v1'
+    description: Server URL for localhost development
+paths:
+  /auth/login:
+    post:
+      summary: Login and get token
+      operationId: post-login
+      responses:
+        '200':
+          description: Authentication is success and logged in. Server returns JWT token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResModel'
+        '401':
+          description: The ID or password is incorrect.
+      tags:
+        - Auth
+      description: Request login with email and password and returns JWT token.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginReqModel'
+        description: Login request.
+  /auth/logout:
+    post:
+      summary: Logout and remove session key
+      operationId: post-logout
+      description: Request to logout. Server removes session key.
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Removed session and logout successfully.
+        '401':
+          description: Invalid token.
+      parameters: []
+  /auth/check/token:
+    get:
+      summary: Check token
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Token is valid.
+        '401':
+          description: Invalid token.
+      operationId: get-check-token
+      description: Checks JWT token is valid.
+  /auth/regist/gen/token:
+    get:
+      summary: Generate new key for registering new user
+      operationId: get-new-token-regist
+      tags:
+        - Auth
+      description: Request to generate new key for registering new user.
+      responses:
+        '200':
+          description: The request is accepted with no error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthRegistNewTokenResModel'
+        '403':
+          description: The user has not permission to generate token
+  '/auth/regist/pre/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+        description: Verification token for registration.
+    post:
+      summary: Request to register new user
+      operationId: post-regist
+      tags:
+        - Auth
+      description: Request to register new user. Server sends verification email.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegistReqModel'
+        description: Regist information
+      responses:
+        '200':
+          description: The request is accepted with no error.
+        '409':
+          description: The username or email is already used. Server cannot accept the request.
+    get:
+      summary: ''
+      operationId: get-auth-regist-pre-token
+      responses:
+        '200':
+          description: token is valid.
+        '401':
+          description: Invalid token.
+      description: Request to verify invitation link
+      tags:
+        - Auth
+      security: []
+  '/auth/regist/verify/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+        description: Verification token for registration.
+    post:
+      summary: Verify registration verification token
+      operationId: post-regist-verify
+      responses:
+        '200':
+          description: The token is accepted and user is registered successfully.
+        '404':
+          description: The token is invalid or expired.
+      tags:
+        - Auth
+      description: 'Verify registration verification token. After verification, the account is added to user data and activated.'
+      security: []
+  /auth/pass/change:
+    post:
+      summary: Request to change password
+      operationId: post-pass-change
+      responses:
+        '200':
+          description: The password is changed successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Old password is wrong.
+      tags:
+        - Auth
+      description: Request to change password.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassChangeReqModel'
+        description: Old and new password.
+  /auth/pass/reset:
+    post:
+      summary: Request to reset password
+      operationId: post-pass-reset
+      tags:
+        - Auth
+      description: Request to reset password. Server sends verification email.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassResetReqModel'
+        description: Email address to reset password.
+      responses:
+        '200':
+          description: The request is accepted.
+        '400':
+          description: The request is invalid. (Email is invalid.)
+  '/auth/pass/reset/verify/{token}':
+    get:
+      summary: Check password reset token
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: The token is valid.
+        '401':
+          description: Invalid token.
+      operationId: get-pass-reset-verify
+      description: 'Check verification token to reset password. To change password with token, use POST methods.'
+      security: []
+    post:
+      summary: Reset password
+      operationId: post-pass-reset-verify
+      responses:
+        '200':
+          description: The request is accepted.
+        '401':
+          description: Invalid token.
+      tags:
+        - Auth
+      description: Reset password with new one.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthPassChangeReqModel'
+        description: New password.
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+  '/profile/{uuid}':
+    parameters:
+      - schema:
+          type: string
+        name: uuid
+        in: path
+        required: true
+        description: Username or teamname
+    get:
+      summary: Get profile
+      responses:
+        '200':
+          description: Got the profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileModel'
+        '404':
+          description: The user/team is not found.
+      operationId: get-user-profile-uuid
+      tags:
+        - Profile
+      description: Get profile for user/team.
+    put:
+      summary: Edit profile
+      operationId: put-user-profile-uuid
+      responses:
+        '200':
+          description: The profile is updated successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Update of profile is not allowed.
+        '404':
+          description: The user/team is not found.
+      tags:
+        - Profile
+      description: Edit profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileModel'
+        description: |-
+          Updated profile data. The parameters can be omitted if no update.
+          Some parameter cannot be changed because of readonly.
+  '/team/{teamid}/member':
+    parameters:
+      - schema:
+          type: string
+        name: teamid
+        in: path
+        required: true
+    get:
+      summary: Get team member list
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: member limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: member offset
+        - schema:
+            type: string
+          in: query
+          name: uuid
+          description: uuid
+      responses:
+        '200':
+          description: Got team member list
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Member list
+                properties:
+                  total:
+                    type: integer
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberInfoModel'
+        '404':
+          description: The team is not found.
+      operationId: get-team-teamid-member
+      description: Get team member list.
+      tags:
+        - Team
+    post:
+      summary: Add the member into team
+      operationId: post-team-teamid-member
+      responses:
+        '200':
+          description: Added the member into the team.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Adding member into the team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Add the member into the team.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInfoModel'
+        description: Member info.
+      tags:
+        - Team
+    put:
+      summary: Modify member info in the team
+      operationId: put-team-teamid-member
+      responses:
+        '200':
+          description: Modified the member info.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Modifying member info team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Modify member info in the team.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInfoModel'
+        description: Member info.
+      tags:
+        - Team
+    delete:
+      summary: Remove the member from the team
+      operationId: delete-team-teamid-member
+      responses:
+        '200':
+          description: Removed the member from the tean.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Removing member from the team is not allowed.
+        '404':
+          description: The team is not found.
+      description: Remove the member from the team.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: uuid
+          description: Removing member UUID
+          required: true
+      tags:
+        - Team
+  /team:
+    post:
+      summary: Create team
+      operationId: post-team
+      responses:
+        '200':
+          description: The new team is created successfully.
+        '401':
+          description: Invalid token.
+        '409':
+          description: The teamname is already used.
+      tags:
+        - Team
+      description: Create new team.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          description: Teamname
+          required: true
+    parameters: []
+  '/team/{teamid}':
+    parameters:
+      - schema:
+          type: string
+        name: teamid
+        in: path
+        required: true
+        description: Team UUID
+    delete:
+      summary: Remove team
+      operationId: delete-team-teamid
+      responses:
+        '200':
+          description: The team is removed successfully.
+        '401':
+          description: Invalid token.
+        '403':
+          description: Removing team is not allowed.
+        '404':
+          description: The team is not found.
+      tags:
+        - Team
+      description: Remove the team.
+  '/doc/{folder_id}':
+    parameters:
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        required: true
+        description: Folder ID
+    post:
+      summary: Make a new document
+      responses:
+        '200':
+          description: Create new a document.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  doc_id:
+                    type: string
+        '400':
+          description: Cannot create new document.
+      operationId: create-new-doc
+      tags:
+        - Document
+      description: Just create new document and will return document id
+  '/doc/{doc_id}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+        description: Document ID
+    delete:
+      summary: Delete a document
+      responses:
+        '200':
+          description: Delete the document.
+        '400':
+          description: Cannot delete the document.
+      operationId: delete-doc
+      tags:
+        - Document
+    put:
+      summary: Modify document property
+      operationId: put-doc-doc_id
+      responses:
+        '200':
+          description: Modified the document property.
+        '400':
+          description: Cannot modify the document property.
+      tags:
+        - Document
+      description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentModifyReqModel'
+    get:
+      summary: ''
+      operationId: get-doc-doc_id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentModel'
+      tags:
+        - Document
+  '/doc/{doc_id}/move/{folder_id}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        description: Folder ID
+        required: true
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        description: Folder ID
+        required: true
+    put:
+      summary: Move document to target folder
+      responses:
+        '200':
+          description: Move document to target folder.
+        '400':
+          description: Cannot move document.
+      operationId: move-doc
+      tags:
+        - Document
+  '/folder/{folder_id}':
+    parameters:
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        required: true
+        description: Folder ID
+    get:
+      summary: Get document and folder list in the target folder
+      responses:
+        '200':
+          description: Move items from target parent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FolderListModel'
+        '404':
+          description: Not found target folder.
+      operationId: get-list
+      tags:
+        - Folder
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: type
+          required: true
+          description: 'type that which list will be returned (all, folder, document)'
+      description: ''
+    post:
+      summary: Make a new folder
+      responses:
+        '200':
+          description: Create new a folder.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder_id:
+                    type: string
+        '400':
+          description: Cannot create new folder.
+      operationId: create-new-folder
+      tags:
+        - Folder
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          required: true
+          description: Folder name
+    delete:
+      summary: Delete a folder
+      responses:
+        '200':
+          description: delete the folder.
+        '400':
+          description: Cannot delete the folder.
+      operationId: delete-folder
+      tags:
+        - Folder
+    put:
+      summary: Modify folder property
+      responses:
+        '200':
+          description: Modified the folder property.
+        '400':
+          description: Cannot modify the folder property.
+      operationId: modify-folder
+      tags:
+        - Folder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderModifyReqModel'
+          application/javascript:
+            schema:
+              type: object
+              properties: {}
+      description: ''
+  '/folder/{folder_id}/move/{target_folder_id}':
+    parameters:
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        description: Folder ID
+        required: true
+      - schema:
+          type: string
+        name: target_folder_id
+        in: path
+        description: Target Folder ID
+        required: true
+    put:
+      summary: Move folder to target parent.
+      responses:
+        '200':
+          description: Moved folder to target parent.
+        '400':
+          description: Cannot move folder.
+      operationId: move-folder
+      tags:
+        - Folder
+  '/doc/{doc_id}/ws':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+    get:
+      summary: Your GET endpoint
+      tags:
+        - Document
+      responses:
+        '101':
+          description: Switch to web socket protocol
+      operationId: get-doc-doc_id-ws
+      description: ''
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: token
+          description: security token
+          required: true
+      security: []
+  '/auth/check/user/{user_name}/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: user_name
+        in: path
+        required: true
+    get:
+      summary: Check username
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: No user
+        '401':
+          description: invalid token
+        '409':
+          description: username has already taken
+      operationId: get-auth-check-user-username
+      description: Check username is not taken by other
+      security: []
+      parameters: []
+  /search/team:
+    get:
+      summary: Get team list
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Got team list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  teams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
+      operationId: get-search-team
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: q
+          description: search filter
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: search limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: search offset
+  /search/user:
+    get:
+      summary: Get user list
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Got user list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileModel'
+      operationId: get-search-user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: q
+          description: search filter
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: search limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: search offset
+  /image:
+    post:
+      summary: Upload image
+      operationId: post-image
+      responses:
+        '200':
+          description: Image is uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Image ID
+      tags:
+        - Image
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              description: ''
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+            examples: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {}
+        description: ''
+  '/image/{imgid}':
+    parameters:
+      - schema:
+          type: string
+        name: imgid
+        in: path
+        required: true
+        description: Image ID
+    get:
+      summary: Get uploaded image
+      tags:
+        - Image
+      responses:
+        '200':
+          description: Got image
+      operationId: get-image-imgid
+      security: []
+  /auth/session:
+    get:
+      summary: Get session list
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthSessionModel'
+      operationId: get-auth-session
+      description: Get session list
+  '/auth/session/{id}':
+    delete:
+      summary: Revoke session
+      operationId: delete-auth-session
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      tags:
+        - Auth
+      description: Revoke session
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+  /auth/log:
+    get:
+      summary: Get logs
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLogResModel'
+      operationId: get-auth-log
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: targetid
+          description: target team/userUUID
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: Offset
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: Limit
+        - schema:
+            type: string
+          in: query
+          name: type
+          description: target log type
+      description: Get log list
+components:
+  schemas:
+    JWT:
+      title: JWT
+      type: object
+      description: |-
+        JSON Web Token(JWT) is used for authorization.
+        Geekers API uses only requred items.
+      properties:
+        iss:
+          type: string
+          description: Issuer Claim.
+          example: geekers
+        sub:
+          type: string
+          description: Subject Claim.
+          example: login
+        aud:
+          type: string
+          description: Audience Claim. It keeps UUID.
+          example: u123456
+        exp:
+          type: integer
+          description: Expiration Time Claim.
+          example: 1609426800
+        nbf:
+          type: integer
+          description: Not Before Claim.
+        iat:
+          type: integer
+          description: Issued At Claim.
+        jti:
+          type: string
+          description: JWT ID Claim. It keeps session ID.
+          example: sessionkey
+      required:
+        - aud
+        - exp
+        - jti
+    AuthRegistReqModel:
+      title: AuthRegistReqModel
+      type: object
+      description: Request model for /auth/regist
+      properties:
+        email:
+          type: string
+          description: Email address
+          format: email
+        username:
+          type: string
+          description: Username
+        password:
+          type: string
+          description: Password
+      required:
+        - email
+        - username
+        - password
+    AuthRegistNewTokenResModel:
+      title: AuthRegistNewTokenResModel
+      type: object
+      description: Request model for /auth/regist/new/token
+      properties:
+        token:
+          type: string
+          description: Token for registering
+      required:
+        - token
+    AuthLoginReqModel:
+      title: AuthLoginReqModel
+      type: object
+      description: Request model for /auth/login
+      properties:
+        id:
+          type: string
+          description: Email address or username
+        pass:
+          type: string
+          description: Password
+      required:
+        - id
+        - pass
+    AuthLoginResModel:
+      title: AuthLoginResModel
+      type: object
+      description: Response model for /auth/login
+      properties:
+        jwt:
+          type: string
+          description: JWT token
+      required:
+        - jwt
+    AuthPassChangeReqModel:
+      title: AuthPassChangeReqModel
+      type: object
+      description: 'Request model for /auth/pass/change and /auth/pass/reset/verify/{token}'
+      properties:
+        oldpass:
+          type: string
+          description: Old password
+        newpass:
+          type: string
+          description: New password
+      required:
+        - newpass
+    AuthPassResetReqModel:
+      title: AuthPassResetReqModel
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email for user to reset password
+      required:
+        - email
+      description: Request model for /auth/pass/reset
+    ProfileModel:
+      title: ProfileModel
+      type: object
+      description: |-
+        Profile model for get and post of /profile/{name}.
+        Required items are attached in child items.
+      properties:
+        uuid:
+          type: string
+          description: UUID for user/team
+        name:
+          type: string
+          description: Username or teamname
+        bio:
+          type: string
+          description: Biography
+        icon_uri:
+          type: string
+          description: IconURI
+          format: uri
+        created_at:
+          type: integer
+          description: User/team creation date
+        attr:
+          type: string
+          description: 'Attribute(Official, SysAdmin)'
+        is_team:
+          type: boolean
+          description: Team or not
+        teams:
+          type: array
+          description: List for joining teams
+          items:
+            $ref: '#/components/schemas/ProfileModel'
+        lang:
+          type: string
+          description: Language
+        is_admin:
+          type: boolean
+          description: Admin or not
+      required:
+        - uuid
+        - name
+        - icon_uri
+        - attr
+        - is_team
+    MemberInfoModel:
+      title: MemberInfoModel
+      description: 'Member info model for /team/{teamid}/member'
+      type: object
+      properties:
+        member:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+          description: Member profile or UUID
+        permission:
+          type: integer
+          description: Permission
+    DocumentModel:
+      title: DocumentModel
+      description: Document model
+      type: object
+      properties:
+        owner:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        updater:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        title:
+          type: string
+          description: Documentation
+        body:
+          type: string
+          description: Documentation
+        permission:
+          type: integer
+          description: Permission
+        created_at:
+          type: integer
+          description: document creation date
+        updated_at:
+          type: integer
+          description: document creation date
+        uuid:
+          type: string
+        editable:
+          type: boolean
+        parentfolderid:
+          type: string
+        revision:
+          type: integer
+    DocumentResModel:
+      title: DocumentResModel
+      type: object
+      description: Response of document creation
+      properties:
+        doc_id:
+          type: string
+          description: Documentation
+      required:
+        - doc_id
+    FolderModel:
+      title: FolderModel
+      description: Folder model
+      type: object
+      properties:
+        owner:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        updater:
+          oneOf:
+            - $ref: '#/components/schemas/ProfileModel'
+            - type: string
+              description: UUID
+        permission:
+          type: integer
+          description: Permission
+        created_at:
+          type: integer
+          description: folder creation date
+        updated_at:
+          type: integer
+          description: folder creation date
+        name:
+          type: string
+        uuid:
+          type: string
+        editable:
+          type: boolean
+    BreadcrumbModel:
+      title: BreadcrumbModel
+      type: object
+      description: Breadcrumb
+      properties:
+        folder_id:
+          type: string
+        title:
+          type: string
+    FolderModifyReqModel:
+      title: FolderModifyReqModel
+      type: object
+      properties:
+        owneruuid:
+          type: string
+          description: Owner UUID
+        name:
+          type: string
+          description: Folder name
+        permission:
+          type: integer
+          description: Permission
+      description: Folder modify request model
+    DocumentModifyReqModel:
+      title: DocumentModifyReqModel
+      type: object
+      description: Document modify request model
+      properties:
+        owneruuid:
+          type: string
+          description: Owner UUID
+        permission:
+          type: integer
+          description: Permission
+    FolderListModel:
+      title: FolderListModel
+      type: object
+      description: Folder list model
+      properties:
+        folder:
+          type: array
+          items:
+            $ref: '#/components/schemas/FolderModel'
+        document:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentModel'
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreadcrumbModel'
+      required:
+        - path
+    AuthSessionModel:
+      title: AuthSessionModel
+      type: object
+      properties:
+        sessionid:
+          type: string
+        lastlogin:
+          type: integer
+        lastused:
+          type: integer
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+        iscurrent:
+          type: boolean
+      description: Session info
+    AuthLogModel:
+      description: ''
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/ProfileModel'
+        date:
+          type: integer
+        type:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/AuthLogLoginModel'
+            - $ref: '#/components/schemas/AuthLogPassResetModel'
+            - $ref: '#/components/schemas/AuthLogPassChangeModel'
+      required:
+        - user
+        - date
+        - type
+    AuthLogResModel:
+      description: ''
+      type: object
+      title: ''
+      properties:
+        offset:
+          type: integer
+        len:
+          type: integer
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthLogModel'
+        has_next:
+          type: boolean
+      required:
+        - offset
+        - len
+        - logs
+        - has_next
+    AuthLogLoginModel:
+      title: AuthLogLoginModel
+      type: object
+      properties:
+        sessionid:
+          type: string
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+    AuthLogPassResetModel:
+      title: AuthLogPassResetModel
+      type: object
+      properties:
+        ipaddr:
+          type: string
+        devinfo:
+          type: string
+    AuthLogPassChangeModel:
+      title: AuthLogPassChangeModel
+      type: object
+      properties:
+        sessionid:
+          type: string
+        ipaddr:
+          type: string
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+tags:
+  - name: Auth
+    description: Authorization API
+  - name: Document
+    description: Document API
+  - name: Profile
+    description: Profile API
+  - name: Team
+    description: Team management API
+  - name: Folder
+    description: Folder API
+  - name: Search
+    description: Search API
+  - name: Image
+    description: Image API
+security:
+  - JWT: []

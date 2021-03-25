@@ -1,0 +1,36 @@
+version: '3'
+services:
+  cakemix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cakemix
+    depends_on:
+      - cakemixpg
+    env_file:
+      - cakemix.env
+      - sendgrid.env
+    networks:
+      - cakemix-network
+    ports:
+      - 8081:8081
+    restart: always
+    volumes:
+      - ./dist:/root/dist
+      - ./docker/server/cmdat:/root/cmdat
+      - ./docker/server/keys:/root/keys
+
+  cakemixpg:
+    image: postgres
+    container_name: cakemixpg
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - cakemix-network
+    restart: always
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+
+networks:
+  cakemix-network:
