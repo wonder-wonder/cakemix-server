@@ -1,18 +1,28 @@
+# Cakemix
+
 ![Cakemix](docs/banner.png)
 
-![Version](https://img.shields.io/github/v/release/wonder-wonder/cakemix-server)
+![Version](https://img.shields.io/github/v/tag/wonder-wonder/cakemix-server)
+[![License](https://img.shields.io/github/license/wonder-wonder/cakemix-server)](LICENSE)
 ![Test Cakemix](https://github.com/wonder-wonder/cakemix-server/workflows/Test%20Cakemix/badge.svg?branch=main)
-![License](https://img.shields.io/github/license/wonder-wonder/cakemix-server)
 
-# Cakemix Server
-Document management system for all creative team  
-Real-time edit with multiple users
-Open Source
+Cakemix is opensource document management system for all creative team.  
+You can make a small team, folder and document on the Cakemix, also write a document with markdown, and edit with multiple users in realtime.  
 
-Cakemix Front is [here](https://github.com/wonder-wonder/cakemix-front/).
+# Features
 
-## License
-Cakemix Server is under [MIT license](LICENSE)
+- [x] Opensource(MIT)
+- [x] Write document with markdown
+- [x] Edit document with multiple users in realtime
+- [x] Make document folder
+- [x] Make small team
+- [x] Security
+- [x] Support PWA
+- [x] Support Mobile-Friendly Design
+
+# How to use
+
+This repository is server side of Cakemix, you need front side ([here](https://github.com/wonder-wonder/cakemix-front)) to use Cakemix.
 
 ## Installation
 ### Fast way (using docker)
@@ -78,3 +88,7 @@ hotfix/x                         x
 - will increment when new features are added
 #### Patch
 - will increment when bugs are fixed
+
+# License
+
+**Released under the [MIT license](LICENSE)**
