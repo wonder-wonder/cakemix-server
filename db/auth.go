@@ -480,9 +480,6 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 // GetLogs returns the list of logs
 // target is list of teamids
 func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype []string) ([]Log, error) {
-	if len(target) == 0 {
-		return []Log{}, nil
-	}
 	params := []interface{}{}
 	// TargetUUID in target
 	params = append(params, uuid)
