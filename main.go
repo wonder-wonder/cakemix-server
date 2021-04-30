@@ -54,7 +54,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	if fileconf.LogFile != "" {
-		f, err := os.OpenFile(fileconf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(fileconf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error occured while opening log file: %v\n", err)
 			os.Exit(1)
