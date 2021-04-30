@@ -21,6 +21,7 @@ var (
 	dataDir        = "./cmdat"
 	signPubKey     = "./signkey.pub"
 	signPrvKey     = "./signkey"
+	logFile        = ""
 	sendgridAPIKey = ""
 	fromAddr       = "cakemix@localhost"
 	fromName       = "Cakemix"
@@ -50,6 +51,7 @@ type FileConf struct {
 	DataDir    string
 	SignPubKey string
 	SignPrvKey string
+	LogFile    string
 }
 
 // MailConf is structure for mail configuration
@@ -135,6 +137,8 @@ func LoadConfigFile(path string) error {
 			signPubKey = confvalue
 		case "signprvkey":
 			signPrvKey = confvalue
+		case "logfile":
+			logFile = confvalue
 		case "mailsgapikey":
 			sendgridAPIKey = confvalue
 		case "mailfromaddr":
@@ -146,7 +150,7 @@ func LoadConfigFile(path string) error {
 		case "mailregisttmpl":
 			tmplRegist = confvalue
 		default:
-			return fmt.Errorf("Unknown option: %v", confkey)
+			return fmt.Errorf("unknown option: %v", confkey)
 		}
 	}
 	return nil
@@ -179,6 +183,7 @@ func GetFileConf() FileConf {
 		DataDir:    dataDir,
 		SignPubKey: signPubKey,
 		SignPrvKey: signPrvKey,
+		LogFile:    logFile,
 	}
 }
 
