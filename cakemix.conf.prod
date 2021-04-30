@@ -19,7 +19,7 @@ DataDir /root/cmdat
 APIHost
 SignPrvKey /root/keys/signkey
 SignPubKey /root/keys/signkey.pub
-LogFile /var/log/access.log
+LogFile /root/log/access.log
 
 # Mail configuration
 MailFromAddr cakemix@localhost
