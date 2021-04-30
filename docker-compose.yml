@@ -19,6 +19,7 @@ services:
       - ./dist:/root/dist
       - ./docker/server/cmdat:/root/cmdat
       - ./docker/server/keys:/root/keys
+      - ./docker/server/log:/root/log
 
   cakemixpg:
     image: postgres

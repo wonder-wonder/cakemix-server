@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -51,6 +52,16 @@ func main() {
 	mailconf := util.GetMailConf()
 
 	gin.SetMode(gin.ReleaseMode)
+
+	if fileconf.LogFile != "" {
+		f, err := os.OpenFile(fileconf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error occured while opening log file: %v\n", err)
+			os.Exit(1)
+		}
+		gin.DefaultWriter = io.MultiWriter(f)
+	}
+
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
