@@ -24,7 +24,6 @@ jobs:
       uses: actions/github-script@v4.0.2
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
-        debug: true
         script: |
           const pr = context.payload.pull_request;
           github.repos.createRelease({
