@@ -24,3 +24,6 @@ MailFromAddr cakemix@localhost
 MailFromName Cakemix
 MailResetPWTmpl ../resetpw.tmpl
 MailRegistTmpl ../regist.tmpl
+
+# Permit to create new team without admin
+PermitUserToCreateTeam false

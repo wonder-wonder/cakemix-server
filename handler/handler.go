@@ -17,10 +17,11 @@ const (
 )
 
 var (
-	dataDir         = ""
-	mailTmplResetPW = ""
-	mailTmplRegist  = ""
-	corsFrontHost   = "*" // CORS front host
+	dataDir                = ""
+	mailTmplResetPW        = ""
+	mailTmplRegist         = ""
+	corsFrontHost          = "*" // CORS front host
+	permitUserToCreateTeam = false
 )
 
 // Handler is object for handler function
@@ -30,10 +31,11 @@ type Handler struct {
 }
 
 type HandlerConf struct {
-	DataDir             string
-	MailTemplateResetPW string
-	MailTemplateRegist  string
-	CORSHost            string
+	DataDir                string
+	MailTemplateResetPW    string
+	MailTemplateRegist     string
+	CORSHost               string
+	PermitUserToCreateTeam bool
 }
 
 // NewHandler generates new Handler instance
@@ -59,6 +61,7 @@ func NewHandler(db *db.DB, conf HandlerConf) *Handler {
 	if conf.CORSHost != "" {
 		corsFrontHost = conf.CORSHost
 	}
+	permitUserToCreateTeam = conf.PermitUserToCreateTeam
 	otmgr, err := ot.NewManager(db)
 	if err != nil {
 		panic(err)

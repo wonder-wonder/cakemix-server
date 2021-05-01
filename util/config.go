@@ -9,24 +9,25 @@ import (
 
 // Default
 var (
-	dbHost         = ""
-	dbPort         = ""
-	dbUser         = ""
-	dbPass         = ""
-	dbName         = ""
-	apiHost        = "localhost"
-	apiPort        = "8081"
-	apiCORS        = ""
-	frontDir       = "./"
-	dataDir        = "./cmdat"
-	signPubKey     = "./signkey.pub"
-	signPrvKey     = "./signkey"
-	logFile        = ""
-	sendgridAPIKey = ""
-	fromAddr       = "cakemix@localhost"
-	fromName       = "Cakemix"
-	tmplResetPW    = "resetpw.tmpl"
-	tmplRegist     = "regist.tmpl"
+	dbHost                    = ""
+	dbPort                    = ""
+	dbUser                    = ""
+	dbPass                    = ""
+	dbName                    = ""
+	apiHost                   = "localhost"
+	apiPort                   = "8081"
+	apiCORS                   = ""
+	apiPermitUserToCreateTeam = false
+	frontDir                  = "./"
+	dataDir                   = "./cmdat"
+	signPubKey                = "./signkey.pub"
+	signPrvKey                = "./signkey"
+	logFile                   = ""
+	sendgridAPIKey            = ""
+	fromAddr                  = "cakemix@localhost"
+	fromName                  = "Cakemix"
+	tmplResetPW               = "resetpw.tmpl"
+	tmplRegist                = "regist.tmpl"
 )
 
 // DBConf is structure for database configuration
@@ -40,9 +41,10 @@ type DBConf struct {
 
 // APIConf is structure for API configuration
 type APIConf struct {
-	Host string
-	Port string
-	CORS string
+	Host                   string
+	Port                   string
+	CORS                   string
+	PermitUserToCreateTeam bool
 }
 
 // FileConf is structure for file configuration
@@ -129,6 +131,14 @@ func LoadConfigFile(path string) error {
 			apiPort = confvalue
 		case "apicors":
 			apiCORS = confvalue
+		case "permitusertocreateteam":
+			confstrlower := strings.ToLower(confvalue)
+			if confstrlower == "no" || confstrlower == "false" || confstrlower == "disable" {
+				apiPermitUserToCreateTeam = false
+			}
+			if confstrlower == "yes" || confstrlower == "true" || confstrlower == "enable" {
+				apiPermitUserToCreateTeam = true
+			}
 		case "frontdir":
 			frontDir = confvalue
 		case "datadir":
@@ -170,9 +180,10 @@ func GetDBConf() DBConf {
 // GetAPIConf returns API config
 func GetAPIConf() APIConf {
 	return APIConf{
-		Host: apiHost,
-		Port: apiPort,
-		CORS: apiCORS,
+		Host:                   apiHost,
+		Port:                   apiPort,
+		CORS:                   apiCORS,
+		PermitUserToCreateTeam: apiPermitUserToCreateTeam,
 	}
 }
 
