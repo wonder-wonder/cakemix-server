@@ -34,3 +34,15 @@ jobs:
             target_commitish: process.env.GITHUB_SHA,
             body: pr.body
           });
+    - name: create PR to develop
+      uses: actions/github-script@v4.0.2
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const pr = context.payload.pull_request;
+          github.pulls.create({
+            ...context.repo,
+            head: "main",
+            base: "develop",
+            title: "Release ${{ env.newtag }} to develop"
+          });
