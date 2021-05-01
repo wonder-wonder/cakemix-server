@@ -79,10 +79,11 @@ func main() {
 	r.Use(handler.CORS())
 	v1 := r.Group("v1")
 	hconf := handler.HandlerConf{
-		DataDir:             fileconf.DataDir,
-		MailTemplateResetPW: mailconf.TmplResetPW,
-		MailTemplateRegist:  mailconf.TmplRegist,
-		CORSHost:            apiconf.CORS,
+		DataDir:                fileconf.DataDir,
+		MailTemplateResetPW:    mailconf.TmplResetPW,
+		MailTemplateRegist:     mailconf.TmplRegist,
+		CORSHost:               apiconf.CORS,
+		PermitUserToCreateTeam: false,
 	}
 	v1Handler(v1, db, hconf)
 
