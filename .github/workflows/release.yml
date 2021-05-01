@@ -13,8 +13,28 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v2
+    - name: get new tag
+      run: echo "newtag=${GITHUB_HEAD_REF#release/}"" >> $GITHUB_ENV
     - name: add tag
       run: |
         git checkout main
-        git tag ${GITHUB_HEAD_REF#release/}
+        git tag ${{ env.newtag }}
         git push --tags
+    - name: create release
+      uses: actions/github-script@0.3.0
+      env:
+        PRODUCTION_BRANCH: release
+        TZ: Asia/Tokyo
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const pr = context.payload.pull_request
+
+          github.repos.createRelease({
+            ...context.repo,
+            draft: false,
+            tag_name: ${{ env.newtag }},
+            name: ${{ env.newtag }},
+            target_commitish: process.env.GITHUB_SHA,
+            body: pr.body
+          });
