@@ -7,7 +7,7 @@ on:
     types: [closed]
 
 jobs:
-  tag:
+  release:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true && startsWith(github.head_ref,'release/')
     steps:
@@ -33,6 +33,50 @@ jobs:
             name: "${{ env.newtag }}",
             target_commitish: process.env.GITHUB_SHA,
             body: pr.body
+          });
+    - name: create PR to develop
+      uses: actions/github-script@v4.0.2
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const pr = context.payload.pull_request;
+          github.pulls.create({
+            ...context.repo,
+            head: "main",
+            base: "develop",
+            title: "Release ${{ env.newtag }} to develop"
+          });
+
+  hotfix:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref,'hotfix/')
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: get new tag
+      run: |
+        LASTVER=$(git describe --tags --abbrev=0)
+        echo "newtag=${LASTVER%.*}.$(expr ${LASTVER#v*.*.} + 1)" >> $GITHUB_ENV
+    - name: add tag
+      run: |
+        git checkout main
+        git tag ${{ env.newtag }}
+        git push --tags
+    - name: create release
+      uses: actions/github-script@v4.0.2
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const pr = context.payload.pull_request;
+          github.repos.createRelease({
+            ...context.repo,
+            draft: false,
+            tag_name: "${{ env.newtag }}",
+            name: "${{ env.newtag }}",
+            target_commitish: process.env.GITHUB_SHA,
+            body: "This release includes hotfix.\n\n" + pr.body
           });
     - name: create PR to develop
       uses: actions/github-script@v4.0.2
