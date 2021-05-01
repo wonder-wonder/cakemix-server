@@ -83,7 +83,7 @@ func main() {
 		MailTemplateResetPW:    mailconf.TmplResetPW,
 		MailTemplateRegist:     mailconf.TmplRegist,
 		CORSHost:               apiconf.CORS,
-		PermitUserToCreateTeam: false,
+		PermitUserToCreateTeam: apiconf.PermitUserToCreateTeam,
 	}
 	v1Handler(v1, db, hconf)
 
