@@ -110,7 +110,7 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 		return
 	}
 	if total == 0 {
-		c.AbortWithStatus(http.StatusNotFound)
+		c.JSON(http.StatusOK, model.MemberInfoRes{Total: 0, Members: []model.MemberInfo{}})
 		return
 	}
 
