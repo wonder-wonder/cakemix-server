@@ -28,17 +28,19 @@ func (h *Handler) createTeamHandler(c *gin.Context) {
 		return
 	}
 
-	isadmin, err := h.db.IsAdmin(useruuid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if !isadmin {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
+	if !permitUserToCreateTeam {
+		isadmin, err := h.db.IsAdmin(useruuid)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		if !isadmin {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
 	}
 
-	_, err = h.db.CreateTeam(teamname, useruuid)
+	_, err := h.db.CreateTeam(teamname, useruuid)
 	if err == db.ErrExistUser {
 		c.AbortWithStatus(http.StatusConflict)
 		return
@@ -108,7 +110,7 @@ func (h *Handler) getTeamMemberHandler(c *gin.Context) {
 		return
 	}
 	if total == 0 {
-		c.AbortWithStatus(http.StatusNotFound)
+		c.JSON(http.StatusOK, model.MemberInfoRes{Total: 0, Members: []model.MemberInfo{}})
 		return
 	}
 
