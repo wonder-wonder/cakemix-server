@@ -1,3 +1,4 @@
 docker/postgres
 docker/server/cmdat
 docker/server/keys
+docker/server/log
