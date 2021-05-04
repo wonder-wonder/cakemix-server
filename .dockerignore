@@ -1,4 +1,6 @@
-docker/postgres
-docker/server/cmdat
-docker/server/keys
-docker/server/log
+.github
+cmdat
+dist
+docker
+docs
+out
