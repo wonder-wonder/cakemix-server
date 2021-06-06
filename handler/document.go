@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -13,7 +15,7 @@ import (
 
 // DocumentHandler is handlers of documents
 func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
-	r.GET("doc/:docid/ws", h.setJWTFromQuery(), h.CheckAuthMiddleware(), h.getOTHandler)
+	r.GET("doc/:docid/ws", h.getOTHandler)
 	docck := r.Group("doc", h.CheckAuthMiddleware())
 	docck.GET(":docid", h.getDocumentHandler)
 	docck.POST(":folderid", h.createDocumentHandler)
@@ -345,35 +347,83 @@ func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 }
 
 func (h *Handler) getOTHandler(c *gin.Context) {
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+	authWithToken := func(token string) (string, []string, error) {
+		// Token check
+		uuid, sessionid, err := h.db.VerifyToken(token)
+		if err != nil {
+			return "", nil, err
+		}
+
+		// Get teams
+		teams, err := h.db.GetTeamsByUser(uuid)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return "", nil, err
+		}
+
+		// Update session last used
+		err = h.db.UpdateSessionLastUsed(uuid, sessionid)
+		if err != nil {
+			return "", nil, err
+		}
+		return uuid, teams, nil
+	}
+	isRelatedUUID := func(uuid string, teams []string, target string) bool {
+		if target == uuid {
+			return true
+		}
+		for _, v := range teams {
+			if target == v {
+				return true
+			}
+		}
+		return false
 	}
 
 	docID := c.Param("docid")
-
 	if docID == "" || docID[0] != 'd' {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	// Check permission
-	docInfo, err := h.db.GetDocumentInfo(docID)
-	if err != nil {
-		if err == db.ErrDocumentNotFound {
-			c.AbortWithStatus(http.StatusNotFound)
+	authok := false
+	editable := false
+	uuid := ""
+
+	// Legacy support (JWT in query param)
+	if c.Query("token") != "" {
+		token := c.Query("token")
+
+		var teams []string
+		var err error
+
+		uuid, teams, err = authWithToken(token)
+		if err == db.ErrInvalidToken {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		} else if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if !isRelatedUUID(c, docInfo.OwnerUUID) && docInfo.Permission == db.FilePermPrivate {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
 
-	editable := isRelatedUUID(c, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
+		// Check permission
+		docInfo, err := h.db.GetDocumentInfo(docID)
+		if err != nil {
+			if err == db.ErrDocumentNotFound {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		if !isRelatedUUID(uuid, teams, docInfo.OwnerUUID) && docInfo.Permission == db.FilePermPrivate {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		editable = isRelatedUUID(uuid, teams, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
+		authok = true
+	}
 
 	// Setup websocket
 	var wsupgrader = websocket.Upgrader{
@@ -391,6 +441,73 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
+	// Authentication in websocket
+	if !authok {
+		// Read raw OT message from websocket
+		err := conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+		if err != nil {
+			log.Printf("OT auth error: websockest error: %v\n", err)
+			return
+		}
+		_, rawmsg, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("OT auth error: websocket error: %v\n", err)
+			return
+		}
+		err = conn.SetReadDeadline(time.Time{})
+		if err != nil {
+			log.Printf("OT auth error: websocket error: %v\n", err)
+			return
+		}
+
+		type authWSMsg struct {
+			Event string `json:"e"`
+			Data  string `json:"d,omitempty"`
+		}
+		// Parse OT message
+		msg := authWSMsg{}
+		err = json.Unmarshal(rawmsg, &msg)
+		if err != nil {
+			log.Printf("OT auth error: invalid request: %v\n", err)
+			return
+		}
+		if msg.Event != "auth" {
+			log.Printf("OT auth error: invalid request: %v\n", msg.Event)
+			return
+		}
+
+		// Token check
+		token := msg.Data
+		var teams []string
+		uuid, teams, err = authWithToken(token)
+		if err == db.ErrInvalidToken {
+			log.Printf("OT auth unauthorized")
+			return
+		} else if err != nil {
+			log.Printf("OT auth error: %v\n", err)
+			return
+		}
+
+		// Check permission
+		docInfo, err := h.db.GetDocumentInfo(docID)
+		if err != nil {
+			if err == db.ErrDocumentNotFound {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+			log.Printf("OT auth error: %v\n", err)
+			return
+		}
+		if !isRelatedUUID(uuid, teams, docInfo.OwnerUUID) && docInfo.Permission == db.FilePermPrivate {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		editable = isRelatedUUID(uuid, teams, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
+		authok = true
+	}
+
+	// Prepare OT session
 	p, err := h.db.GetProfileByUUID(uuid)
 	if err != nil {
 		log.Printf("OT handler error: %v", err)
