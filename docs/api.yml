@@ -858,6 +858,48 @@ paths:
           name: type
           description: target log type
       description: Get log list
+  '/auth/lock/{uuid}':
+    get:
+      summary: Get user lock status
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLockResModel'
+        '403':
+          description: Forbidden
+      operationId: get-auth-lock
+      description: ''
+    post:
+      summary: Lock user
+      operationId: post-auth-lock
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Forbidden
+      tags:
+        - Auth
+    delete:
+      summary: Unlock user
+      operationId: delete-auth-lock
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Forbidden
+      tags:
+        - Auth
+    parameters:
+      - schema:
+          type: string
+        name: uuid
+        in: path
+        required: true
 components:
   schemas:
     JWT:
@@ -1247,6 +1289,15 @@ components:
           type: string
         ipaddr:
           type: string
+    AuthLockResModel:
+      title: AuthLockResModel
+      type: object
+      properties:
+        status:
+          type: boolean
+      required:
+        - status
+      description: Response model for /auth/lock
   securitySchemes:
     JWT:
       type: http
