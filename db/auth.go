@@ -631,7 +631,7 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 		return true, err
 	}
 
-	if pass == "" {
+	if pass == "" || pass[0] == '$' {
 		return true, nil
 	}
 	return false, nil
@@ -639,8 +639,32 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 
 // LockUser locks user.
 func (d *DB) LockUser(uuid string) error {
-	_, err := d.db.Exec(`UPDATE auth SET password = '' WHERE uuid = $1`, uuid)
+	tx, err := d.db.Begin()
 	if err != nil {
+		return err
+	}
+
+	pass := ""
+	err = tx.QueryRow(`SELECT password FROM auth WHERE uuid = $1 FOR UPDATE`, uuid).Scan(&pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`UPDATE auth SET password = $2 WHERE uuid = $1`, uuid, "$"+pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
 		return err
 	}
 	return nil
@@ -648,9 +672,35 @@ func (d *DB) LockUser(uuid string) error {
 
 // UnlockUser unlocks user.
 func (d *DB) UnlockUser(uuid string) error {
-	_, err := d.db.Exec(`UPDATE auth SET password = 'RESET' WHERE uuid = $1`, uuid)
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
+
+	pass := ""
+	err = tx.QueryRow(`SELECT password FROM auth WHERE uuid = $1 FOR UPDATE`, uuid).Scan(&pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	pass = strings.TrimLeft(pass, "$")
+	_, err = tx.Exec(`UPDATE auth SET password = $2 WHERE uuid = $1`, uuid, pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
 	return nil
 }
