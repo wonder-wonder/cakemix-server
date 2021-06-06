@@ -310,6 +310,7 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+
 	uuid, err := h.db.ResetPassVerify(token, req.NewPass)
 	if err == db.ErrInvalidToken {
 		c.AbortWithStatus(http.StatusUnauthorized)
@@ -318,6 +319,17 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	islocked, err := h.db.IsUserLocked(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if islocked {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	err = h.db.AddLogPassReset(uuid, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
