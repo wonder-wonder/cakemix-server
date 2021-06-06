@@ -464,23 +464,6 @@ func (d *DB) ResetPassVerify(token string, newpass string) (string, error) {
 	return uuid, nil
 }
 
-// IsUserLocked checks the user is locked.
-func (d *DB) IsUserLocked(uuid string) (bool, error) {
-	pass := ""
-	r := d.db.QueryRow("SELECT password FROM auth WHERE uuid = $1", uuid)
-	err := r.Scan(&pass)
-	if err == sql.ErrNoRows {
-		return true, ErrIDPassInvalid
-	} else if err != nil {
-		return true, err
-	}
-
-	if pass == "" {
-		return true, nil
-	}
-	return false, nil
-}
-
 // GetLogs returns the list of logs
 // target is list of teamids
 func (d *DB) GetLogs(offset int, limit int, uuid string, target []string, ltype []string) ([]Log, error) {
@@ -632,6 +615,32 @@ func (d *DB) AddLogPassChange(uuid string, ipaddr string, sessionID string) erro
 		if re := tx.Rollback(); re != nil {
 			err = fmt.Errorf("%s: %w", re.Error(), err)
 		}
+		return err
+	}
+	return nil
+}
+
+// IsUserLocked checks the user is locked.
+func (d *DB) IsUserLocked(uuid string) (bool, error) {
+	pass := ""
+	r := d.db.QueryRow("SELECT password FROM auth WHERE uuid = $1", uuid)
+	err := r.Scan(&pass)
+	if err == sql.ErrNoRows {
+		return true, ErrIDPassInvalid
+	} else if err != nil {
+		return true, err
+	}
+
+	if pass == "" {
+		return true, nil
+	}
+	return false, nil
+}
+
+// LockUser locks user.
+func (d *DB) LockUser(uuid string) error {
+	_, err := d.db.Exec(`UPDATE auth SET password = '' WHERE uuid = $3`, uuid)
+	if err != nil {
 		return err
 	}
 	return nil

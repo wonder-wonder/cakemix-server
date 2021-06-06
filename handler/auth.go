@@ -35,6 +35,7 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck.DELETE("session/:id", h.removeSessionHandler)
 	authck.GET("log", h.getLogHandler)
 	authck.GET("lock/:uuid", h.getLockUserHandler)
+	authck.POST("lock/:uuid", h.lockUserHandler)
 }
 
 func (h *Handler) loginHandler(c *gin.Context) {
@@ -524,4 +525,33 @@ func (h *Handler) getLockUserHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) lockUserHandler(c *gin.Context) {
+	targetuuid := c.Param("uuid")
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// Only admin can operate
+	isAdmin, err := h.db.IsAdmin(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	err = h.db.LockUser(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
 }
