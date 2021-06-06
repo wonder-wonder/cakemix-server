@@ -246,7 +246,27 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		return
 	}
 
-	uuid, token, err := h.db.ResetPass(req.Email)
+	uuid, err := h.db.GetUUIDByEmail(req.Email)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if uuid == "" {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+
+	islocked, err := h.db.IsUserLocked(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if islocked {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+
+	token, err := h.db.ResetPass(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -258,16 +278,6 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 	prof, err := h.db.GetProfileByUUID(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	islocked, err := h.db.IsUserLocked(uuid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if islocked {
-		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 

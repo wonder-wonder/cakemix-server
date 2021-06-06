@@ -401,28 +401,32 @@ func (d *DB) SetPass(uuid string, newpass string) error {
 }
 
 // ResetPass generates and returns token to reset password
-func (d *DB) ResetPass(email string) (string, string, error) {
+func (d *DB) GetUUIDByEmail(email string) (string, error) {
 	uuid := ""
 
 	r := d.db.QueryRow("SELECT uuid FROM auth WHERE email = $1", email)
 	err := r.Scan(&uuid)
 	if err == sql.ErrNoRows {
-		return "", "", nil
+		return "", nil
 	} else if err != nil {
-		return "", "", err
+		return "", err
 	}
+	return uuid, nil
+}
 
+// ResetPass generates and returns token to reset password
+func (d *DB) ResetPass(uuid string) (string, error) {
 	expdateint := time.Now().Add(time.Hour * verifyTokenExpHours).Unix()
 	token, err := GenerateID(IDTypeVerifyToken)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	_, err = d.db.Exec(`INSERT INTO passreset VALUES($1,$2,$3)`, uuid, token, expdateint)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	return uuid, token, nil
+	return token, nil
 }
 
 // ResetPassTokenCheck checks the token to reset password and returns UUID
