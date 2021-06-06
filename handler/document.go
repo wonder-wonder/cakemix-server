@@ -504,7 +504,6 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 		}
 
 		editable = isRelatedUUID(uuid, teams, docInfo.OwnerUUID) || docInfo.Permission == db.FilePermReadWrite
-		authok = true
 	}
 
 	// Prepare OT session
