@@ -639,7 +639,16 @@ func (d *DB) IsUserLocked(uuid string) (bool, error) {
 
 // LockUser locks user.
 func (d *DB) LockUser(uuid string) error {
-	_, err := d.db.Exec(`UPDATE auth SET password = '' WHERE uuid = $3`, uuid)
+	_, err := d.db.Exec(`UPDATE auth SET password = '' WHERE uuid = $1`, uuid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnlockUser unlocks user.
+func (d *DB) UnlockUser(uuid string) error {
+	_, err := d.db.Exec(`UPDATE auth SET password = 'RESET' WHERE uuid = $1`, uuid)
 	if err != nil {
 		return err
 	}
