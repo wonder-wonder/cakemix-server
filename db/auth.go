@@ -660,6 +660,15 @@ func (d *DB) LockUser(uuid string) error {
 		return err
 	}
 
+	// Remove all sessions
+	_, err = tx.Exec(`DELETE FROM session WHERE uuid = $1`, uuid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		if re := tx.Rollback(); re != nil {
