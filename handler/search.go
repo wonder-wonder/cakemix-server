@@ -21,30 +21,15 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 	res := []model.Profile{}
 	var err error
 
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	isadmin, err := h.db.IsAdmin(uuid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
 	q := c.Query("q")
 	filters := strings.Split(c.Query("filter"), " ")
 	searchfilter := []int{}
 	for _, v := range filters {
 		switch strings.ToLower(v) {
 		case "locked":
-			if isadmin {
-				searchfilter = append(searchfilter, db.SearchFilterLocked)
-			}
+			searchfilter = append(searchfilter, db.SearchFilterLocked)
 		case "unlocked":
-			if isadmin {
-				searchfilter = append(searchfilter, db.SearchFilterNotLocked)
-			}
+			searchfilter = append(searchfilter, db.SearchFilterNotLocked)
 		}
 	}
 
@@ -88,12 +73,15 @@ func (h *Handler) searchUserHandler(c *gin.Context) {
 			Lang:      uprof.Lang,
 		}
 
-		if isadmin {
-			prof.IsLock, err = h.db.IsUserLocked(uprof.UUID)
-			if err != nil {
-				c.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
+		prof.IsAdmin, err = h.db.IsAdmin(uprof.UUID)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		prof.IsLock, err = h.db.IsUserLocked(uprof.UUID)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
 		}
 
 		teams, err := h.db.GetTeamsByUser(v)

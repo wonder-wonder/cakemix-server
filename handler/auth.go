@@ -499,33 +499,15 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 }
 
 func (h *Handler) getLockUserHandler(c *gin.Context) {
-	res := model.AuthLockRes{}
 	targetuuid := c.Param("uuid")
 
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	// Only admin can operate
-	isAdmin, err := h.db.IsAdmin(uuid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if !isAdmin {
-		c.AbortWithStatus(http.StatusForbidden)
-		return
-	}
-
-	res.Status, err = h.db.IsUserLocked(targetuuid)
+	status, err := h.db.IsUserLocked(targetuuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, model.AuthLockRes{Status: status})
 }
 
 func (h *Handler) lockUserHandler(c *gin.Context) {

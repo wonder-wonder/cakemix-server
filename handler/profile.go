@@ -19,11 +19,6 @@ func (h *Handler) ProfileHandler(r *gin.RouterGroup) {
 func (h *Handler) getProfileHandler(c *gin.Context) {
 	var res model.Profile
 
-	uuid, ok := getUUID(c)
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
 	targetuuid := c.Param("uuid")
 
 	p, err := h.db.GetProfileByUUID(targetuuid)
@@ -31,12 +26,6 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	} else if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	istargetadmin, err := h.db.IsAdmin(p.UUID)
-	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -51,22 +40,17 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		Lang:      p.Lang,
 		IsTeam:    (p.UUID[0] == 't'),
 		Teams:     []model.Profile{},
-		IsAdmin:   istargetadmin,
 	}
 
-	if istargetadmin {
-		isadmin, err := h.db.IsAdmin(uuid)
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-		if isadmin {
-			res.IsLock, err = h.db.IsUserLocked(p.UUID)
-			if err != nil {
-				c.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-		}
+	res.IsAdmin, err = h.db.IsAdmin(p.UUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	res.IsLock, err = h.db.IsUserLocked(p.UUID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	teams, err := h.db.GetTeamsByUser(targetuuid)
