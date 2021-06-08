@@ -737,6 +737,11 @@ paths:
           in: query
           name: offset
           description: search offset
+        - schema:
+            type: string
+          in: query
+          name: filter
+          description: search condition filter
   /image:
     post:
       summary: Upload image
@@ -1056,6 +1061,8 @@ components:
         is_admin:
           type: boolean
           description: Admin or not
+        is_lock:
+          type: boolean
       required:
         - uuid
         - name
