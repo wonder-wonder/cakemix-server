@@ -32,7 +32,7 @@ func (d *DB) SearchUser(query string, limit int, offset int, filters []int) (int
 		case SearchFilterLocked:
 			sqlparams = append(sqlparams, sqlparam{col: "password", op: "like", arg: "$%"})
 		case SearchFilterNotLocked:
-			sqlparams = append(sqlparams, sqlparam{col: "password", op: "not like", arg: query + "$%"})
+			sqlparams = append(sqlparams, sqlparam{col: "password", op: "not like", arg: "$%"})
 		}
 	}
 
