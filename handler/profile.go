@@ -41,22 +41,6 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		return
 	}
 
-	islock := false
-	if istargetadmin {
-		isadmin, err := h.db.IsAdmin(uuid)
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-		if isadmin {
-			islock, err = h.db.IsUserLocked(p.UUID)
-			if err != nil {
-				c.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-		}
-	}
-
 	res = model.Profile{
 		UUID:      p.UUID,
 		Name:      p.Name,
@@ -68,7 +52,21 @@ func (h *Handler) getProfileHandler(c *gin.Context) {
 		IsTeam:    (p.UUID[0] == 't'),
 		Teams:     []model.Profile{},
 		IsAdmin:   istargetadmin,
-		IsLock:    islock,
+	}
+
+	if istargetadmin {
+		isadmin, err := h.db.IsAdmin(uuid)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		if isadmin {
+			res.IsLock, err = h.db.IsUserLocked(p.UUID)
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
+		}
 	}
 
 	teams, err := h.db.GetTeamsByUser(targetuuid)
