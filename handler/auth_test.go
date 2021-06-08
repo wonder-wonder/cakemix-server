@@ -753,8 +753,8 @@ func TestAuthHandler(t *testing.T) {
 	t.Run("GetLock(unlock)", func(t *testing.T) {
 		token = testGetToken(t, r)
 		type req struct {
-			header   map[string]string
-			username string
+			header map[string]string
+			uuid   string
 		}
 		type res struct {
 			code int
@@ -767,8 +767,8 @@ func TestAuthHandler(t *testing.T) {
 			{
 				name: "Root",
 				req: req{
-					header:   map[string]string{"Authorization": `Bearer ` + token},
-					username: "test",
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
 				},
 				res: res{
 					code: 200,
@@ -777,15 +777,8 @@ func TestAuthHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				targetuuid := ""
-				row := db.QueryRow("SELECT uuid FROM username WHERE username = $1", tt.req.username)
-				err := row.Scan(&targetuuid)
-				if !assert.NoError(t, err) {
-					t.FailNow()
-				}
-
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+targetuuid, nil)
+				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+tt.req.uuid, nil)
 				for hk, hv := range tt.req.header {
 					req.Header.Set(hk, hv)
 				}
@@ -826,8 +819,8 @@ func TestAuthHandler(t *testing.T) {
 	t.Run("LockUser", func(t *testing.T) {
 		token = testGetToken(t, r)
 		type req struct {
-			header   map[string]string
-			username string
+			header map[string]string
+			uuid   string
 		}
 		type res struct {
 			code int
@@ -840,8 +833,8 @@ func TestAuthHandler(t *testing.T) {
 			{
 				name: "Root",
 				req: req{
-					header:   map[string]string{"Authorization": `Bearer ` + token},
-					username: "test",
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
 				},
 				res: res{
 					code: 200,
@@ -850,15 +843,8 @@ func TestAuthHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				targetuuid := ""
-				row := db.QueryRow("SELECT uuid FROM username WHERE username = $1", tt.req.username)
-				err := row.Scan(&targetuuid)
-				if !assert.NoError(t, err) {
-					t.FailNow()
-				}
-
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest("POST", "/v1/auth/lock/"+targetuuid, nil)
+				req, _ := http.NewRequest("POST", "/v1/auth/lock/"+tt.req.uuid, nil)
 				for hk, hv := range tt.req.header {
 					req.Header.Set(hk, hv)
 				}
@@ -872,8 +858,8 @@ func TestAuthHandler(t *testing.T) {
 	t.Run("GetLock(lock)", func(t *testing.T) {
 		token = testGetToken(t, r)
 		type req struct {
-			header   map[string]string
-			username string
+			header map[string]string
+			uuid   string
 		}
 		type res struct {
 			code int
@@ -886,8 +872,8 @@ func TestAuthHandler(t *testing.T) {
 			{
 				name: "Root",
 				req: req{
-					header:   map[string]string{"Authorization": `Bearer ` + token},
-					username: "test",
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
 				},
 				res: res{
 					code: 200,
@@ -896,15 +882,8 @@ func TestAuthHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				targetuuid := ""
-				row := db.QueryRow("SELECT uuid FROM username WHERE username = $1", tt.req.username)
-				err := row.Scan(&targetuuid)
-				if !assert.NoError(t, err) {
-					t.FailNow()
-				}
-
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+targetuuid, nil)
+				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+tt.req.uuid, nil)
 				for hk, hv := range tt.req.header {
 					req.Header.Set(hk, hv)
 				}
@@ -945,8 +924,8 @@ func TestAuthHandler(t *testing.T) {
 	t.Run("UnlockUser", func(t *testing.T) {
 		token = testGetToken(t, r)
 		type req struct {
-			header   map[string]string
-			username string
+			header map[string]string
+			uuid   string
 		}
 		type res struct {
 			code int
@@ -959,8 +938,8 @@ func TestAuthHandler(t *testing.T) {
 			{
 				name: "Root",
 				req: req{
-					header:   map[string]string{"Authorization": `Bearer ` + token},
-					username: "test",
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
 				},
 				res: res{
 					code: 200,
@@ -969,15 +948,8 @@ func TestAuthHandler(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				targetuuid := ""
-				row := db.QueryRow("SELECT uuid FROM username WHERE username = $1", tt.req.username)
-				err := row.Scan(&targetuuid)
-				if !assert.NoError(t, err) {
-					t.FailNow()
-				}
-
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest("DELETE", "/v1/auth/lock/"+targetuuid, nil)
+				req, _ := http.NewRequest("DELETE", "/v1/auth/lock/"+tt.req.uuid, nil)
 				for hk, hv := range tt.req.header {
 					req.Header.Set(hk, hv)
 				}
