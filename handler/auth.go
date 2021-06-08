@@ -548,6 +548,17 @@ func (h *Handler) lockUserHandler(c *gin.Context) {
 		return
 	}
 
+	// If target is admin, abort.
+	isTargetAdmin, err := h.db.IsAdmin(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if isTargetAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	err = h.db.LockUser(targetuuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
