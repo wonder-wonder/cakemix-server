@@ -749,4 +749,215 @@ func TestAuthHandler(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("GetLock(unlock)", func(t *testing.T) {
+		token = testGetToken(t, r)
+		type req struct {
+			header map[string]string
+			uuid   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+tt.req.uuid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if string(resraw) == "" {
+					t.Fatalf("should be string, got empty string")
+				}
+
+				var res map[string]interface{}
+				err = json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				attrs := []string{"status"}
+				for _, v := range attrs {
+					_, ok := res[v]
+					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+						t.FailNow()
+					}
+				}
+				resstatus, ok := res["status"].(bool)
+				if !assert.True(t, ok, "should be bool, got:\n%v", res) {
+					t.FailNow()
+				}
+
+				if !assert.False(t, resstatus) {
+					t.FailNow()
+				}
+			})
+		}
+	})
+	t.Run("LockUser", func(t *testing.T) {
+		token = testGetToken(t, r)
+		type req struct {
+			header map[string]string
+			uuid   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/auth/lock/"+tt.req.uuid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
+	})
+	t.Run("GetLock(lock)", func(t *testing.T) {
+		token = testGetToken(t, r)
+		type req struct {
+			header map[string]string
+			uuid   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/auth/lock/"+tt.req.uuid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				if string(resraw) == "" {
+					t.Fatalf("should be string, got empty string")
+				}
+
+				var res map[string]interface{}
+				err = json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				attrs := []string{"status"}
+				for _, v := range attrs {
+					_, ok := res[v]
+					if !assert.True(t, ok, "should has %s, got:\n%v", v, res) {
+						t.FailNow()
+					}
+				}
+				resstatus, ok := res["status"].(bool)
+				if !assert.True(t, ok, "should be bool, got:\n%v", res) {
+					t.FailNow()
+				}
+
+				if !assert.True(t, resstatus) {
+					t.FailNow()
+				}
+			})
+		}
+	})
+	t.Run("UnlockUser", func(t *testing.T) {
+		token = testGetToken(t, r)
+		type req struct {
+			header map[string]string
+			uuid   string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header: map[string]string{"Authorization": `Bearer ` + token},
+					uuid:   "urtsqctxpdg3ypzan",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("DELETE", "/v1/auth/lock/"+tt.req.uuid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+			})
+		}
+	})
 }

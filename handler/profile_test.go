@@ -58,11 +58,13 @@ func TestProfileHandler(t *testing.T) {
 								"is_team": true,
 								"teams": null,
 								"lang": "",
-								"is_admin": false
+								"is_admin": false,
+								"is_lock": false
 							}
 						],
 						"lang": "ja",
-						"is_admin": true
+						"is_admin": true,
+						"is_lock": false
 					}`,
 				}, // bio,created_at,teams,lang,is_admin in team are default values because some team info is omitted.
 			},
@@ -84,7 +86,8 @@ func TestProfileHandler(t *testing.T) {
 						"is_team": false,
 						"teams": [],
 						"lang": "ja",
-						"is_admin": false
+						"is_admin": false,
+						"is_lock": false
 					}`,
 				},
 			},

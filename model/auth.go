@@ -78,3 +78,8 @@ type AuthLogPassReset struct {
 	IPAddr     string `json:"ipaddr"`
 	DeviceInfo string `json:"devinfo"`
 }
+
+//AuthLockRes model
+type AuthLockRes struct {
+	Status bool `json:"status"`
+}
