@@ -43,7 +43,7 @@ func (d *DB) SearchUser(query string, limit int, offset int, filters []int) (int
 		for i, v := range sqlparams {
 			sql += fmt.Sprintf(" %s %s $%d", v.col, v.op, i+1)
 			if i < len(sqlparams)-1 {
-				sql += " OR"
+				sql += " AND"
 			}
 			param = append(param, v.arg)
 		}
@@ -61,7 +61,7 @@ func (d *DB) SearchUser(query string, limit int, offset int, filters []int) (int
 		for i, v := range sqlparams {
 			sql += fmt.Sprintf(" %s %s $%d", v.col, v.op, i+1)
 			if i < len(sqlparams)-1 {
-				sql += " OR"
+				sql += " AND"
 			}
 			param = append(param, v.arg)
 		}
