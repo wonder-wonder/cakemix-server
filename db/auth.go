@@ -401,28 +401,32 @@ func (d *DB) SetPass(uuid string, newpass string) error {
 }
 
 // ResetPass generates and returns token to reset password
-func (d *DB) ResetPass(email string) (string, string, error) {
+func (d *DB) GetUUIDByEmail(email string) (string, error) {
 	uuid := ""
 
 	r := d.db.QueryRow("SELECT uuid FROM auth WHERE email = $1", email)
 	err := r.Scan(&uuid)
 	if err == sql.ErrNoRows {
-		return "", "", nil
+		return "", nil
 	} else if err != nil {
-		return "", "", err
+		return "", err
 	}
+	return uuid, nil
+}
 
+// ResetPass generates and returns token to reset password
+func (d *DB) ResetPass(uuid string) (string, error) {
 	expdateint := time.Now().Add(time.Hour * verifyTokenExpHours).Unix()
 	token, err := GenerateID(IDTypeVerifyToken)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	_, err = d.db.Exec(`INSERT INTO passreset VALUES($1,$2,$3)`, uuid, token, expdateint)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	return uuid, token, nil
+	return token, nil
 }
 
 // ResetPassTokenCheck checks the token to reset password and returns UUID
@@ -458,23 +462,6 @@ func (d *DB) ResetPassVerify(token string, newpass string) (string, error) {
 	}
 
 	return uuid, nil
-}
-
-// IsUserLocked checks the user is locked.
-func (d *DB) IsUserLocked(uuid string) (bool, error) {
-	pass := ""
-	r := d.db.QueryRow("SELECT password FROM auth WHERE uuid = $1", uuid)
-	err := r.Scan(&pass)
-	if err == sql.ErrNoRows {
-		return true, ErrIDPassInvalid
-	} else if err != nil {
-		return true, err
-	}
-
-	if pass == "" {
-		return true, nil
-	}
-	return false, nil
 }
 
 // GetLogs returns the list of logs
@@ -630,5 +617,99 @@ func (d *DB) AddLogPassChange(uuid string, ipaddr string, sessionID string) erro
 		}
 		return err
 	}
+	return nil
+}
+
+// IsUserLocked checks the user is locked.
+func (d *DB) IsUserLocked(uuid string) (bool, error) {
+	pass := ""
+	r := d.db.QueryRow("SELECT password FROM auth WHERE uuid = $1", uuid)
+	err := r.Scan(&pass)
+	if err == sql.ErrNoRows {
+		return true, ErrIDPassInvalid
+	} else if err != nil {
+		return true, err
+	}
+
+	if pass == "" || pass[0] == '$' {
+		return true, nil
+	}
+	return false, nil
+}
+
+// LockUser locks user.
+func (d *DB) LockUser(uuid string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	pass := ""
+	err = tx.QueryRow(`SELECT password FROM auth WHERE uuid = $1 FOR UPDATE`, uuid).Scan(&pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	_, err = tx.Exec(`UPDATE auth SET password = $2 WHERE uuid = $1`, uuid, "$"+pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	// Remove all sessions
+	_, err = tx.Exec(`DELETE FROM session WHERE uuid = $1`, uuid)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	return nil
+}
+
+// UnlockUser unlocks user.
+func (d *DB) UnlockUser(uuid string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	pass := ""
+	err = tx.QueryRow(`SELECT password FROM auth WHERE uuid = $1 FOR UPDATE`, uuid).Scan(&pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+	pass = strings.TrimLeft(pass, "$")
+	_, err = tx.Exec(`UPDATE auth SET password = $2 WHERE uuid = $1`, uuid, pass)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return err
+	}
+
 	return nil
 }

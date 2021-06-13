@@ -12,6 +12,7 @@ type Profile struct {
 	Teams     []Profile `json:"teams"`
 	Lang      string    `json:"lang"`
 	IsAdmin   bool      `json:"is_admin"`
+	IsLock    bool      `json:"is_lock"`
 }
 
 //ProfileReq model

@@ -34,6 +34,9 @@ func (h *Handler) AuthHandler(r *gin.RouterGroup) {
 	authck.GET("session", h.getSessionHandler)
 	authck.DELETE("session/:id", h.removeSessionHandler)
 	authck.GET("log", h.getLogHandler)
+	authck.GET("lock/:uuid", h.getLockUserHandler)
+	authck.POST("lock/:uuid", h.lockUserHandler)
+	authck.DELETE("lock/:uuid", h.unlockUserHandler)
 }
 
 func (h *Handler) loginHandler(c *gin.Context) {
@@ -246,7 +249,27 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 		return
 	}
 
-	uuid, token, err := h.db.ResetPass(req.Email)
+	uuid, err := h.db.GetUUIDByEmail(req.Email)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if uuid == "" {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+
+	islocked, err := h.db.IsUserLocked(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if islocked {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+
+	token, err := h.db.ResetPass(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -258,16 +281,6 @@ func (h *Handler) passResetHandler(c *gin.Context) {
 	prof, err := h.db.GetProfileByUUID(uuid)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	islocked, err := h.db.IsUserLocked(uuid)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if islocked {
-		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
@@ -300,6 +313,7 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+
 	uuid, err := h.db.ResetPassVerify(token, req.NewPass)
 	if err == db.ErrInvalidToken {
 		c.AbortWithStatus(http.StatusUnauthorized)
@@ -308,6 +322,17 @@ func (h *Handler) passResetVerifyHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	islocked, err := h.db.IsUserLocked(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if islocked {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	err = h.db.AddLogPassReset(uuid, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -471,4 +496,85 @@ func (h *Handler) getLogHandler(c *gin.Context) {
 	}
 
 	c.AbortWithStatusJSON(http.StatusOK, res)
+}
+
+func (h *Handler) getLockUserHandler(c *gin.Context) {
+	targetuuid := c.Param("uuid")
+
+	status, err := h.db.IsUserLocked(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, model.AuthLockRes{Status: status})
+}
+
+func (h *Handler) lockUserHandler(c *gin.Context) {
+	targetuuid := c.Param("uuid")
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// Only admin can operate
+	isAdmin, err := h.db.IsAdmin(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// If target is admin, abort.
+	isTargetAdmin, err := h.db.IsAdmin(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if isTargetAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	err = h.db.LockUser(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (h *Handler) unlockUserHandler(c *gin.Context) {
+	targetuuid := c.Param("uuid")
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// Only admin can operate
+	isAdmin, err := h.db.IsAdmin(uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	err = h.db.UnlockUser(targetuuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
 }
