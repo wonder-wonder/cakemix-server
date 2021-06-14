@@ -1,7 +1,6 @@
 package ot
 
 import (
-	"context"
 	"log"
 	"net"
 	"time"
@@ -48,17 +47,10 @@ func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Cli
 }
 
 func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("Recover: %v", err)
-			}
-		}()
-		cl.sv2cl <- otS2CMessage{
-			msgType: msgType,
-			message: message,
-		}
-	}()
+	cl.sv2cl <- otS2CMessage{
+		msgType: msgType,
+		message: message,
+	}
 }
 
 func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
@@ -72,17 +64,18 @@ func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
 // Loop is main loop for client
 func (cl *Client) Loop() {
 	request := make(chan []byte)
-	// Reader routine
-	ctx := context.Background()
-	childCtx, cancel := context.WithCancel(ctx)
-	// cancel := false
-	// defer func() { cancel = true }()
-	defer func() { cancel() }()
 
+	// Ping timer
+	pingTicker := time.NewTicker(time.Second * otClientPingInterval)
+	defer pingTicker.Stop()
+
+	// Reader routine
+	readstop := make(chan struct{})
+	defer func() { readstop <- struct{}{} }()
 	go func() {
 		for {
 			select {
-			case <-childCtx.Done():
+			case <-readstop:
 				err := cl.conn.Close()
 				if err != nil {
 					log.Printf("OT client error: ws close error: %v\n", err)
@@ -113,32 +106,22 @@ func (cl *Client) Loop() {
 		}
 
 	}()
-	go func() {
-		for {
-			select {
-			case <-childCtx.Done():
-				return
-			default:
-				cl.sendS2C(otS2CMessageTypePing, nil)
-				time.Sleep(time.Second * otClientPingInterval)
-			}
-		}
-	}()
+
 main:
 	for {
 		select {
+		case <-pingTicker.C:
+			err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+			if err != nil {
+				log.Printf("OT client error: websocket error: %v\n", err)
+				break main
+			}
 		case s2cmsg, ok := <-cl.sv2cl:
 			if !ok {
 				// Closed by server
 				return
 			}
 			switch s2cmsg.msgType {
-			case otS2CMessageTypePing:
-				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
-				if err != nil {
-					log.Printf("OT client error: websocket error: %v\n", err)
-					break main
-				}
 			case otS2CMessageTypeWSMsg:
 				wsmsg := s2cmsg.message.(otWSMessage)
 				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)

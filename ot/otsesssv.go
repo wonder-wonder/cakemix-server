@@ -43,8 +43,7 @@ type Server struct {
 type otS2CMessageType int
 
 const (
-	otS2CMessageTypePing otS2CMessageType = iota
-	otS2CMessageTypeWSMsg
+	otS2CMessageTypeWSMsg otS2CMessageType = iota
 )
 
 type otC2SMessageType int
