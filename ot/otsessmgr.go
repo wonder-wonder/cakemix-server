@@ -98,7 +98,22 @@ func (mgr *Manager) Loop() {
 				}()
 				continue
 			}
-			svinfo.Server.addClient(&clreq)
+
+			mgr2sv := svinfo.Server.mgr2sv
+			// If manager request buffer is full,
+			if len(mgr2sv)+1 >= cap(mgr2sv) {
+				// Reenqueue
+				go func() {
+					time.Sleep(time.Millisecond * 10)
+					mgr.clientReq <- clreq
+				}()
+				continue
+			}
+			mgr2sv <- otManagerRequest{
+				reqType: otManagerRequestTypeAddClient,
+				request: &clreq,
+			}
+
 			svinfo.ClientNum++
 		case svreq, _ := <-mgr.serverReq:
 			switch svreq.reqType {

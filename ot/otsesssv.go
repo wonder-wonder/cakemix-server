@@ -78,7 +78,7 @@ func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, e
 		clients:             map[string]*Client{},
 		accumulationClients: 0,
 		sv2mgr:              sv2mgr,
-		mgr2sv:              make(chan otManagerRequest),
+		mgr2sv:              make(chan otManagerRequest, 10),
 		cl2sv:               make(chan otC2SMessage),
 	}
 
@@ -94,15 +94,6 @@ func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, e
 	sv.ot = NewOT(text)
 
 	return sv, nil
-}
-
-func (sv *Server) addClient(clreq *otClientRequest) {
-	go func() {
-		sv.mgr2sv <- otManagerRequest{
-			reqType: otManagerRequestTypeAddClient,
-			request: clreq,
-		}
-	}()
 }
 
 func (sv *Server) sendS2M(reqType otServerRequestType, request interface{}) {
