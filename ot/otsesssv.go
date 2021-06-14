@@ -40,12 +40,6 @@ type Server struct {
 	cl2sv  chan otC2SMessage
 }
 
-type otS2CMessageType int
-
-const (
-	otS2CMessageTypeWSMsg otS2CMessageType = iota
-)
-
 type otC2SMessageType int
 
 const (
@@ -53,10 +47,6 @@ const (
 	otC2SMessageTypeWSMsg
 )
 
-type otS2CMessage struct {
-	msgType otS2CMessageType
-	message interface{}
-}
 type otC2SMessage struct {
 	clientID string
 	msgType  otC2SMessageType
@@ -169,10 +159,10 @@ main:
 					}
 					res.Clients[tclientID] = rescl
 				}
-				clreq.client.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+				clreq.client.sv2cl <- otWSMessage{
 					Event: WSMsgTypeDoc,
 					Data:  res,
-				})
+				}
 			}
 		case clreq, _ := <-sv.cl2sv:
 			switch clreq.msgType {
@@ -238,10 +228,10 @@ main:
 						Event: WSMsgTypeOp,
 						Data:  opres,
 					})
-					cl.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+					cl.sv2cl <- otWSMessage{
 						Event: WSMsgTypeOK,
 						Data:  nil,
-					})
+					}
 
 					sv.lastUpdater = cl.profile.UUID
 					sv.countFromLastGC++
@@ -300,7 +290,7 @@ func (sv *Server) broadcast(from string, message otWSMessage) {
 		if i == from {
 			continue
 		}
-		v.sendS2C(otS2CMessageTypeWSMsg, message)
+		v.sv2cl <- message
 	}
 }
 

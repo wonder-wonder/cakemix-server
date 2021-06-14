@@ -21,7 +21,7 @@ type Client struct {
 	readOnly bool
 	// Server
 	cl2sv chan otC2SMessage
-	sv2cl chan otS2CMessage
+	sv2cl chan otWSMessage
 }
 
 // ClientProfile is structure for client profile
@@ -41,16 +41,9 @@ func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Cli
 		profile:   profile,
 		readOnly:  readOnly,
 		cl2sv:     nil,
-		sv2cl:     make(chan otS2CMessage, 1000),
+		sv2cl:     make(chan otWSMessage, 1000),
 	}
 	return cl, nil
-}
-
-func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
-	cl.sv2cl <- otS2CMessage{
-		msgType: msgType,
-		message: message,
-	}
 }
 
 func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
@@ -121,19 +114,15 @@ main:
 				// Closed by server
 				return
 			}
-			switch s2cmsg.msgType {
-			case otS2CMessageTypeWSMsg:
-				wsmsg := s2cmsg.message.(otWSMessage)
-				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)
-				if err != nil {
-					log.Printf("OT client error: response error: %v\n", err)
-					break main
-				}
-				err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
-				if err != nil {
-					log.Printf("OT client error: websocket error: %v\n", err)
-					break main
-				}
+			resraw, err := convertToMsg(s2cmsg.Event, s2cmsg.Data)
+			if err != nil {
+				log.Printf("OT client error: response error: %v\n", err)
+				break main
+			}
+			err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
+			if err != nil {
+				log.Printf("OT client error: websocket error: %v\n", err)
+				break main
 			}
 		case req, ok := <-request:
 			if !ok {
