@@ -124,6 +124,7 @@ func (cl *Client) Loop() {
 			}
 		}
 	}()
+main:
 	for {
 		select {
 		case s2cmsg, ok := <-cl.sv2cl:
@@ -136,62 +137,51 @@ func (cl *Client) Loop() {
 				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 				if err != nil {
 					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.stop()
-					return
+					break main
 				}
 			case otS2CMessageTypeWSMsg:
 				wsmsg := s2cmsg.message.(otWSMessage)
 				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)
 				if err != nil {
 					log.Printf("OT client error: response error: %v\n", err)
-					cl.stop()
-					return
+					break main
 				}
 				err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
 				if err != nil {
 					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.stop()
-					return
+					break main
 				}
 			}
 		case req, ok := <-request:
 			if !ok {
-				cl.stop()
-				return
+				break main
 			}
 			if cl.readOnly {
 				log.Printf("OT client error: permission denied\n")
-				cl.stop()
-				return
+				break main
 			}
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				log.Printf("OT client error: %v\n", err)
-				cl.stop()
-				return
+				break main
 			}
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.stop()
-					return
+					break main
 				}
 				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeOp, Data: opdat})
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.stop()
-					return
+					break main
 				}
 				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeSel, Data: opdat})
 			}
 		}
 	}
-
-}
-func (cl *Client) stop() {
 	// Closed by client
 	cl.sendC2S(otC2SMessageTypeClose, nil)
 	// Wait server close
