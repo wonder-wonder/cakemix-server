@@ -104,10 +104,20 @@ main:
 	for {
 		select {
 		case <-pingTicker.C:
-			err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+			err := cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				return
+			}
+			err = cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 			if err != nil {
 				log.Printf("OT client error: websocket error: %v\n", err)
 				break main
+			}
+			err = cl.conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				return
 			}
 		case s2cmsg, ok := <-cl.sv2cl:
 			if !ok {
@@ -119,10 +129,20 @@ main:
 				log.Printf("OT client error: response error: %v\n", err)
 				break main
 			}
+			err = cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				return
+			}
 			err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
 			if err != nil {
 				log.Printf("OT client error: websocket error: %v\n", err)
 				break main
+			}
+			err = cl.conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				return
 			}
 		case req, ok := <-request:
 			if !ok {
