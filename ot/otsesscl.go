@@ -60,14 +60,13 @@ func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
 		}
 	}()
 }
+
 func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
-	go func() {
-		cl.cl2sv <- otC2SMessage{
-			clientID: cl.clientID,
-			msgType:  msgType,
-			message:  message,
-		}
-	}()
+	cl.cl2sv <- otC2SMessage{
+		clientID: cl.clientID,
+		msgType:  msgType,
+		message:  message,
+	}
 }
 
 // Loop is main loop for client

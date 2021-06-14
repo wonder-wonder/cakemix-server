@@ -79,7 +79,7 @@ func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, e
 		accumulationClients: 0,
 		sv2mgr:              sv2mgr,
 		mgr2sv:              make(chan otManagerRequest, 10),
-		cl2sv:               make(chan otC2SMessage),
+		cl2sv:               make(chan otC2SMessage, 100),
 	}
 
 	docInfo, err := db.GetDocumentInfo(docID)
