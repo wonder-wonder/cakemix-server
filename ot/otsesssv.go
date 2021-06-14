@@ -111,15 +111,13 @@ func (sv *Server) Loop() {
 	autoSaveTicker := time.NewTicker(time.Second * autoSaveInterval)
 	defer autoSaveTicker.Stop()
 	sv.sendS2M(otServerRequestTypeStarted, nil)
+main:
 	for {
 		select {
 		case mgrreq, ok := <-sv.mgr2sv:
+			// Stop request by manager
 			if !ok {
-				err := sv.stop()
-				if err != nil {
-					log.Printf("OT session close error: %v\n", err)
-				}
-				return
+				break main
 			}
 			switch mgrreq.reqType {
 			case otManagerRequestTypeAddClient:
@@ -185,11 +183,7 @@ func (sv *Server) Loop() {
 				saved, err := sv.saveDoc()
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
-					err = sv.stop()
-					if err != nil {
-						log.Printf("OT session error: close error: %v\n", err)
-					}
-					return
+					break main
 				}
 				if saved {
 					log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
@@ -284,17 +278,22 @@ func (sv *Server) Loop() {
 			saved, err := sv.saveDoc()
 			if err != nil {
 				log.Printf("OT session error: save error: %v\n", err)
-				err = sv.stop()
-				if err != nil {
-					log.Printf("OT session error: close error: %v\n", err)
-				}
-				return
+				break main
 			}
 			if saved {
 				log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
 			}
 		}
 	}
+	for i := range sv.clients {
+		sv.closeClient(i)
+	}
+	_, err := sv.saveDoc()
+	if err != nil {
+		log.Printf("OT session close error: %v\n", err)
+	}
+	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
+	sv.sendS2M(otServerRequestTypeStopped, nil)
 }
 
 func (sv *Server) broadcast(from string, message otWSMessage) {
@@ -334,17 +333,4 @@ func (sv *Server) saveDoc() (bool, error) {
 		}
 	}
 	return true, nil
-}
-
-func (sv *Server) stop() error {
-	for i := range sv.clients {
-		sv.closeClient(i)
-	}
-	_, err := sv.saveDoc()
-	if err != nil {
-		return err
-	}
-	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
-	sv.sendS2M(otServerRequestTypeStopped, nil)
-	return nil
 }
