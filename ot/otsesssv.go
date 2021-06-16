@@ -40,13 +40,6 @@ type Server struct {
 	cl2sv  chan otC2SMessage
 }
 
-type otS2CMessageType int
-
-const (
-	otS2CMessageTypePing otS2CMessageType = iota
-	otS2CMessageTypeWSMsg
-)
-
 type otC2SMessageType int
 
 const (
@@ -54,10 +47,6 @@ const (
 	otC2SMessageTypeWSMsg
 )
 
-type otS2CMessage struct {
-	msgType otS2CMessageType
-	message interface{}
-}
 type otC2SMessage struct {
 	clientID string
 	msgType  otC2SMessageType
@@ -78,8 +67,8 @@ func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, e
 		clients:             map[string]*Client{},
 		accumulationClients: 0,
 		sv2mgr:              sv2mgr,
-		mgr2sv:              make(chan otManagerRequest),
-		cl2sv:               make(chan otC2SMessage),
+		mgr2sv:              make(chan otManagerRequest, 10),
+		cl2sv:               make(chan otC2SMessage, 100),
 	}
 
 	docInfo, err := db.GetDocumentInfo(docID)
@@ -94,15 +83,6 @@ func NewServer(docID string, sv2mgr chan otServerRequest, db *db.DB) (*Server, e
 	sv.ot = NewOT(text)
 
 	return sv, nil
-}
-
-func (sv *Server) addClient(clreq *otClientRequest) {
-	go func() {
-		sv.mgr2sv <- otManagerRequest{
-			reqType: otManagerRequestTypeAddClient,
-			request: clreq,
-		}
-	}()
 }
 
 func (sv *Server) sendS2M(reqType otServerRequestType, request interface{}) {
@@ -120,15 +100,13 @@ func (sv *Server) Loop() {
 	autoSaveTicker := time.NewTicker(time.Second * autoSaveInterval)
 	defer autoSaveTicker.Stop()
 	sv.sendS2M(otServerRequestTypeStarted, nil)
+main:
 	for {
 		select {
 		case mgrreq, ok := <-sv.mgr2sv:
+			// Stop request by manager
 			if !ok {
-				err := sv.stop()
-				if err != nil {
-					log.Printf("OT session close error: %v\n", err)
-				}
-				return
+				break main
 			}
 			switch mgrreq.reqType {
 			case otManagerRequestTypeAddClient:
@@ -181,10 +159,10 @@ func (sv *Server) Loop() {
 					}
 					res.Clients[tclientID] = rescl
 				}
-				clreq.client.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+				clreq.client.sv2cl <- otWSMessage{
 					Event: WSMsgTypeDoc,
 					Data:  res,
-				})
+				}
 			}
 		case clreq, _ := <-sv.cl2sv:
 			switch clreq.msgType {
@@ -194,11 +172,7 @@ func (sv *Server) Loop() {
 				saved, err := sv.saveDoc()
 				if err != nil {
 					log.Printf("OT session error: save error: %v\n", err)
-					err = sv.stop()
-					if err != nil {
-						log.Printf("OT session error: close error: %v\n", err)
-					}
-					return
+					break main
 				}
 				if saved {
 					log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
@@ -254,10 +228,10 @@ func (sv *Server) Loop() {
 						Event: WSMsgTypeOp,
 						Data:  opres,
 					})
-					cl.sendS2C(otS2CMessageTypeWSMsg, otWSMessage{
+					cl.sv2cl <- otWSMessage{
 						Event: WSMsgTypeOK,
 						Data:  nil,
-					})
+					}
 
 					sv.lastUpdater = cl.profile.UUID
 					sv.countFromLastGC++
@@ -293,17 +267,22 @@ func (sv *Server) Loop() {
 			saved, err := sv.saveDoc()
 			if err != nil {
 				log.Printf("OT session error: save error: %v\n", err)
-				err = sv.stop()
-				if err != nil {
-					log.Printf("OT session error: close error: %v\n", err)
-				}
-				return
+				break main
 			}
 			if saved {
 				log.Printf("Session(%s) auto saved (total %d ops)", sv.docID, sv.ot.Revision)
 			}
 		}
 	}
+	for i := range sv.clients {
+		sv.closeClient(i)
+	}
+	_, err := sv.saveDoc()
+	if err != nil {
+		log.Printf("OT session close error: %v\n", err)
+	}
+	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
+	sv.sendS2M(otServerRequestTypeStopped, nil)
 }
 
 func (sv *Server) broadcast(from string, message otWSMessage) {
@@ -311,7 +290,7 @@ func (sv *Server) broadcast(from string, message otWSMessage) {
 		if i == from {
 			continue
 		}
-		v.sendS2C(otS2CMessageTypeWSMsg, message)
+		v.sv2cl <- message
 	}
 }
 
@@ -343,17 +322,4 @@ func (sv *Server) saveDoc() (bool, error) {
 		}
 	}
 	return true, nil
-}
-
-func (sv *Server) stop() error {
-	for i := range sv.clients {
-		sv.closeClient(i)
-	}
-	_, err := sv.saveDoc()
-	if err != nil {
-		return err
-	}
-	log.Printf("Session(%s) closed (total %d ops)\n", sv.docID, sv.ot.Revision)
-	sv.sendS2M(otServerRequestTypeStopped, nil)
-	return nil
 }
