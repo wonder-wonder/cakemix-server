@@ -174,6 +174,18 @@ main:
 			}
 		}
 	}
+	// Discard all server response data
+	clear := false
+	for !clear {
+		select {
+		case _, ok := <-cl.sv2cl:
+			if !ok {
+				clear = true
+			}
+		default:
+			clear = true
+		}
+	}
 	// Closed by client
 	cl.sendC2S(otC2SMessageTypeClose, nil)
 	// Wait server close
