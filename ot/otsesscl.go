@@ -107,7 +107,7 @@ main:
 			err := cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err != nil {
 				log.Printf("OT client error: websockest error: %v\n", err)
-				return
+				break main
 			}
 			err = cl.conn.WriteMessage(websocket.PingMessage, []byte{})
 			if err != nil {
@@ -117,11 +117,11 @@ main:
 			err = cl.conn.SetWriteDeadline(time.Time{})
 			if err != nil {
 				log.Printf("OT client error: websockest error: %v\n", err)
-				return
+				break main
 			}
 		case s2cmsg, ok := <-cl.sv2cl:
 			if !ok {
-				// Closed by server
+				// Closed by server and notification is not needed.
 				return
 			}
 			resraw, err := convertToMsg(s2cmsg.Event, s2cmsg.Data)
@@ -132,7 +132,7 @@ main:
 			err = cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err != nil {
 				log.Printf("OT client error: websockest error: %v\n", err)
-				return
+				break main
 			}
 			err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
 			if err != nil {
@@ -142,7 +142,7 @@ main:
 			err = cl.conn.SetWriteDeadline(time.Time{})
 			if err != nil {
 				log.Printf("OT client error: websockest error: %v\n", err)
-				return
+				break main
 			}
 		case req, ok := <-request:
 			if !ok {
