@@ -137,60 +137,60 @@ main:
 				break main
 			}
 		default:
-			// If no server response, check all response including server response
-			select {
-			case <-pingTicker.C:
-				err := cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
-				if err != nil {
-					log.Printf("OT client error: websockest error: %v\n", err)
-					break main
-				}
-				err = cl.conn.WriteMessage(websocket.PingMessage, []byte{})
-				if err != nil {
-					log.Printf("OT client error: websocket error: %v\n", err)
-					break main
-				}
-				err = cl.conn.SetWriteDeadline(time.Time{})
-				if err != nil {
-					log.Printf("OT client error: websockest error: %v\n", err)
-					break main
-				}
-			case s2cmsg, ok := <-cl.sv2cl:
+		}
+		// If no server response, check all response including server response
+		select {
+		case <-pingTicker.C:
+			err := cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				break main
+			}
+			err = cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+			if err != nil {
+				log.Printf("OT client error: websocket error: %v\n", err)
+				break main
+			}
+			err = cl.conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				break main
+			}
+		case s2cmsg, ok := <-cl.sv2cl:
+			if !ok {
+				// Closed by server and notification is not needed.
+				return
+			}
+			if !sendSvResponse(s2cmsg) {
+				break main
+			}
+		case req, ok := <-request:
+			if !ok {
+				break main
+			}
+			if cl.readOnly {
+				log.Printf("OT client error: permission denied\n")
+				break main
+			}
+			mtype, dat, err := parseMsg(req)
+			if err != nil {
+				log.Printf("OT client error: %v\n", err)
+				break main
+			}
+			if mtype == WSMsgTypeOp {
+				opdat, ok := dat.(OpData)
 				if !ok {
-					// Closed by server and notification is not needed.
-					return
-				}
-				if !sendSvResponse(s2cmsg) {
+					log.Printf("OT client error: invalid request data\n")
 					break main
 				}
-			case req, ok := <-request:
+				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeOp, Data: opdat})
+			} else if mtype == WSMsgTypeSel {
+				opdat, ok := dat.(Ranges)
 				if !ok {
+					log.Printf("OT client error: invalid request data\n")
 					break main
 				}
-				if cl.readOnly {
-					log.Printf("OT client error: permission denied\n")
-					break main
-				}
-				mtype, dat, err := parseMsg(req)
-				if err != nil {
-					log.Printf("OT client error: %v\n", err)
-					break main
-				}
-				if mtype == WSMsgTypeOp {
-					opdat, ok := dat.(OpData)
-					if !ok {
-						log.Printf("OT client error: invalid request data\n")
-						break main
-					}
-					cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeOp, Data: opdat})
-				} else if mtype == WSMsgTypeSel {
-					opdat, ok := dat.(Ranges)
-					if !ok {
-						log.Printf("OT client error: invalid request data\n")
-						break main
-					}
-					cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeSel, Data: opdat})
-				}
+				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeSel, Data: opdat})
 			}
 		}
 	}
