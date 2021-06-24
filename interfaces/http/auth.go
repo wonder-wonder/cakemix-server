@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/wonder-wonder/cakemix-server/interfaces/db"
+	"github.com/wonder-wonder/cakemix-server/interfaces/database"
 	"github.com/wonder-wonder/cakemix-server/usecase"
 )
 
@@ -16,9 +16,9 @@ type Auth struct {
 	passResetUC  *usecase.PassReset
 }
 
-func NewAuth(d db.DB) *Auth {
+func NewAuth(db database.DB) *Auth {
 	return &Auth{
-		userUC: usecase.NewUser(db.NewUserRepo(d)),
+		userUC: usecase.NewUser(database.NewUserRepo(db)),
 		// sessionUC   :,
 		// invitationUC:,
 		// preUserUC   :,

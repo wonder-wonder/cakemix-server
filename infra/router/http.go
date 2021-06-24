@@ -1,9 +1,9 @@
-package http
+package router
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/handler"
-	"github.com/wonder-wonder/cakemix-server/interfaces/db"
+	"github.com/wonder-wonder/cakemix-server/interfaces/database"
 	"github.com/wonder-wonder/cakemix-server/interfaces/http"
 )
 
@@ -14,7 +14,7 @@ type Handler struct {
 	auth *http.Auth
 }
 
-func NewHandler(r *gin.RouterGroup, db db.DB, hconf handler.HandlerConf) *Handler {
+func NewHandler(r *gin.RouterGroup, db database.DB, hconf handler.HandlerConf) *Handler {
 	return &Handler{
 		auth: http.NewAuth(db),
 	}

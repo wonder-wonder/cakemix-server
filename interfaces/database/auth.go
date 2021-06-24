@@ -1,4 +1,4 @@
-package db
+package database
 
 import "github.com/wonder-wonder/cakemix-server/domain"
 
