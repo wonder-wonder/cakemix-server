@@ -1,9 +1,23 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/interfaces/db"
+	"github.com/wonder-wonder/cakemix-server/interfaces/http"
+)
 
 type Context struct {
 	c *gin.Context
+}
+type Handler struct {
+	auth *http.Auth
+}
+
+func NewHandler(r *gin.RouterGroup, db db.DB, hconf handler.HandlerConf) *Handler {
+	return &Handler{
+		auth: http.NewAuth(db),
+	}
 }
 
 func New(c *gin.Context) *Context {
