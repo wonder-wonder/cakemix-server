@@ -13,7 +13,11 @@ type UserRepo interface {
 
 // User data structure
 type User struct {
-	repo UserRepo
+	repo *UserRepo
+}
+
+func NewUser(repo UserRepo) *User {
+	return &User{repo: &repo}
 }
 
 // Authorize checks userid and password. If successful, returns UUID

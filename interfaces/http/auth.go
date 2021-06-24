@@ -1,16 +1,29 @@
 package http
 
-import "github.com/wonder-wonder/cakemix-server/usecase"
+import (
+	"github.com/wonder-wonder/cakemix-server/interfaces/db"
+	"github.com/wonder-wonder/cakemix-server/usecase"
+)
 
 // import "github.com/gin-gonic/gin"
 
 // Auth handler structure
 type Auth struct {
-	userUC       usecase.User
-	sessionUC    usecase.Session
-	invitationUC usecase.Invitation
-	preUserUC    usecase.PreUser
-	passResetUC  usecase.PassReset
+	userUC       *usecase.User
+	sessionUC    *usecase.Session
+	invitationUC *usecase.Invitation
+	preUserUC    *usecase.PreUser
+	passResetUC  *usecase.PassReset
+}
+
+func NewAuth(d db.DB) *Auth {
+	return &Auth{
+		userUC: usecase.NewUser(db.NewUserRepo(d)),
+		// sessionUC   :,
+		// invitationUC:,
+		// preUserUC   :,
+		// passResetUC :,
+	}
 }
 
 // Login handler

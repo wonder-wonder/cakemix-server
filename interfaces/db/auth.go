@@ -7,6 +7,10 @@ type UserRepo struct {
 	db DB
 }
 
+func NewUserRepo(db DB) *UserRepo {
+	return &UserRepo{db: db}
+}
+
 // FindByEmail returns user info corresponding email
 func (r *UserRepo) FindByEmail(email string) (domain.User, error) {
 	panic("TODO: impl")
