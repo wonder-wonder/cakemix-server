@@ -1,4 +1,4 @@
-package db
+package database
 
 // DB is interface for database
 type DB interface {

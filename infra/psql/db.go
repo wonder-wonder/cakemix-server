@@ -1,11 +1,12 @@
-package db
+package psql
 
 import (
 	"database/sql"
 	"os"
 
+	"github.com/wonder-wonder/cakemix-server/interfaces/database"
+
 	_ "github.com/lib/pq" //PostgreSQL driver
-	"github.com/wonder-wonder/cakemix-server/interfaces/db"
 )
 
 var (
@@ -45,7 +46,7 @@ func initVars() {
 }
 
 // OpenDB connects to DB server and return DB instance
-func OpenDB() (db.DB, error) {
+func OpenDB() (database.DB, error) {
 	initVars()
 	db, err := sql.Open("postgres", "host= "+dbHost+" port="+dbPort+" user="+dbUser+" dbname="+dbName+" password="+dbPass+" sslmode=disable")
 	if err != nil {
@@ -61,11 +62,11 @@ func (db *DB) Commit() error {
 	panic("TODO: impl")
 
 }
-func (db *DB) Query(string, ...interface{}) (*db.DBRows, error) {
+func (db *DB) Query(string, ...interface{}) (*database.DBRows, error) {
 	panic("TODO: impl")
 
 }
-func (db *DB) QueryRow(string, ...interface{}) (*db.DBRow, error) {
+func (db *DB) QueryRow(string, ...interface{}) (*database.DBRow, error) {
 	panic("TODO: impl")
 
 }
