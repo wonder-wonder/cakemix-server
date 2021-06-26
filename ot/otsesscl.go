@@ -69,10 +69,6 @@ func (cl *Client) Loop() {
 		for {
 			select {
 			case <-readstop:
-				err := cl.conn.Close()
-				if err != nil {
-					log.Printf("OT client error: ws close error: %v\n", err)
-				}
 				return
 			default:
 				_, msg, err := cl.conn.ReadMessage()
@@ -82,10 +78,6 @@ func (cl *Client) Loop() {
 						return
 					}
 					log.Printf("OT client error: read error: %v\n", err)
-					err := cl.conn.Close()
-					if err != nil {
-						log.Printf("OT client error: ws close error: %v\n", err)
-					}
 					return
 				}
 				request <- msg
