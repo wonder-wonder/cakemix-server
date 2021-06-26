@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wonder-wonder/cakemix-server/db"
 	"github.com/wonder-wonder/cakemix-server/handler"
+	"github.com/wonder-wonder/cakemix-server/infra/psql"
+	"github.com/wonder-wonder/cakemix-server/infra/router"
 	"github.com/wonder-wonder/cakemix-server/util"
 )
 
@@ -115,6 +117,15 @@ func main() {
 		PermitUserToCreateTeam: apiconf.PermitUserToCreateTeam,
 	}
 	v1Handler(v1, db, hconf)
+
+	// CA----------
+	v2 := r.Group("v2")
+	dbb, err := psql.OpenDB()
+	if err != nil {
+		panic(err)
+	}
+	router.NewHandler(v2, dbb, hconf)
+	//---------
 
 	// Front serve
 	if fileconf.FrontDir != "" {
