@@ -2,7 +2,6 @@ package ot
 
 import (
 	"log"
-	"net"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -64,34 +63,21 @@ func (cl *Client) Loop() {
 
 	// Reader routine
 	readstop := make(chan struct{})
-	defer func() { readstop <- struct{}{} }()
+	defer func() { close(readstop) }()
 	go func() {
+		defer func() { close(request) }()
 		for {
 			select {
 			case <-readstop:
-				err := cl.conn.Close()
-				if err != nil {
-					log.Printf("OT client error: ws close error: %v\n", err)
-					close(request)
-				}
 				return
 			default:
 				_, msg, err := cl.conn.ReadMessage()
 				if err != nil {
-					if operr, ok := err.(*net.OpError); ok && operr.Timeout() {
-						continue
-					}
 					// Closed
 					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
-						close(request)
 						return
 					}
 					log.Printf("OT client error: read error: %v\n", err)
-					close(request)
-					err := cl.conn.Close()
-					if err != nil {
-						log.Printf("OT client error: ws close error: %v\n", err)
-					}
 					return
 				}
 				request <- msg
