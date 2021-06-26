@@ -64,7 +64,7 @@ func (cl *Client) Loop() {
 
 	// Reader routine
 	readstop := make(chan struct{})
-	defer func() { readstop <- struct{}{} }()
+	defer func() { close(readstop) }()
 	go func() {
 		for {
 			select {
