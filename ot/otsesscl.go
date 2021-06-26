@@ -65,13 +65,13 @@ func (cl *Client) Loop() {
 	readstop := make(chan struct{})
 	defer func() { close(readstop) }()
 	go func() {
+		defer func() { close(request) }()
 		for {
 			select {
 			case <-readstop:
 				err := cl.conn.Close()
 				if err != nil {
 					log.Printf("OT client error: ws close error: %v\n", err)
-					close(request)
 				}
 				return
 			default:
@@ -79,11 +79,9 @@ func (cl *Client) Loop() {
 				if err != nil {
 					// Closed
 					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
-						close(request)
 						return
 					}
 					log.Printf("OT client error: read error: %v\n", err)
-					close(request)
 					err := cl.conn.Close()
 					if err != nil {
 						log.Printf("OT client error: ws close error: %v\n", err)
