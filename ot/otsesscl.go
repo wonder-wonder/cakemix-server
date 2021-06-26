@@ -2,7 +2,6 @@ package ot
 
 import (
 	"log"
-	"net"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -78,9 +77,6 @@ func (cl *Client) Loop() {
 			default:
 				_, msg, err := cl.conn.ReadMessage()
 				if err != nil {
-					if operr, ok := err.(*net.OpError); ok && operr.Timeout() {
-						continue
-					}
 					// Closed
 					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
 						close(request)
