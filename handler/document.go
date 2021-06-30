@@ -281,17 +281,6 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
-func (h *Handler) setJWTFromQuery() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := c.Query("token")
-		if token == "" {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		c.Request.Header.Set("Authorization", "Bearer "+token)
-	}
-}
-
 func (h *Handler) modifyDocumentHandler(c *gin.Context) {
 	did := c.Param("docid")
 
