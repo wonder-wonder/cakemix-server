@@ -627,7 +627,7 @@ paths:
           type: string
         name: doc_id
         in: path
-        description: Folder ID
+        description: Document ID
         required: true
       - schema:
           type: string
