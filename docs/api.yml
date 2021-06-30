@@ -426,10 +426,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  doc_id:
-                    type: string
+                $ref: '#/components/schemas/DocumentResModel'
         '400':
           description: Cannot create new document.
       operationId: create-new-doc
@@ -504,6 +501,35 @@ paths:
         '400':
           description: Cannot move document.
       operationId: move-doc
+      tags:
+        - Document
+  '/doc/{doc_id}/copy/{folder_id}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+        description: Document ID
+      - schema:
+          type: string
+        name: folder_id
+        in: path
+        required: true
+        description: Folder ID
+    post:
+      summary: Copy document to target folder
+      operationId: post-doc-doc_id-copy-folder_id
+      responses:
+        '200':
+          description: Document is duplicated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResModel'
+        '400':
+          description: Connot copy the document.
+      description: ''
       tags:
         - Document
   '/folder/{folder_id}':
