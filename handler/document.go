@@ -18,9 +18,10 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 	r.GET("doc/:docid/ws", h.getOTHandler)
 	docck := r.Group("doc", h.CheckAuthMiddleware())
 	docck.GET(":docid", h.getDocumentHandler)
-	docck.POST(":folderid", h.createDocumentHandler)
+	docck.POST(":id", h.createDocumentHandler)
 	docck.DELETE(":docid", h.deleteDocumentHandler)
 	docck.PUT(":docid/move/:folderid", h.moveDocumentHandler)
+	docck.POST(":id/copy/:folderid", h.duplicateDocumentHandler)
 	docck.PUT(":docid", h.modifyDocumentHandler)
 }
 
@@ -87,7 +88,7 @@ func (h *Handler) getDocumentHandler(c *gin.Context) {
 }
 
 func (h *Handler) createDocumentHandler(c *gin.Context) {
-	parentfid := c.Param("folderid")
+	parentfid := c.Param("id")
 
 	if parentfid == "" || parentfid[0] != 'f' {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -278,17 +279,6 @@ func (h *Handler) moveDocumentHandler(c *gin.Context) {
 	}
 
 	c.AbortWithStatus(http.StatusOK)
-}
-
-func (h *Handler) setJWTFromQuery() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := c.Query("token")
-		if token == "" {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		c.Request.Header.Set("Authorization", "Bearer "+token)
-	}
 }
 
 func (h *Handler) modifyDocumentHandler(c *gin.Context) {
@@ -524,4 +514,71 @@ func (h *Handler) getOTHandler(c *gin.Context) {
 	}
 	h.otmgr.ClientConnect(cl, docID)
 	cl.Loop()
+}
+
+func (h *Handler) duplicateDocumentHandler(c *gin.Context) {
+	did := c.Param("id")
+	targetfid := c.Param("folderid")
+
+	if did == "" || did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if targetfid == "" || targetfid[0] != 'f' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrDocumentNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission == db.FilePermPrivate {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	finfo, err := h.db.GetFolderInfo(targetfid)
+	if err != nil {
+		if err == db.ErrFolderNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, finfo.OwnerUUID) && finfo.Permission != db.FilePermReadWrite {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	owneruuid := uuid
+	if isRelatedUUID(c, finfo.OwnerUUID) {
+		owneruuid = finfo.OwnerUUID
+	}
+
+	newdid, err := h.db.DuplicateDocument(did, db.FilePermPrivate, targetfid, owneruuid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.db.UpdateFolder(targetfid, uuid)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.AbortWithStatusJSON(http.StatusOK, model.CreateDocumentRes{DocumentID: newdid})
 }
