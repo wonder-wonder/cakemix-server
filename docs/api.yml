@@ -75,6 +75,33 @@ paths:
                 $ref: '#/components/schemas/AuthRegistNewTokenResModel'
         '403':
           description: The user has not permission to generate token
+  '/auth/check/user/{user_name}/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: user_name
+        in: path
+        required: true
+    get:
+      summary: Check username
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: No user
+        '401':
+          description: invalid token
+        '409':
+          description: username has already taken
+      operationId: get-auth-check-user-username
+      description: Check username is not taken by other
+      security: []
+      parameters: []
   '/auth/regist/pre/{token}':
     parameters:
       - schema:
@@ -209,52 +236,162 @@ paths:
         name: token
         in: path
         required: true
-  '/profile/{uuid}':
+  /auth/session:
+    get:
+      summary: Get session list
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthSessionModel'
+      operationId: get-auth-session
+      description: Get session list
+  '/auth/session/{id}':
+    delete:
+      summary: Revoke session
+      operationId: delete-auth-session
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      tags:
+        - Auth
+      description: Revoke session
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+  /auth/log:
+    get:
+      summary: Get logs
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLogResModel'
+      operationId: get-auth-log
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: targetid
+          description: target team/userUUID
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: Offset
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: Limit
+        - schema:
+            type: string
+          in: query
+          name: type
+          description: target log type
+      description: Get log list
+  '/auth/lock/{uuid}':
+    get:
+      summary: Get user lock status
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLockResModel'
+        '403':
+          description: Forbidden
+      operationId: get-auth-lock
+      description: ''
+    post:
+      summary: Lock user
+      operationId: post-auth-lock
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Forbidden
+      tags:
+        - Auth
+    delete:
+      summary: Unlock user
+      operationId: delete-auth-lock
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Forbidden
+      tags:
+        - Auth
     parameters:
       - schema:
           type: string
         name: uuid
         in: path
         required: true
-        description: Username or teamname
-    get:
-      summary: Get profile
+  /team:
+    post:
+      summary: Create team
+      operationId: post-team
       responses:
         '200':
-          description: Got the profile.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfileModel'
-        '404':
-          description: The user/team is not found.
-      operationId: get-user-profile-uuid
+          description: The new team is created successfully.
+        '401':
+          description: Invalid token.
+        '409':
+          description: The teamname is already used.
       tags:
-        - Profile
-      description: Get profile for user/team.
-    put:
-      summary: Edit profile
-      operationId: put-user-profile-uuid
+        - Team
+      description: Create new team.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: name
+          description: Teamname
+          required: true
+    parameters: []
+  '/team/{teamid}':
+    parameters:
+      - schema:
+          type: string
+        name: teamid
+        in: path
+        required: true
+        description: Team UUID
+    delete:
+      summary: Remove team
+      operationId: delete-team-teamid
       responses:
         '200':
-          description: The profile is updated successfully.
+          description: The team is removed successfully.
         '401':
           description: Invalid token.
         '403':
-          description: Update of profile is not allowed.
+          description: Removing team is not allowed.
         '404':
-          description: The user/team is not found.
+          description: The team is not found.
       tags:
-        - Profile
-      description: Edit profile
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfileModel'
-        description: |-
-          Updated profile data. The parameters can be omitted if no update.
-          Some parameter cannot be changed because of readonly.
+        - Team
+      description: Remove the team.
   '/team/{teamid}/member':
     parameters:
       - schema:
@@ -365,51 +502,52 @@ paths:
           required: true
       tags:
         - Team
-  /team:
-    post:
-      summary: Create team
-      operationId: post-team
-      responses:
-        '200':
-          description: The new team is created successfully.
-        '401':
-          description: Invalid token.
-        '409':
-          description: The teamname is already used.
-      tags:
-        - Team
-      description: Create new team.
-      parameters:
-        - schema:
-            type: string
-          in: query
-          name: name
-          description: Teamname
-          required: true
-    parameters: []
-  '/team/{teamid}':
+  '/profile/{uuid}':
     parameters:
       - schema:
           type: string
-        name: teamid
+        name: uuid
         in: path
         required: true
-        description: Team UUID
-    delete:
-      summary: Remove team
-      operationId: delete-team-teamid
+        description: Username or teamname
+    get:
+      summary: Get profile
       responses:
         '200':
-          description: The team is removed successfully.
+          description: Got the profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileModel'
+        '404':
+          description: The user/team is not found.
+      operationId: get-user-profile-uuid
+      tags:
+        - Profile
+      description: Get profile for user/team.
+    put:
+      summary: Edit profile
+      operationId: put-user-profile-uuid
+      responses:
+        '200':
+          description: The profile is updated successfully.
         '401':
           description: Invalid token.
         '403':
-          description: Removing team is not allowed.
+          description: Update of profile is not allowed.
         '404':
-          description: The team is not found.
+          description: The user/team is not found.
       tags:
-        - Team
-      description: Remove the team.
+        - Profile
+      description: Edit profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileModel'
+        description: |-
+          Updated profile data. The parameters can be omitted if no update.
+          Some parameter cannot be changed because of readonly.
   '/doc/{folder_id}':
     parameters:
       - schema:
@@ -532,6 +670,30 @@ paths:
       description: ''
       tags:
         - Document
+  '/doc/{doc_id}/ws':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+    get:
+      summary: Your GET endpoint
+      tags:
+        - Document
+      responses:
+        '101':
+          description: Switch to web socket protocol
+      operationId: get-doc-doc_id-ws
+      description: ''
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: token
+          description: security token
+          required: true
+      security: []
   '/folder/{folder_id}':
     parameters:
       - schema:
@@ -640,57 +802,6 @@ paths:
       operationId: move-folder
       tags:
         - Folder
-  '/doc/{doc_id}/ws':
-    parameters:
-      - schema:
-          type: string
-        name: doc_id
-        in: path
-        required: true
-    get:
-      summary: Your GET endpoint
-      tags:
-        - Document
-      responses:
-        '101':
-          description: Switch to web socket protocol
-      operationId: get-doc-doc_id-ws
-      description: ''
-      parameters:
-        - schema:
-            type: string
-          in: query
-          name: token
-          description: security token
-          required: true
-      security: []
-  '/auth/check/user/{user_name}/{token}':
-    parameters:
-      - schema:
-          type: string
-        name: token
-        in: path
-        required: true
-      - schema:
-          type: string
-        name: user_name
-        in: path
-        required: true
-    get:
-      summary: Check username
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: No user
-        '401':
-          description: invalid token
-        '409':
-          description: username has already taken
-      operationId: get-auth-check-user-username
-      description: Check username is not taken by other
-      security: []
-      parameters: []
   /search/team:
     get:
       summary: Get team list
@@ -820,117 +931,6 @@ paths:
           description: Got image
       operationId: get-image-imgid
       security: []
-  /auth/session:
-    get:
-      summary: Get session list
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AuthSessionModel'
-      operationId: get-auth-session
-      description: Get session list
-  '/auth/session/{id}':
-    delete:
-      summary: Revoke session
-      operationId: delete-auth-session
-      responses:
-        '200':
-          description: OK
-        '404':
-          description: Not Found
-      tags:
-        - Auth
-      description: Revoke session
-    parameters:
-      - schema:
-          type: string
-        name: id
-        in: path
-        required: true
-  /auth/log:
-    get:
-      summary: Get logs
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthLogResModel'
-      operationId: get-auth-log
-      parameters:
-        - schema:
-            type: string
-          in: query
-          name: targetid
-          description: target team/userUUID
-        - schema:
-            type: integer
-          in: query
-          name: offset
-          description: Offset
-        - schema:
-            type: integer
-          in: query
-          name: limit
-          description: Limit
-        - schema:
-            type: string
-          in: query
-          name: type
-          description: target log type
-      description: Get log list
-  '/auth/lock/{uuid}':
-    get:
-      summary: Get user lock status
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthLockResModel'
-        '403':
-          description: Forbidden
-      operationId: get-auth-lock
-      description: ''
-    post:
-      summary: Lock user
-      operationId: post-auth-lock
-      responses:
-        '200':
-          description: OK
-        '403':
-          description: Forbidden
-      tags:
-        - Auth
-    delete:
-      summary: Unlock user
-      operationId: delete-auth-lock
-      responses:
-        '200':
-          description: OK
-        '403':
-          description: Forbidden
-      tags:
-        - Auth
-    parameters:
-      - schema:
-          type: string
-        name: uuid
-        in: path
-        required: true
 components:
   schemas:
     JWT:
