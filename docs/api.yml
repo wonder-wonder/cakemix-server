@@ -320,7 +320,7 @@ paths:
         '403':
           description: Forbidden
       operationId: get-auth-lock
-      description: ''
+      description: Get user lock status
     post:
       summary: Lock user
       operationId: post-auth-lock
@@ -331,6 +331,7 @@ paths:
           description: Forbidden
       tags:
         - Auth
+      description: Lock user
     delete:
       summary: Unlock user
       operationId: delete-auth-lock
@@ -341,6 +342,7 @@ paths:
           description: Forbidden
       tags:
         - Auth
+      description: Unlock user
     parameters:
       - schema:
           type: string
@@ -589,6 +591,7 @@ paths:
       operationId: delete-doc
       tags:
         - Document
+      description: Delete a document
     put:
       summary: Modify document property
       operationId: put-doc-doc_id
@@ -599,14 +602,14 @@ paths:
           description: Cannot modify the document property.
       tags:
         - Document
-      description: ''
+      description: Modify document property
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DocumentModifyReqModel'
     get:
-      summary: ''
+      summary: Get document information
       operationId: get-doc-doc_id
       responses:
         '200':
@@ -617,6 +620,7 @@ paths:
                 $ref: '#/components/schemas/DocumentModel'
       tags:
         - Document
+      description: Get document information
   '/doc/{doc_id}/move/{folder_id}':
     parameters:
       - schema:
@@ -641,6 +645,7 @@ paths:
       operationId: move-doc
       tags:
         - Document
+      description: Move document to target folder
   '/doc/{doc_id}/copy/{folder_id}':
     parameters:
       - schema:
@@ -667,7 +672,7 @@ paths:
                 $ref: '#/components/schemas/DocumentResModel'
         '400':
           description: Connot copy the document.
-      description: ''
+      description: Copy document to target folder
       tags:
         - Document
   '/doc/{doc_id}/ws':
@@ -678,14 +683,14 @@ paths:
         in: path
         required: true
     get:
-      summary: Your GET endpoint
+      summary: Open OT session
       tags:
         - Document
       responses:
         '101':
           description: Switch to web socket protocol
       operationId: get-doc-doc_id-ws
-      description: ''
+      description: Open OT session for the document
       parameters:
         - schema:
             type: string
@@ -723,7 +728,7 @@ paths:
           name: type
           required: true
           description: 'type that which list will be returned (all, folder, document)'
-      description: ''
+      description: Get document and folder list in the target folder
     post:
       summary: Make a new folder
       responses:
@@ -741,6 +746,7 @@ paths:
       operationId: create-new-folder
       tags:
         - Folder
+      description: Make a new folder
       parameters:
         - schema:
             type: string
@@ -758,6 +764,7 @@ paths:
       operationId: delete-folder
       tags:
         - Folder
+      description: Delete a folder
     put:
       summary: Modify folder property
       responses:
@@ -777,7 +784,7 @@ paths:
             schema:
               type: object
               properties: {}
-      description: ''
+      description: Modify folder property
   '/folder/{folder_id}/move/{target_folder_id}':
     parameters:
       - schema:
@@ -802,11 +809,13 @@ paths:
       operationId: move-folder
       tags:
         - Folder
+      description: Move folder to target parent.
   /search/team:
     get:
       summary: Get team list
       tags:
         - Search
+      description: Get team list
       responses:
         '200':
           description: Got team list.
@@ -843,6 +852,7 @@ paths:
       summary: Get user list
       tags:
         - Search
+      description: Get user list
       responses:
         '200':
           description: Got user list.
@@ -896,6 +906,7 @@ paths:
                     description: Image ID
       tags:
         - Image
+      description: Upload image
       requestBody:
         content:
           multipart/form-data:
@@ -931,6 +942,7 @@ paths:
           description: Got image
       operationId: get-image-imgid
       security: []
+      description: Get uploaded image
 components:
   schemas:
     JWT:
