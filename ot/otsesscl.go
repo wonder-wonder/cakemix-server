@@ -1,9 +1,7 @@
 package ot
 
 import (
-	"context"
 	"log"
-	"net"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -22,7 +20,7 @@ type Client struct {
 	readOnly bool
 	// Server
 	cl2sv chan otC2SMessage
-	sv2cl chan otS2CMessage
+	sv2cl chan otWSMessage
 }
 
 // ClientProfile is structure for client profile
@@ -42,71 +40,44 @@ func NewClient(conn *websocket.Conn, profile ClientProfile, readOnly bool) (*Cli
 		profile:   profile,
 		readOnly:  readOnly,
 		cl2sv:     nil,
-		sv2cl:     make(chan otS2CMessage, 1000),
+		sv2cl:     make(chan otWSMessage, 1000),
 	}
 	return cl, nil
 }
 
-func (cl *Client) sendS2C(msgType otS2CMessageType, message interface{}) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("Recover: %v", err)
-			}
-		}()
-		cl.sv2cl <- otS2CMessage{
-			msgType: msgType,
-			message: message,
-		}
-	}()
-}
 func (cl *Client) sendC2S(msgType otC2SMessageType, message interface{}) {
-	go func() {
-		cl.cl2sv <- otC2SMessage{
-			clientID: cl.clientID,
-			msgType:  msgType,
-			message:  message,
-		}
-	}()
+	cl.cl2sv <- otC2SMessage{
+		clientID: cl.clientID,
+		msgType:  msgType,
+		message:  message,
+	}
 }
 
 // Loop is main loop for client
 func (cl *Client) Loop() {
 	request := make(chan []byte)
-	// Reader routine
-	ctx := context.Background()
-	childCtx, cancel := context.WithCancel(ctx)
-	// cancel := false
-	// defer func() { cancel = true }()
-	defer func() { cancel() }()
 
+	// Ping timer
+	pingTicker := time.NewTicker(time.Second * otClientPingInterval)
+	defer pingTicker.Stop()
+
+	// Reader routine
+	readstop := make(chan struct{})
+	defer func() { close(readstop) }()
 	go func() {
+		defer func() { close(request) }()
 		for {
 			select {
-			case <-childCtx.Done():
-				err := cl.conn.Close()
-				if err != nil {
-					log.Printf("OT client error: ws close error: %v\n", err)
-					close(request)
-				}
+			case <-readstop:
 				return
 			default:
 				_, msg, err := cl.conn.ReadMessage()
 				if err != nil {
-					if operr, ok := err.(*net.OpError); ok && operr.Timeout() {
-						continue
-					}
 					// Closed
 					if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
-						close(request)
 						return
 					}
 					log.Printf("OT client error: read error: %v\n", err)
-					close(request)
-					err := cl.conn.Close()
-					if err != nil {
-						log.Printf("OT client error: ws close error: %v\n", err)
-					}
 					return
 				}
 				request <- msg
@@ -114,85 +85,113 @@ func (cl *Client) Loop() {
 		}
 
 	}()
-	go func() {
-		for {
-			select {
-			case <-childCtx.Done():
-				return
-			default:
-				cl.sendS2C(otS2CMessageTypePing, nil)
-				time.Sleep(time.Second * otClientPingInterval)
-			}
+
+	sendSvResponse := func(s2cmsg otWSMessage) bool {
+		resraw, err := convertToMsg(s2cmsg.Event, s2cmsg.Data)
+		if err != nil {
+			log.Printf("OT client error: response error: %v\n", err)
+			return false
 		}
-	}()
+		err = cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
+		if err != nil {
+			log.Printf("OT client error: websockest error: %v\n", err)
+			return false
+		}
+		err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
+		if err != nil {
+			log.Printf("OT client error: websocket error: %v\n", err)
+			return false
+		}
+		err = cl.conn.SetWriteDeadline(time.Time{})
+		if err != nil {
+			log.Printf("OT client error: websockest error: %v\n", err)
+			return false
+		}
+		return true
+	}
+
+main:
 	for {
 		select {
 		case s2cmsg, ok := <-cl.sv2cl:
+			// Server response is high priority so check the first
 			if !ok {
-				// Closed by server
+				// Closed by server and notification is not needed.
 				return
 			}
-			switch s2cmsg.msgType {
-			case otS2CMessageTypePing:
-				err := cl.conn.WriteMessage(websocket.PingMessage, []byte{})
-				if err != nil {
-					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.stop()
-					return
-				}
-			case otS2CMessageTypeWSMsg:
-				wsmsg := s2cmsg.message.(otWSMessage)
-				resraw, err := convertToMsg(wsmsg.Event, wsmsg.Data)
-				if err != nil {
-					log.Printf("OT client error: response error: %v\n", err)
-					cl.stop()
-					return
-				}
-				err = cl.conn.WriteMessage(websocket.TextMessage, resraw)
-				if err != nil {
-					log.Printf("OT client error: websocket error: %v\n", err)
-					cl.stop()
-					return
-				}
+			if !sendSvResponse(s2cmsg) {
+				break main
+			}
+		default:
+		}
+		// If no server response, check all response including server response
+		select {
+		case <-pingTicker.C:
+			err := cl.conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				break main
+			}
+			err = cl.conn.WriteMessage(websocket.PingMessage, []byte{})
+			if err != nil {
+				log.Printf("OT client error: websocket error: %v\n", err)
+				break main
+			}
+			err = cl.conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				log.Printf("OT client error: websockest error: %v\n", err)
+				break main
+			}
+		case s2cmsg, ok := <-cl.sv2cl:
+			if !ok {
+				// Closed by server and notification is not needed.
+				return
+			}
+			if !sendSvResponse(s2cmsg) {
+				break main
 			}
 		case req, ok := <-request:
 			if !ok {
-				cl.stop()
-				return
+				break main
 			}
 			if cl.readOnly {
 				log.Printf("OT client error: permission denied\n")
-				cl.stop()
-				return
+				break main
 			}
 			mtype, dat, err := parseMsg(req)
 			if err != nil {
 				log.Printf("OT client error: %v\n", err)
-				cl.stop()
-				return
+				break main
 			}
 			if mtype == WSMsgTypeOp {
 				opdat, ok := dat.(OpData)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.stop()
-					return
+					break main
 				}
 				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeOp, Data: opdat})
 			} else if mtype == WSMsgTypeSel {
 				opdat, ok := dat.(Ranges)
 				if !ok {
 					log.Printf("OT client error: invalid request data\n")
-					cl.stop()
-					return
+					break main
 				}
 				cl.sendC2S(otC2SMessageTypeWSMsg, otWSMessage{Event: WSMsgTypeSel, Data: opdat})
 			}
 		}
 	}
-
-}
-func (cl *Client) stop() {
+	// Discard all server response data
+	clear := false
+	for !clear {
+		select {
+		case _, ok := <-cl.sv2cl:
+			if !ok {
+				clear = true
+			}
+		default:
+			clear = true
+		}
+	}
 	// Closed by client
 	cl.sendC2S(otC2SMessageTypeClose, nil)
 	// Wait server close
