@@ -42,7 +42,4 @@ docker/server/keys/signkey:
 
 cleanall:
 	rm -rf out
-	rm -f signkey
-	rm -f signkey.pub
-	rm -rf cmdat
 	rm -rf docker/server

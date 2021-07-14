@@ -16,10 +16,10 @@ services:
       - 8081:8081
     restart: always
     volumes:
-      - ./dist:/root/dist
-      - ./docker/server/cmdat:/root/cmdat
-      - ./docker/server/keys:/root/keys
-      - ./docker/server/log:/root/log
+      - ./share/www:/usr/share/cakemix/www
+      - ./docker/server/cmdat:/var/lib/cakemix/cmdat
+      - ./docker/server/keys:/etc/cakemix/keys
+      - ./docker/server/log:/var/log/cakemix
 
   cakemixpg:
     image: postgres

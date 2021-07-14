@@ -6,9 +6,8 @@
 # Production file
 /docker/postgres/data
 /docker/server
+sendgrid.env
 
 # Common files
 /cakemixsv
 /share/www
-
-/sendgrid.env
