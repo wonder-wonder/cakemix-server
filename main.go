@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 	"time"
@@ -54,6 +55,11 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	if fileconf.LogFile != "" {
+		// Make log directory
+		err := os.MkdirAll(path.Dir(fileconf.LogFile), 0700)
+		if err != nil {
+			panic(err)
+		}
 		f, err := os.OpenFile(fileconf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error occured while opening log file: %v\n", err)
