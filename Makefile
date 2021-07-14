@@ -5,8 +5,8 @@ DBPASS=postgres
 DBNAME=cakemix
 VERSION=$(shell git describe --tags)
 
-rundev: main.go signkey sendgrid.env
-	$(shell cat sendgrid.env) DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -ldflags "-X main.version=$(VERSION)" -race main.go -c cakemix.conf
+rundev: main.go out/keys/signkey
+	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -ldflags "-X main.version=$(VERSION)" -race main.go -c example/cakemix.conf.dev
 
 test: main.go signkey
 	test -d out || mkdir out
@@ -29,10 +29,11 @@ down:
 build: main.go
 	go build -o cakemixsv -ldflags "-X main.version=$(VERSION)" main.go
 
-signkey:
-	ssh-keygen -t rsa -f signkey -m PEM -N ""
-	ssh-keygen -f signkey.pub -e -m pkcs8 > signkey.pub2
-	mv signkey.pub2 signkey.pub
+out/keys/signkey:
+	mkdir -p out/keys
+	ssh-keygen -t rsa -f out/keys/signkey -m PEM -N ""
+	ssh-keygen -f out/keys/signkey.pub -e -m pkcs8 > out/keys/signkey.pub2
+	mv out/keys/signkey.pub2 out/keys/signkey.pub
 
 docker/server/keys/signkey:
 	mkdir -p docker/server/keys
