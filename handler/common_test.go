@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 func testInit(tb testing.TB) *gin.Engine {
 	tb.Helper()
 
-	conffile := "../cakemix.conf.test"
+	conffile := "../example/cakemix.conf.test"
 	_, err := os.Stat(conffile)
 	if err == nil {
 		err = util.LoadConfigFile(conffile)

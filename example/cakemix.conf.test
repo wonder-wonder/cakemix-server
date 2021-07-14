@@ -13,17 +13,17 @@ APIHost localhost
 APIPort 8081
 
 # File and directory configuration
-FrontDir ../dist
-DataDir ../cmdat
-SignPubKey ../signkey.pub
-SignPrvKey ../signkey
+FrontDir ../share/www
+DataDir ../out/cmdat
+SignPubKey ../out/keys/signkey.pub
+SignPrvKey ../out/keys/signkey
 
 # Mail configuration
 MailSGAPIKey DEBUG
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
-MailResetPWTmpl ../resetpw.tmpl
-MailRegistTmpl ../regist.tmpl
+MailResetPWTmpl ../share/mail/resetpw.tmpl
+MailRegistTmpl ../share/mail/regist.tmpl
 
 # Permit to create new team without admin
 PermitUserToCreateTeam false

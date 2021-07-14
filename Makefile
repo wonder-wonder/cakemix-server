@@ -8,10 +8,10 @@ VERSION=$(shell git describe --tags)
 rundev: main.go out/keys/signkey
 	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go run -ldflags "-X main.version=$(VERSION)" -race main.go -c example/cakemix.conf.dev
 
-test: main.go signkey
-	test -d out || mkdir out
-	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go test -ldflags "-X main.version=$(VERSION)" -v ./handler -count=1 -coverprofile=out/cover.out
-	go tool cover -html=out/cover.out -o out/cover.html
+test: main.go out/keys/signkey
+	mkdir -p out/cover
+	DBHOST="$(DBHOST)" DBPORT="$(DBPORT)" DBUSER="$(DBUSER)" DBPASS="$(DBPASS)" DBNAME="$(DBNAME)" go test -ldflags "-X main.version=$(VERSION)" -v ./handler -count=1 -coverprofile=out/cover/cover.out
+	go tool cover -html=out/cover/cover.out -o out/cover/cover.html
 
 startdb:
 	docker run -dp $(DBPORT):5432 -v `pwd`/docker/postgres/init:/docker-entrypoint-initdb.d --name cakemixdbdev -e POSTGRES_PASSWORD=postgres postgres

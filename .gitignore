@@ -1,6 +1,7 @@
-# Debug files
+# Debug and test files
 /out/keys
 /out/cmdat
+/out/cover
 
 # Production file
 /docker/postgres/data
@@ -11,7 +12,3 @@
 /share/www
 
 /sendgrid.env
-
-# Test files
-/out/cover.out
-/out/cover.html
