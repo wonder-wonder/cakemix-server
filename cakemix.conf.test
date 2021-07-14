@@ -19,7 +19,7 @@ SignPubKey ../signkey.pub
 SignPrvKey ../signkey
 
 # Mail configuration
-MailSGAPIKey
+MailSGAPIKey DEBUG
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
 MailResetPWTmpl ../resetpw.tmpl
