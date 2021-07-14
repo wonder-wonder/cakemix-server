@@ -3,17 +3,44 @@ package usecase
 import (
 	"crypto/sha512"
 	"encoding/base64"
+	"strings"
 
 	"github.com/wonder-wonder/cakemix-server/domain"
 )
 
-func NewUser(repo UserRepo) *User {
-	return &User{repo: repo}
+func NewUser(userR UserRepo, seclogRepo SecurityLogRepo) *User {
+	return &User{userRepo: userR, securityLogRepo: seclogRepo}
 }
 
 // Authenticate checks userid and password. If successful, returns UUID
 func (uc *User) Authenticate(id, pass string) (uuid string, err error) {
 	panic("TODO: impl")
+	var user domain.User
+
+	// Get user info
+	if strings.Contains(id, "@") {
+		user, err = uc.userRepo.FindByEmail(id)
+		if err != nil {
+			return
+		}
+	} else {
+		user, err = uc.userRepo.FindByUsername(id)
+		if err != nil {
+			return
+		}
+	}
+
+	// Check password
+	hpass := passhash(pass, user.Salt)
+	if hpass != user.Password {
+		// TODO: ERROR
+		return
+	}
+
+	// TODO: generate session Token
+
+	// TODO: add login log
+
 }
 
 func passhash(pass, salt string) string {
