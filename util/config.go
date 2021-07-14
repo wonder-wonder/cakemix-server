@@ -85,7 +85,6 @@ func LoadConfigEnv() {
 	}
 
 	// Mail config
-	sendgridAPIKey = ""
 	if os.Getenv("SENDGRID_API_KEY") != "" {
 		sendgridAPIKey = os.Getenv("SENDGRID_API_KEY")
 	}
