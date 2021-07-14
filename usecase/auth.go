@@ -15,7 +15,8 @@ type UserRepo interface {
 
 // User data structure
 type User struct {
-	repo UserRepo
+	userRepo        UserRepo
+	securityLogRepo SecurityLogRepo
 }
 
 // SessionRepo is interface of repository for session
@@ -74,4 +75,10 @@ type PassResetRepo interface {
 type PassReset struct {
 	userRepo      UserRepo
 	passResetRepo PassResetRepo
+}
+
+type SecurityLogRepo interface {
+	AddLogLogin(uuid string, sessionID string, ipaddr string, devinfo string) error
+	AddLogPassReset(uuid string, ipaddr string, devinfo string) error
+	AddLogPassChange(uuid string, ipaddr string, sessionID string) error
 }
