@@ -18,16 +18,16 @@ var (
 	apiPort                   = "8081"
 	apiCORS                   = ""
 	apiPermitUserToCreateTeam = false
-	frontDir                  = "./"
-	dataDir                   = "./cmdat"
-	signPubKey                = "./signkey.pub"
-	signPrvKey                = "./signkey"
+	frontDir                  = "/usr/share/cakemix/www"
+	dataDir                   = "/var/lib/cakemix/cmdat"
+	signPubKey                = "/etc/cakemix/keys/signkey.pub"
+	signPrvKey                = "/etc/cakemix/keys/signkey"
 	logFile                   = ""
 	sendgridAPIKey            = ""
 	fromAddr                  = "cakemix@localhost"
 	fromName                  = "Cakemix"
-	tmplResetPW               = "resetpw.tmpl"
-	tmplRegist                = "regist.tmpl"
+	tmplResetPW               = "/usr/share/cakemix/mail/resetpw.tmpl"
+	tmplRegist                = "/usr/share/cakemix/mail/regist.tmpl"
 )
 
 // DBConf is structure for database configuration
