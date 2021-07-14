@@ -14,18 +14,18 @@ APIPort 8081
 APICORS example.com
 
 # File and directory configuration
-FrontDir /root/dist
-DataDir /root/cmdat
+FrontDir /usr/share/cakemix/www
+DataDir /var/lib/cakemix/cmdat
 APIHost
-SignPrvKey /root/keys/signkey
-SignPubKey /root/keys/signkey.pub
-LogFile /root/log/access.log
+SignPubKey /etc/cakemix/keys/signkey.pub
+SignPrvKey /etc/cakemix/keys/signkey
+LogFile /var/log/cakemix/access.log
 
 # Mail configuration
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
-MailResetPWTmpl resetpw.tmpl
-MailRegistTmpl regist.tmpl
+MailResetPWTmpl /usr/share/cakemix/mail/resetpw.tmpl
+MailRegistTmpl /usr/share/cakemix/mail/regist.tmpl
 
 # Permit to create new team without admin
 PermitUserToCreateTeam false
