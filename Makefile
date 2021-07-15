@@ -27,7 +27,7 @@ down:
 	docker-compose down
 
 build: main.go
-	go build -o cakemixsv -ldflags "-X main.version=$(VERSION)" main.go
+	CGO_ENABLED=0 go build -o cakemixsv -ldflags "-X main.version=$(VERSION)" main.go
 
 cleanall:
 	rm -rf out
