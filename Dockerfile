@@ -7,4 +7,4 @@ COPY example/cakemix.conf.prod /etc/cakemix/cakemix.conf
 
 RUN make build
 
-CMD ["./cakemixsv","-c","/etc/cakemix/cakemix.conf"]
+CMD ["./cakemixsv"]

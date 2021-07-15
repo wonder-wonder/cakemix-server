@@ -19,11 +19,24 @@ import (
 
 var version string = ""
 
+const defaultConfig = "/etc/cakemix/cakemix.conf"
+
 func main() {
 	if version == "" {
 		version = "unknown version"
 	}
 	fmt.Printf("\nCakemix %s\n\n", version)
+
+	// Load default config file
+	if _, err := os.Stat(defaultConfig); err == nil {
+		log.Printf("Loading config %s", defaultConfig)
+		err := util.LoadConfigFile(defaultConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error occured while loading config: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
 			switch strings.ToLower(os.Args[i]) {
