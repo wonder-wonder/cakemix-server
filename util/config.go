@@ -19,7 +19,7 @@ var (
 	apiCORS                   = ""
 	apiPermitUserToCreateTeam = false
 	frontDir                  = "/usr/share/cakemix/www"
-	dataDir                   = "/var/lib/cakemix/cmdat"
+	dataDir                   = "/var/lib/cakemix"
 	signPubKey                = "/etc/cakemix/keys/signkey.pub"
 	signPrvKey                = "/etc/cakemix/keys/signkey"
 	logFile                   = ""

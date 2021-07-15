@@ -17,7 +17,7 @@ services:
     restart: always
     volumes:
       - ./share/www:/usr/share/cakemix/www
-      - ./docker/server/cmdat:/var/lib/cakemix/cmdat
+      - ./docker/server/cmdat:/var/lib/cakemix
       - ./docker/server/keys:/etc/cakemix/keys
       - ./docker/server/log:/var/log/cakemix
 

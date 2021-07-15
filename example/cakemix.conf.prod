@@ -15,7 +15,7 @@ APICORS example.com
 
 # File and directory configuration
 FrontDir /usr/share/cakemix/www
-DataDir /var/lib/cakemix/cmdat
+DataDir /var/lib/cakemix
 APIHost
 SignPubKey /etc/cakemix/keys/signkey.pub
 SignPrvKey /etc/cakemix/keys/signkey
