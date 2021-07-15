@@ -84,7 +84,17 @@ func main() {
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
-	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+	// Check keyfiles exist
+	_, err := os.Stat(fileconf.SignPrvKey)
+	if err != nil {
+		log.Printf("Generating public/private keys...\n")
+		err = util.GenerateKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+	// Load keyfiles
+	err = db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		panic(err)
 	}
