@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -77,6 +78,16 @@ func testInit(tb testing.TB) *gin.Engine {
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+	// Check keyfiles exist
+	_, err = os.Stat(fileconf.SignPrvKey)
+	if err != nil {
+		log.Printf("Generating public/private keys...\n")
+		err = util.GenerateKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+	// Load keyfiles
 	err = db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		tb.Errorf("testInit: %v", err)
