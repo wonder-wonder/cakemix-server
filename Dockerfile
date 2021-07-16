@@ -3,9 +3,9 @@ FROM golang
 WORKDIR /go/src/github.com/wonder-wonder/cakemix-server
 
 COPY . .
-
-# ENV GOPATH /go:/root
+COPY example/cakemix.conf.prod /etc/cakemix/cakemix.conf
+COPY share/mail /usr/share/cakemix/mail
 
 RUN make build
 
-CMD ["./cakemixsv","-c","cakemix.conf.prod"]
+CMD ["./cakemixsv"]
