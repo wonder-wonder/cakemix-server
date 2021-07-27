@@ -2,30 +2,28 @@
 # Starting with # is comment line
 
 # Database configuration
-DBHost cakemixpg
+DBHost localhost
 DBPort 5432
 DBUser postgres
 DBPass postgres
 DBName cakemix
 
 # API socket configuration
-APIHost
+APIHost localhost
 APIPort 8081
-APICORS example.com
 
 # File and directory configuration
-FrontDir /root/dist
-DataDir /root/cmdat
-APIHost
-SignPrvKey /root/keys/signkey
-SignPubKey /root/keys/signkey.pub
-LogFile /root/log/access.log
+FrontDir ../share/www
+DataDir ../out/cmdat
+SignPubKey ../out/keys/signkey.pub
+SignPrvKey ../out/keys/signkey
 
 # Mail configuration
+MailSGAPIKey DEBUG
 MailFromAddr cakemix@localhost
 MailFromName Cakemix
-MailResetPWTmpl resetpw.tmpl
-MailRegistTmpl regist.tmpl
+MailResetPWTmpl ../share/mail/resetpw.tmpl
+MailRegistTmpl ../share/mail/regist.tmpl
 
 # Permit to create new team without admin
 PermitUserToCreateTeam false

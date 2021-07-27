@@ -178,3 +178,52 @@ func (d *DB) UpdateDocument(did string, updateruuid string) error {
 	}
 	return nil
 }
+
+// DuplicateDocument duplicates document and save into target folder
+func (d *DB) DuplicateDocument(did string, permission FilePerm, parentfid string, owneruuid string, updateruuid string) (string, error) {
+	title := ""
+	content := ""
+	r := d.db.QueryRow("SELECT title,text FROM documentrevision INNER JOIN document ON (documentrevision.uuid = document.uuid AND documentrevision.revision = document.revision) WHERE document.uuid = $1", did)
+	err := r.Scan(&title, &content)
+	if err == sql.ErrNoRows {
+		return "", ErrDocumentNotFound
+	} else if err != nil {
+		return "", err
+	}
+
+	dateint := time.Now().Unix()
+	newdid, err := GenerateID(IDTypeDocument)
+	if err != nil {
+		return "", err
+	}
+	tx, err := d.db.Begin()
+	if err != nil {
+		return "", err
+	}
+
+	_, err = tx.Exec(`INSERT INTO document VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,1)`,
+		newdid, owneruuid, parentfid, title, permission, dateint, dateint, updateruuid, 0)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+	_, err = tx.Exec(`INSERT INTO documentrevision VALUES($1,$2,$3,1)`,
+		newdid, content, dateint)
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if re := tx.Rollback(); re != nil {
+			err = fmt.Errorf("%s: %w", re.Error(), err)
+		}
+		return "", err
+	}
+	return newdid, nil
+}

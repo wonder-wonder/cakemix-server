@@ -1,6 +1,6 @@
 module github.com/wonder-wonder/cakemix-server
 
-go 1.14
+go 1.16
 
 require (
 	github.com/gin-gonic/gin v1.7.2

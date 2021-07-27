@@ -41,6 +41,14 @@ make down
 ```
 Now you can access `localhost:8081` to use cakemix!
 
+### Default File Layout
+ConfigFile: `/etc/cakemix/cakemix.conf`
+KeyFiles:   `/etc/cakemix/keys/signkey{,.pub}`
+FrontDir:   `/usr/share/cakemix/www`
+MailTmpl:   `/usr/share/cakemix/mail/*`
+DataDir:    `/var/lib/cakemix`
+LogFile:    `/var/log/cakemix/access.log` (disabled by default)
+
 ## For developer
 ### How To run for development
 ``` sh
