@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 	"time"
@@ -18,11 +19,24 @@ import (
 
 var version string = ""
 
+const defaultConfig = "/etc/cakemix/cakemix.conf"
+
 func main() {
 	if version == "" {
 		version = "unknown version"
 	}
 	fmt.Printf("\nCakemix %s\n\n", version)
+
+	// Load default config file
+	if _, err := os.Stat(defaultConfig); err == nil {
+		log.Printf("Loading config %s", defaultConfig)
+		err := util.LoadConfigFile(defaultConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error occured while loading config: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	if len(os.Args) > 1 {
 		for i := 1; i < len(os.Args); i++ {
 			switch strings.ToLower(os.Args[i]) {
@@ -54,6 +68,11 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	if fileconf.LogFile != "" {
+		// Make log directory
+		err := os.MkdirAll(path.Dir(fileconf.LogFile), 0700)
+		if err != nil {
+			panic(err)
+		}
 		f, err := os.OpenFile(fileconf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error occured while opening log file: %v\n", err)
@@ -65,7 +84,17 @@ func main() {
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
-	err := db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+	// Check keyfiles exist
+	_, err := os.Stat(fileconf.SignPrvKey)
+	if err != nil {
+		log.Printf("Generating public/private keys...\n")
+		err = util.GenerateKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+	// Load keyfiles
+	err = db.LoadKeys(fileconf.SignPrvKey, fileconf.SignPubKey)
 	if err != nil {
 		panic(err)
 	}
