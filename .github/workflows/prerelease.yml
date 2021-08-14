@@ -2,9 +2,9 @@ name: Release
 
 on:
   pull_request:
-    # branches:
-    #   - develop
-    # types: [closed]
+    branches:
+      - develop
+    types: [closed]
 
 jobs:
   prerelease:
@@ -32,7 +32,6 @@ jobs:
             console.log("No prerelease detected. Skipped.")
           }
     - name: remove develop-latest tag if exists
-      id: checktag
       run: |
         if git tag|grep "develop-latest";then git tag -d develop-latest && git push origin :develop-latest;fi
     - name: update tag
