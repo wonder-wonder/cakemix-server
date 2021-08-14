@@ -65,8 +65,8 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/wonder-wonder/cakemix:latest
-          ghcr.io/wonder-wonder/cakemix:${{ env.newtag }}
+          ghcr.io/wonder-wonder/cakemix-server:latest
+          ghcr.io/wonder-wonder/cakemix-server:${{ env.newtag }}
 
   hotfix:
     runs-on: ubuntu-latest
@@ -128,5 +128,5 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/wonder-wonder/cakemix:latest
-          ghcr.io/wonder-wonder/cakemix:${{ env.newtag }}
+          ghcr.io/wonder-wonder/cakemix-server:latest
+          ghcr.io/wonder-wonder/cakemix-server:${{ env.newtag }}

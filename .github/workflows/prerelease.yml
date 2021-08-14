@@ -70,4 +70,4 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/wonder-wonder/cakemix:develop-latest
+          ghcr.io/wonder-wonder/cakemix-server:develop-latest
