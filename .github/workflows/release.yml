@@ -143,9 +143,9 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         git clone git@github.com:wonder-wonder/cakemix.git
         cd cakemix
-        git checkout develop && git submodule update
-        cd cakemix-server && git checkout develop && git pull && cd ..
-        cd cakemix-front && git checkout develop && git pull && cd ..
+        git checkout main && git submodule update
+        cd cakemix-server && git checkout main && git pull && cd ..
+        cd cakemix-front && git checkout main && git pull && cd ..
         git config --global user.email "github@actions"
         git config --global user.name "github-actions"
-        git add . && git commit -m "Update for develop" && git push || echo "Nothing to update. Abort."
+        git add . && git commit -m "Update for main" && git push || echo "Nothing to update. Abort."
