@@ -133,6 +133,8 @@ jobs:
 
   updatecakemix:
     runs-on: ubuntu-latest
+    if: always()
+    needs: [release, hotfix]
     steps:
     - name: update cakemix repo
       env:
