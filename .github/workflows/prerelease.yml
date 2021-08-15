@@ -75,7 +75,7 @@ jobs:
   updatecakemix:
     runs-on: ubuntu-latest
     steps:
-    - name: checkout
+    - name: update cakemix repo
       env:
         CAKEMIX_SSHKEY: ${{secrets.CAKEMIX_SSHKEY}}
       run: |
