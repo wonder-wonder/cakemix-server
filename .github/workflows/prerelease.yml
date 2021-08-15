@@ -74,6 +74,7 @@ jobs:
 
   updatecakemix:
     runs-on: ubuntu-latest
+    needs: prerelease
     steps:
     - name: update cakemix repo
       env:
