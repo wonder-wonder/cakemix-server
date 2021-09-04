@@ -1,0 +1,93 @@
+name: Prerelease
+
+on:
+  pull_request:
+    branches:
+      - develop
+    types: [closed]
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: remove old prerelease
+      uses: actions/github-script@v4.0.2
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          try {
+            const release = await github.repos.getReleaseByTag({
+              ...context.repo,
+              tag: "develop-latest",
+            })
+            const res = await github.repos.deleteRelease({
+              ...context.repo,
+              release_id: release.data.id,
+            })
+          } catch {
+            console.log("No prerelease detected. Skipped.")
+          }
+    - name: remove develop-latest tag if exists
+      run: |
+        if git tag|grep "develop-latest";then git tag -d develop-latest && git push origin :develop-latest;fi
+    - name: update tag
+      run: |
+        git checkout develop
+        git tag develop-latest
+        git push --tags
+    - name: create release
+      uses: actions/github-script@v4.0.2
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.repos.createRelease({
+            ...context.repo,
+            draft: false,
+            prerelease: true,
+            tag_name: "develop-latest",
+            name: "Develop Latest",
+            target_commitish: process.env.GITHUB_SHA,
+            body: "This is a beta release."
+          });
+    - name: Log in to GitHub Docker Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build container image
+      uses: docker/build-push-action@v2
+      with:
+        platforms: linux/amd64,linux/arm/v7,linux/arm64
+        context: .
+        push: true
+        tags: |
+          ghcr.io/wonder-wonder/cakemix-server:develop-latest
+
+  updatecakemix:
+    runs-on: ubuntu-latest
+    needs: prerelease
+    steps:
+    - name: update cakemix repo
+      env:
+        CAKEMIX_SSHKEY: ${{secrets.CAKEMIX_SSHKEY}}
+      run: |
+        mkdir ~/.ssh
+        echo "${CAKEMIX_SSHKEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        git clone git@github.com:wonder-wonder/cakemix.git
+        cd cakemix
+        git checkout develop && git submodule init && git submodule update
+        cd cakemix-server && git checkout develop && git pull && cd ..
+        cd cakemix-front && git checkout develop && git pull && cd ..
+        git config --global user.email "github@actions"
+        git config --global user.name "github-actions"
+        git add . && git commit -m "Update for develop" && git push || echo "Nothing to update. Abort."

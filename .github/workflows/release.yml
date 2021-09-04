@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: get new tag
       run: echo "newtag=${GITHUB_HEAD_REF#release/}" >> $GITHUB_ENV
     - name: add tag
@@ -46,6 +48,25 @@ jobs:
             base: "develop",
             title: "Release ${{ env.newtag }} to develop"
           });
+    - name: Log in to GitHub Docker Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build container image
+      uses: docker/build-push-action@v2
+      with:
+        platforms: linux/amd64,linux/arm/v7,linux/arm64
+        context: .
+        push: true
+        tags: |
+          ghcr.io/wonder-wonder/cakemix-server:latest
+          ghcr.io/wonder-wonder/cakemix-server:${{ env.newtag }}
 
   hotfix:
     runs-on: ubuntu-latest
@@ -90,3 +111,43 @@ jobs:
             base: "develop",
             title: "Release ${{ env.newtag }} to develop"
           });
+    - name: Log in to GitHub Docker Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build container image
+      uses: docker/build-push-action@v2
+      with:
+        platforms: linux/amd64,linux/arm/v7,linux/arm64
+        context: .
+        push: true
+        tags: |
+          ghcr.io/wonder-wonder/cakemix-server:latest
+          ghcr.io/wonder-wonder/cakemix-server:${{ env.newtag }}
+
+  updatecakemix:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [release, hotfix]
+    steps:
+    - name: update cakemix repo
+      env:
+        CAKEMIX_SSHKEY: ${{secrets.CAKEMIX_SSHKEY}}
+      run: |
+        mkdir ~/.ssh
+        echo "${CAKEMIX_SSHKEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        git clone git@github.com:wonder-wonder/cakemix.git
+        cd cakemix
+        git checkout main && git submodule init && git submodule update
+        cd cakemix-server && git checkout main && git pull && cd ..
+        cd cakemix-front && git checkout main && git pull && cd ..
+        git config --global user.email "github@actions"
+        git config --global user.name "github-actions"
+        git add . && git commit -m "Update for main" && git push || echo "Nothing to update. Abort."

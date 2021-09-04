@@ -240,6 +240,69 @@ func TestDocumentHandler(t *testing.T) {
 			})
 		}
 	})
+	t.Run("DuplicateDoc", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		if newdid == "" {
+			t.SkipNow()
+		}
+		type req struct {
+			header    map[string]string
+			targetfid string
+		}
+		type res struct {
+			code int
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "Root",
+				req: req{
+					header:    map[string]string{"Authorization": `Bearer ` + token},
+					targetfid: "fhfprvdljyczssis7",
+				},
+				res: res{
+					code: 200,
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("POST", "/v1/doc/"+newdid+"/copy/"+tt.req.targetfid, nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+
+				resraw := w.Body.Bytes()
+				var res map[string]interface{}
+				err := json.Unmarshal(resraw, &res)
+				if !assert.NoError(t, err, "fail to umarshal json:\n%v", err) {
+					t.FailNow()
+				}
+
+				dupdidraw, ok := res["doc_id"]
+				if !assert.True(t, ok, "should has doc_id, got:\n%v", res) {
+					t.FailNow()
+				}
+				dupdid, ok := dupdidraw.(string)
+				if !assert.True(t, ok, "should be string, got:\n%v", res) {
+					t.FailNow()
+				}
+				if !assert.NotEmpty(t, dupdid) {
+					t.FailNow()
+				}
+			})
+		}
+	})
 	t.Run("RemoveDoc", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()
