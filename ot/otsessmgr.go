@@ -223,3 +223,8 @@ func (mgr *Manager) StopOTManager() {
 func (mgr *Manager) StopOTSession(docID string) {
 	go func() { mgr.stop <- docID }()
 }
+
+// StopOTSessionAndWait stops session
+func (mgr *Manager) StopOTSessionAndWait(docID string) {
+	mgr.stop <- docID
+}

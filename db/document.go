@@ -227,3 +227,16 @@ func (d *DB) DuplicateDocument(did string, permission FilePerm, parentfid string
 	}
 	return newdid, nil
 }
+
+// GetDocumentByRevision returns document data by revision
+func (d *DB) GetDocumentByRevision(did string, revision int) (string, error) {
+	text := ""
+	r := d.db.QueryRow("SELECT text FROM documentrevision WHERE uuid = $1 AND revision = $2", did, revision)
+	err := r.Scan(&text)
+	if err == sql.ErrNoRows {
+		return "", ErrDocumentNotFound
+	} else if err != nil {
+		return "", err
+	}
+	return text, nil
+}

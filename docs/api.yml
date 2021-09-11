@@ -699,6 +699,52 @@ paths:
           description: security token
           required: true
       security: []
+  '/doc/{doc_id}/rev/{revision}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: revision
+        in: path
+        required: true
+    get:
+      summary: Get document by revision
+      tags:
+        - Document
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+      operationId: get-doc-doc_id-rev-revision
+      description: Get document by revision
+  '/doc/{doc_id}/revert/{revision}':
+    parameters:
+      - schema:
+          type: string
+        name: doc_id
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: revision
+        in: path
+        required: true
+    put:
+      summary: Revert document
+      operationId: put-doc-doc_id-revert-revision
+      responses:
+        '200':
+          description: OK
+      description: Revert document to the revision
+      tags:
+        - Document
   '/folder/{folder_id}':
     parameters:
       - schema:
