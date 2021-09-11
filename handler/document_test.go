@@ -352,6 +352,65 @@ func TestDocumentHandler(t *testing.T) {
 			})
 		}
 	})
+	t.Run("RevertDoc", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		type req struct {
+			header      map[string]string
+			docid       string
+			oldrevision int
+			revision    int
+		}
+		type res struct {
+			code int
+			text string
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "TestDoc2",
+				req: req{
+					header:      map[string]string{"Authorization": `Bearer ` + token},
+					docid:       "dzhkyo37b63qk3yj5",
+					oldrevision: 2,
+					revision:    4,
+				},
+				res: res{
+					code: 200,
+					text: "Is this a test?",
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, err := http.NewRequest("PUT", "/v1/doc/"+tt.req.docid+"/revert/"+strconv.Itoa(tt.req.oldrevision), nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.NoError(t, err) || !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+				w = httptest.NewRecorder()
+				req, _ = http.NewRequest("GET", "/v1/doc/"+tt.req.docid+"/rev/"+strconv.Itoa(tt.req.revision), nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, 200, w.Code) {
+					t.FailNow()
+				}
+				if !assert.Equal(t, tt.res.text, w.Body.String()) {
+					t.FailNow()
+				}
+			})
+		}
+	})
 	t.Run("RemoveDoc", func(t *testing.T) {
 		if token == "" {
 			t.SkipNow()

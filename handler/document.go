@@ -25,6 +25,7 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 	docck.POST(":id/copy/:folderid", h.duplicateDocumentHandler)
 	docck.PUT(":docid", h.modifyDocumentHandler)
 	docck.GET(":docid/rev/:rev", h.getDocumentByRevisionHandler)
+	docck.PUT(":docid/revert/:rev", h.revertDocumentToRevision)
 }
 
 func (h *Handler) getDocumentHandler(c *gin.Context) {
@@ -623,4 +624,58 @@ func (h *Handler) getDocumentByRevisionHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, doc)
+}
+
+func (h *Handler) revertDocumentToRevision(c *gin.Context) {
+	uuid, ok := getUUID(c)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	did := c.Param("docid")
+	rev := c.Param("rev")
+	revint, err := strconv.Atoi(rev)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if did == "" || did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrDocumentNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission == db.FilePermPrivate {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	h.otmgr.StopOTSessionAndWait(did)
+	doc, err := h.db.GetDocumentByRevision(did, revint)
+	if err != nil {
+		if err == db.ErrDocumentNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.db.SaveDocument(did, uuid, doc)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
 }
