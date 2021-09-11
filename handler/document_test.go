@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -298,6 +299,54 @@ func TestDocumentHandler(t *testing.T) {
 					t.FailNow()
 				}
 				if !assert.NotEmpty(t, dupdid) {
+					t.FailNow()
+				}
+			})
+		}
+	})
+	t.Run("GetDocByRevision", func(t *testing.T) {
+		if token == "" {
+			t.SkipNow()
+		}
+		type req struct {
+			header   map[string]string
+			docid    string
+			revision int
+		}
+		type res struct {
+			code int
+			text string
+		}
+		tests := []struct {
+			name string
+			req  req
+			res  res
+		}{
+			{
+				name: "TestDoc2",
+				req: req{
+					header:   map[string]string{"Authorization": `Bearer ` + token},
+					docid:    "dzhkyo37b63qk3yj5",
+					revision: 1,
+				},
+				res: res{
+					code: 200,
+					text: "This is a test.",
+				},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req, _ := http.NewRequest("GET", "/v1/doc/"+tt.req.docid+"/rev/"+strconv.Itoa(tt.req.revision), nil)
+				for hk, hv := range tt.req.header {
+					req.Header.Set(hk, hv)
+				}
+				r.ServeHTTP(w, req)
+				if !assert.Equal(t, tt.res.code, w.Code) {
+					t.FailNow()
+				}
+				if !assert.Equal(t, tt.res.text, w.Body.String()) {
 					t.FailNow()
 				}
 			})

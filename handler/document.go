@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ func (h *Handler) DocumentHandler(r *gin.RouterGroup) {
 	docck.PUT(":docid/move/:folderid", h.moveDocumentHandler)
 	docck.POST(":id/copy/:folderid", h.duplicateDocumentHandler)
 	docck.PUT(":docid", h.modifyDocumentHandler)
+	docck.GET(":docid/rev/:rev", h.getDocumentByRevisionHandler)
 }
 
 func (h *Handler) getDocumentHandler(c *gin.Context) {
@@ -581,4 +583,44 @@ func (h *Handler) duplicateDocumentHandler(c *gin.Context) {
 	}
 
 	c.AbortWithStatusJSON(http.StatusOK, model.CreateDocumentRes{DocumentID: newdid})
+}
+
+func (h *Handler) getDocumentByRevisionHandler(c *gin.Context) {
+	did := c.Param("docid")
+	rev := c.Param("rev")
+	revint, err := strconv.Atoi(rev)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if did == "" || did[0] != 'd' {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	dinfo, err := h.db.GetDocumentInfo(did)
+	if err != nil {
+		if err == db.ErrDocumentNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if !isRelatedUUID(c, dinfo.OwnerUUID) && dinfo.Permission == db.FilePermPrivate {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	doc, err := h.db.GetDocumentByRevision(did, revint)
+	if err != nil {
+		if err == db.ErrDocumentNotFound {
+			c.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	c.String(http.StatusOK, doc)
 }
