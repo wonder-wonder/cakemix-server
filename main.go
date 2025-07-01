@@ -169,6 +169,7 @@ func v1Handler(r *gin.RouterGroup, db *db.DB, hconf handler.HandlerConf) {
 	h.TeamHandler(r)
 	h.SearchHandler(r)
 	h.ImageHandler(r)
+	h.StatsHandler(r)
 	go func() {
 		<-sig
 		h.StopOTManager()

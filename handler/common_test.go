@@ -106,6 +106,7 @@ func testInit(tb testing.TB) *gin.Engine {
 	h.TeamHandler(v1)
 	h.SearchHandler(v1)
 	h.ImageHandler(v1)
+	h.StatsHandler(v1)
 
 	return r
 }
